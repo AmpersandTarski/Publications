@@ -16,7 +16,7 @@
 \def\Events{{\mathit E}}
 \begin{document}
 
-\title{A Theory for Database Transactions with no Database}
+\title{A Theory for Distributed Database Transactions}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
 \ead{stef.joosten@ou.nl}
 \author[utwente]{Sebastiaan Joosten\fnref{fn2}}
@@ -27,13 +27,17 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-	How can we make transactions work in distributed information systems without a shared database?
-	Transaction theory as we know it assumes a shared data space.
-	Multiple processes are acting simultaneously, each making changes to that shared data space.
-	The observation that transaction mechanisms in NoSQL databases are not common
-	makes us feel that a solution to this problem is not so obvious.
+	A shared data space can be problematic in globally distributed information systems,
+	because it can become a performance bottleneck or a single point of failure.
+	Yet, transaction theory as we know it assumes a shared data space.
+	Several solutions exist, such as nested transactions and distributed transactions.
+	Practitioners tend to avoid them when possible becaus the are complicated and error prone.
 
-	This contribution proposes a theory of database transactions without a shared data space.
+	In this contribution we let go of the shared data space requirement.
+	We propose a transaction theory based on events rather than states.
+	By expressing the required properties A (atomic), C (consistent), I (isolated), and D (durable)
+	in terms of events we can avoid the assumption of a shared state space.
+
 	This makes transactions suitable for more databases than just relational ones.
 	The soundness of the theory has been established by means of formal proof.
 	To show that the theory works, the theory is demonstrated by a prototype developed in Ampersand\footnote{\tt https://github.com/AmpersandTarski/Ampersand}.
@@ -49,49 +53,50 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \section{Introduction}
 \label{sct:Introduction}
 	A distributed information system (DIS) serves its users with things such as
-	registering data, guarding the consistency, protecting the data,
-	and providing that data accurately and meaningfully for its intended purpose.
-	Users want predictable behaviour when they are simultaneously changing a shared state (e.g.\ flight reservation).
-	For that purpose a transaction mechanism preserves system-wide invariants.
-	Many transaction mechanisms are known that presume a shared database [refs].
-	However, shared databases are not always an option in distributed cloud architectures.
+	registering data, guarding consistency, protecting that data,
+	and providing it accurately and meaningfully for its intended purpose to various users.
+	These users want predictable behaviour, even when they change a shared state,
+	e.g. when reserving a seat in a global flight reservation system like Galileo.
+	Although we cannot always avoid sharing a state,
+	we usually can avoid sharing an entire database.
 	Globally distributed applications such as Netflix and LinkedIn cannot afford to rely on a shared database for obvious reasons of performance and reliability.
 	Many cloud applications use distributed storage models instead.
 	Examples are event stores (e.g.\ Kafka), triple stores (e.g.\ semantic web), graph databases (e.g. Neo4J) and others.
-	These so-called NoSQL databases often lack functionality for transactions,
+	Many so-called NoSQL databases lack functionality for transactions,
 	leaving the problems for the user to solve.
-	As a result, many architectural patterns exist for the purpose of doing transactions in a distributed setting.
+	As a result, architectural patterns exist for the purpose of doing transactions in a distributed setting.
 	Some of these patterns simply circumvent the problem.
 	Others will isolate transactionality into a smaller sub-problem.
 	Still others introduce locking mechanisms to do the job.
-	In paper we will show that the ACID-properties of transactions follow quite naturally from the theory of time.
-	In informal terms: the merge of Git corresponds to the transactional commit in databases.
-	This result contributes to the body of foundational theory of information systems.
-	
-	This paper describes transactions without the assumption of a shared database.
-	In we express the characteristic properties of transactions: Atomicity, Consistency, Isolation, and Durability.
-	{\em Atomicity} means that a sequence of primitive actions can be executed as though it were a single action.
-	{\em Consistency} means that integrity rules are warranted by the database management system.
-	{\em Isolation} means that actions can be done without any knowledge of what other users are doing simultaneously.
-	{\em Durability} means that the contents of a database cannot change unintendedly.
+
+	Our work is inspired by the observation that the merge of Git corresponds to the commit that we know from transactional databases.
+	We show this correspondence by expressing the characteristic properties of transactions in a theory of time.
 	For this purpose we build on a well-known theory of time~\cite{DBLP:journals/ipl/FosterCWZ18},
 	which is generally applicable,
 	well-established, and founded in a solid mathematical structure~\cite{Foster14}.
+	This means we have to redefine Atomicity, Consistency, Isolation, and Durability in terms of events.
+	Informally, {\em Atomicity} means that a sequence of primitive actions can be executed as though it were a single action.
+	{\em Consistency} means that integrity rules are warranted.
+	{\em Isolation} means that actions can be done without any knowledge of what other users are doing.
+	{\em Durability} means that history does not change.
+	The result of this work contributes to the body of foundational theory of information systems
+	by defining transactions in a theory of time.
+	By showing that transactions come quite naturally from an event perspective,
+	we give formal substance under the observation that event systems like Git do not need new features to behave transactionally.
 
-\section{Related work}
+	\section{Related work}
 \label{sct:Related work}
-	In 2017, Simon Foster et al. published a theory of time with generalised reactive processes~\cite{DBLP:journals/ipl/FosterCWZ18}.
-	It provides a generic foundation for denotational semantics of concurrent languages,
-	the proof obligation of which are satisfied by automated verification~\cite{Foster14}.
-	Their theory describes program behaviour as relational predicates whose variables correspond to observable quantities.
-	It draws on the seminal work of Hoare on communicating sequential processes~\cite{HoareHe98},
+	Distributed information systems are dynamic systems,
+	so time is the first aspect to focus on.
+	We will define transactions in terms of traces,
+	which draws on the seminal work of Hoare on communicating sequential processes~\cite{HoareHe98},
 	work on process algebras by Bergstra and Klop~\cite{DBLP:journals/iandc/BergstraK84}, and
 	Robin Milner's work on CCS~\cite{Milner1989}.
-	We chose to build our theory on the work of Foster et al. because it provides three healthiness conditions
-	that theories of time must adhere to,
-	ready for us to adopt.
-	In the same style we have tried to keep our theory down to the bare minimum, to make it as generally applicable as possible.
-	We too have used Isabelle to verify the required proofs,
+	Trace theory is today the usual way of defining distributed event-based systems.
+	Trace algebras also have sound interpretations for analog real-time systems and hybrid systems~\cite{Foster17b}.
+	This paper, however, sticks to the interpretation of event sequences, because distributed information systems are event-based.
+	Yet, we define the theory in trace algebra so as to impose as few restrictions as possible.
+	We have used Isabelle to verify the required proofs,
 	to increase our confidence in this theory.
 	
 \cite{Foster17c}
@@ -102,24 +107,67 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 
 	ACID 2.0 - Associative, Commutative, Idempotent, Distributed
 
+\section{Traces}
+\label{sct:Traces}
+	We need the notion of {\em event}\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} to describe things that happen in a distributed information system.
+	Being distributed means that we must assume that the temporal order of events is partial:
+	We do not necessarily know in which order two events have happened.
+	To describe this, we define traces algebraically corresponding to Foster~\cite{Foster17b}.
+
+	We define traces as a set ${\mathcal T}$ with
+	a concatenation operator $+:\mathcal T\rightarrow\mathcal T\rightarrow\mathcal T$ and
+	the empty trace $0:\mathcal T$, which obey the following axioms.
+\begin{definition}[Trace Algebra]
+\label{def:Trace Algebra}
+\item   A trace algebra $(\mathcal T, +, 0)$, is an algebra that satisfies: 
+\begin{eqnarray}
+	x+(y+z)&=&(x+y)+z\label{axi:associative}\\
+	0+x&=&x+0\label{axi:lr-identity}\\
+	x+y\ =\ x+z&\Rightarrow&y=z\label{axi:right cancellation}\\
+	x+z\ =\ y+z&\Rightarrow&x=y\label{axi:left cancellation}\\
+	x+z\ =\ 0&\Rightarrow&x=0\label{axi:no inverse}
+\end{eqnarray}
+\end{definition}
+	In terms of universal algebra, equations~\ref{axi:associative} and~\ref{axi:lr-identity} state that a trace algebra is a {\em monoid}.
+	Equations~\ref{axi:right cancellation} and~\ref{axi:left cancellation} state that $+$ is {\em cancellative}.
+	Equation~\ref{axi:no inverse} makes the cancellative monoid into a trace algebra.
+	It implies that there is no inverse.
+
+	In terms of information systems, a trace represents history.
+	For that purpose it makes sense to define the notion of prefix, so we can define notions like shared history.
+\begin{definition}[Prefix]
+\label{def:Prefix}
+\begin{eqnarray}
+	x\leq y&\Rightarrow&\exists z:\ x+z=y
+\end{eqnarray}
+\end{definition}
+	We also define subtraction of traces as a way to "cut off" a prefix from a trace.
+\begin{definition}[Subtract]
+\label{def:Subtract}
+\label{def:Subtract}
+\begin{array}[t]{rcll}
+	y-x&=&\text{if }x\leq y:&\exists z: y=x+z\Rightarrow z\\
+	   & &\text{otherwise}:&0
+\end{array}
+\end{definition}
+
 \section{History}
 \label{sct:History}
-	Distributed information systems are dynamic systems,
-	so time is the first aspect we focus on.
-	Being distributed means that we cannot assume that the temporal order of events is known in all cases.
-	In this paper we simplify the notion of time to precedence of events,
-	allowing us to study the evolution over time by events that happen.
-	We need the notion of {\em event}\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} to describe things that happen in a DIS.
-	In this work we use variables $e$, $e_1$, and $e_2$ to represent events.
+	The history of a distributed information system (DIS) consists of events and an ordering on these events.
+	Because a DIS is distributed,
+	we may not know the temporal order of two events in the history structure.
+	For this reason we describe the history structure of a DIS as a partial order of events.
+
+	We use variables $e$, $e_1$, and $e_2$ to represent events.
 	Let $\mathbb E$ represent the set of all conceivable events.
 	We also introduce the notion of {\em history structure}
-	to represent all events that have happend up to some point in time and the precedences between those events.
+	to represent all events that have happened up to some point in time and the precedences between those events.
 	In this paper, variables $h$, $h'$, $h_1$, and $h_2$ represent history structures.
 	Let $\mathbb H$ be the set of all conceivable history structures.
-	We describe the history structure of a DIS as a partial order of events
 
 	A {\em history structure} is a tuple $\la \Events, \id{prec}\ra$ in which
 \begin{eqnarray}
+	&&\Events\ \subseteq\ \mathbb E\\
 	&&\id{prec}\ \subseteq\ \Events\times\Events\label{req:precInE}\\
 	&&(e,e)\notin\id{prec}\label{req:prec irreflexive}\\
 	&&(e_1,e_2)\in\id{prec}^+\ \wedge\ (e_2,e_1)\in\id{prec}^+\ \Rightarrow\ e_1=e_2\label{req:precPlus asy}
@@ -131,7 +179,24 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Requirement~\ref{req:prec irreflexive} excludes the situation that $e$ has happened before itself.
 	To represent time faithfully, we require that $\la\Events,\id{prec}^*\ra$ is a partially ordered set,
 	meaning that $\id{prec}^*$ is reflexive, transitive, and antisymmetric.
-	For this reason equation~\ref{req:precPlus asy} requires the transitive closure $\id{prec}^+$ to be antisymmetric.
+	For this reason we have requirement~\ref{req:precPlus asy}, which says that the transitive closure $\id{prec}^+$ must be antisymmetric.
+
+	In a history structure $\la \Events, \id{prec}\ra$, an event $e$ that precedes another event is called a {\em past} event,
+	which we define as \ $\exists e_1\in\Events: e\ \id{prec}\ e_1$.
+	All other events are called {\em current} events in that history structure.
+	Function $\id{current}:\mathbb H\rightarrow\powerset{\Events}$ computes the current events in a history structure.
+	Events in $\Events$ that have no preceding events are called {\em initial} events.
+	Function $\id{past}$ computes the past events and $\id{initial}$ computes the initial events.
+\begin{eqnarray}
+	\id{current}(\la \Events, \id{prec}\ra)&=&\{ c\in\Events|\ \neg\exists e_1\in\Events: e\ \id{prec}\ e_1 \}\\
+	\id{initial}(\la \Events, \id{prec}\ra)&=&\{ c\in\Events|\ \neg\exists e_1\in\Events: e_1\ \id{prec}\ e \}
+\end{eqnarray}
+	We define the {\em closure} of a history structure as the history structure whose order is the reflexive, transitive closure of the original ordering relation.
+\begin{eqnarray}
+	\la \Events, \id{prec}\ra^*&=&\la \Events, \id{prec}^*\ra\label{def:closure}
+\end{eqnarray}
+	Equation~\ref{def:closure} allows us to write $h^*$ for elements of $\mathbb H$.
+	The order of $h^*$ is reflexive, transitive, and antisymmetric.
 
 	The special case in which $\la\Events,\id{prec}^*\ra$ is a total order is called a {\em sequential history structure}.
 	Note that any nonempty finite sequential history structure has one current event and one first event.
@@ -139,28 +204,70 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	In a sequential history structure, every event except the first one has precisely one preceding event.
 	In general, however, events may have multiple preceding events and multiple succeeding events.
 
-	In a history structure $\la \Events, \id{prec}\ra$, an event $e$ that precedes another event is called a {\em past} event,
-	which we define as \ $\exists e_1\in\Events: e\ \id{prec}\ e_1$.
-	All other events are called {\em current} events in that history structure.
-	Events in $\Events$ that have no preceding events are called {\em first} events.
-
 	We extend the notion of subset to historic structures and use the subset symbol $\subseteq$ for that purpose.
-	We call this a {\em historic substructure}, which is defined by:
+	We use $h\subseteq h'$ to state that $h$ lies in the past of $h'$.
+	Let $h=\la \Events, \id{prec}\ra$ and $h'=\la \Events', \id{prec}'\ra$ in the definition of $h\subseteq h'$:
 \begin{equation}
-\label{def:historic substructure}
-	\la \Events, \id{prec}\ra\ \subseteq\ \la \Events', \id{prec}'\ra\ \Leftrightarrow\ \Events\subseteq\Events'\ \wedge\ \id{prec}\subseteq\id{prec}'
+\label{def:lies in the past}
+	h\subseteq h'\ \Leftrightarrow\ 
+	\Events\subseteq\Events'\ \wedge\ \id{initial}(h)\subseteq\id{initial}(h')\ \wedge\ \id{prec}^*\subseteq\id{prec}'^*
 \end{equation}
+
+	Durability is meant to express that an action preserves history:
+\begin{definition}[Durability]
+\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is durable iff for every $h\in\mathbb H$:
+\label{def:Durability}
+\begin{eqnarray}
+	h\subseteq\id{act}(h)
+\end{eqnarray}
+\end{definition}
+
+	Isolation is meant to express that the effect of an action depends only on its current state.
+\begin{definition}[Isolation]
+\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ works in isolation iff there is a function $f:\mathbb S\rightarrow\mathbb S$ such that:
+\label{def:Isolation}
+\begin{eqnarray}
+	(h',e')=\id{act}(h,e)&\Rightarrow&\id{stat}(h',e')=f(\id{stat}(h,e))
+\end{eqnarray}
+\end{definition}
+
+	Atomicity expresses that a sequence of multiple actions can be treated as one.
+\begin{definition}[Atomicity]
+\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is atomic iff its constituent actions ...
+\label{def:Atomicity}
+\begin{eqnarray}
+	(h',e')=\id{act}(h,e)&\Rightarrow&e\ \id{pred}^*\ e'
+\end{eqnarray}
+\end{definition}
+
+	Consistency of an action means that it preserves truth.
+\begin{definition}[Consistency]
+\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is consistent iff it preserves the integrity constraints of all contexts in the system.
+\label{def:Consistency}
+\begin{eqnarray}
+	(h',e',r')=\id{act}(h,e,r)\ \wedge\ r(\id{stat}(h,e))&\Rightarrow&r'(\id{stat}(h',e'))
+\end{eqnarray}
+\end{definition}
+
+\section{Progress}
+\label{sct:Progress}
 
 	A DIS grows by adding events to it.
 	We describe each time a new event $e$ happens as a mapping, $\id{happens}_{P,e}$, from one history structure to another:
 \begin{equation}
-\begin{array}{l}
+\begin{array}[b]{l}
 	P\subseteq\Events\ \wedge\ e\notin E\\
 	\ \ \Rightarrow\ \ \id{happens}_{P,e}(\la \Events, \id{prec}\ra)\ =\ \la \Events\cup\{e\}, \id{prec}\cup\{(e_1,e) | e_1\in P\}\ra
 \end{array}
 \label{req:def happens}
 \end{equation}
 	This happening adds one event to $\Events$ and enlarges relation $\id{prec}$ with one pair for every immediate predecessor of $e$.
+	To understand why $P\subseteq\Events$ is necessary,
+	consider $\la \Events', \id{prec}'\ra=\id{happens}_{P,e}(h)$.
+	Now suppose event $e_1\in P$ but $e_1\notin\Events$.
+	Equation~\ref{req:def happens} tells us that $(e_1,e)\in\id{prec}'$.
+	However, this violates requirement~\ref{req:precInE}.
+	So it is necessary that every $e_1\in P$ is an element of $\Events$.
 	The immediate predecessors of $e$ are specified in set $P$, which we call the predecessor set.
 	We need the predecessor set to cater for the distributed nature of a DIS.
 \begin{lemma}
@@ -172,13 +279,8 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	It says that $\id{happens}_{P,e}$ preserves the history structure,
 	provided that $P\subseteq\Events$ and $e\notin\Events$.
 	This lemma has been proven in proof assistant Isabelle/HOL.
-	To understand why $P\subseteq\Events$ is necessary,
-	let $\la \Events', \id{prec}'\ra=\id{happens}_{P,e}(h)$.
-	Now suppose event $e_1\in P$ but $e_1\notin\Events$.
-	Equation~\ref{req:def happens} tells us that $(e_1,e)\in\id{prec}'$.
-	However, this violates requirement~\ref{req:precInE}.
-	So it is necessary that every $e_1\in P$ is an element of $\Events$.
-	Similarly, $e\notin\Events$ is a necessary condition,
+	Condition $P\subseteq\Events$ is necessary to satisfy equation~\ref{req:precInE}.
+	Condition $e\notin\Events$ is necessary too,
 	because any $e\in\Events$ violates the antisymmetry of $\id{prec}^+$ (requirement~\ref{req:precPlus asy}).
 
 	With lemma~\ref{lemma:happens preserves history structure} we can prove that $\id{happens}_{P,e}(h)=h'$ implies that $h\subseteq h'$.
