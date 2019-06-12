@@ -107,34 +107,102 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 
 	ACID 2.0 - Associative, Commutative, Idempotent, Distributed
 
+\section{History}
+\label{sct:History}
+	A treatment of time lays the foundation of our theory of distributed information systems (DIS).
+	Because of the distributed nature of a DIS,
+	we may not know in which order two events\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} have happened.
+	For this reason we describe the history of a DIS as a partially ordered relation of events.
+
+	We use variables $e$, $e_1$, and $e_2$ to represent events.
+	Let $\mathbb E$ represent the set of all conceivable events.
+%	We also introduce the notion of {\em history structure}
+%	to represent all events that have happened up to some point in time and the precedences between those events.
+%	In this paper, variables $h$, $h'$, $h_1$, and $h_2$ represent history structures.
+
+	We represent the ``history of a DIS up to some point in time'' by a relation $\id{prec}$ (pronounce: {\em precedes}),
+	being a set of pairs from $\mathbb E$.
+\[\id{prec}\subseteq\mathbb E\times\mathbb E\]
+	Let $e_1\ \id{prec}\ e_2$ represent the fact that event $e_1$ has happened before event $e_2$,
+	making $\id{prec}$ a relation on events in $\mathbb E$.
+	We require:
+\begin{eqnarray}
+	&&(e,e)\notin\id{prec}\label{req:prec irreflexive}\\
+	&&(e_1,e_2)\in\id{prec}^+\ \wedge\ (e_2,e_1)\in\id{prec}^+\ \Rightarrow\ e_1=e_2\label{req:precPlus asy}
+\end{eqnarray}
+	The events in the DIS, of which $\id{prec}$ represents the history, are 
+\begin{eqnarray}
+	&&\id{events}(\id{prec})\ =\ \{e_1|(e_1,e_2)\in\id{prec}\}\cup\{e_2|(e_1,e_2)\in\id{prec}\}\label{req:events}
+\end{eqnarray}
+	Requirement~\ref{req:prec irreflexive} excludes the situation that $e$ has happened before itself.
+	To represent time faithfully, equation~\ref{req:precPlus asy} requires that the transitive closure $\id{prec}^+$ is antisymmetric.
+	This makes $\id{prec}^*$ a reflexive, transitive, and antisymmetric relation, which lets us use it as a temporal order between events.
+	So we shall call $\id{prec}$ "a history" because it represents all events that have happened up to a certain point in time and the (partial) order between them.
+	Let $\mathbb H$ be the set of all conceivable histories, meaning that every $\id{prec}\in\mathbb H$.
+
+	In a history $\id{prec}$, an event $e$ that precedes another event is called a {\em past} event,
+	which we define as \ $\exists e_1:\ e\ \id{prec}\ e_1$.
+	All other events are called {\em current} events in $\id{prec}$.
+	Function $\id{current}$ computes the current events in history $\id{prec}$.
+	Function $\id{initial}$ computes the initial events, which are the events without preceding events.
+\begin{eqnarray}
+	\id{current}(\id{prec})&=&\{e |\ \exists e_1: (e_1,e)\in\id{prec}\ \wedge\ \neg\exists e_2: (e,e_2)\in\id{prec}\}\\
+	\id{initial}(\id{prec})&=&\{e |\ \exists e_1: (e,e_1)\in\id{prec}\ \wedge\ \neg\exists e_2: (e_2,e)\in\id{prec}\}
+\end{eqnarray}
+
+	The special case in which $\id{prec}^*$ is a total order is called a {\em sequential history}.
+	Note that any nonempty finite sequential history has one current event and one initial event.
+	Other finite histories may have more.
+	In a sequential history structure, every event except the initial one has precisely one preceding event.
+	In general, however, events may have multiple preceding events and multiple succeeding events.
+
+	We define $\leq$ to represent the fact that history $\id{prec}$ has preceded history $\id{prec}'$ in time.
+	It is defined by:
+\begin{equation}
+\label{def:lies in the past}
+	\id{prec}\leq\id{prec}'\ \Leftrightarrow\ \id{prec}^*\subseteq\id{prec}'^*
+\end{equation}
+
 \section{Traces}
 \label{sct:Traces}
-	We need the notion of {\em event}\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} to describe things that happen in a distributed information system.
-	Being distributed means that we must assume that the temporal order of events is partial:
-	We do not necessarily know in which order two events have happened.
-	To describe this, we define traces algebraically corresponding to Foster~\cite{Foster17b}.
+	A transaction in a DIS may be perceived as a distributed action,
+	which leaves a trace of events in the history of a DIS.
+	Let $\mathbb T$ be the set of all conceivable traces.
+	With \id{prec} being a history, we define that every pair $(e_1,e_2)\in\id{prec}^*$ is a trace.
+	So the traces of history $\id{prec}$ are denoted ${\mathcal T}_{\id{prec}}$ with ${\mathcal T}_{\id{prec}}\subseteq\mathbb T$.
+\begin{definition}[Traces]
+\label{def:Traces}
+\item   The set of traces of history $\text{prec}$ is defined by ${\mathcal T}_{\text{prec}}\ =\ \text{prec}^*$.
+\end{definition}
+	Pair $(e,e)$ represents the empty trace for any $e\in\id{events}(\id{prec})$ because $(e,e)\in\id{prec}^*$.
+	We will denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
+	If $(e_1,e)\in\id{prec}^*$ and $(e,e_2)\in\id{prec}'^*$ then
+	we define the concatenation operator $+:\mathbb T\rightarrow\mathbb T\rightarrow\mathbb T$ by
+\begin{definition}[Concatenation of traces]
+\label{def:concatenation}
+\item   $(e_1,e)+(e,e_2)=(e_1,e_2)$
+\end{definition}
+	Note that the definition of $+$ is partial, because $(e_1,e_2)+(e_3,e_4)$ is not defined unless $e_2=e_3$.
+	Also, $(e_1,e)+(e,e_2)$ is defined in the combined history $\id{prec}^*\cup\id{prec}'^*$
+	because $(e_1,e_2)\in(\id{prec}\cup\id{prec}')^*$.
 
-	We define traces as a set ${\mathcal T}$ with
-	a concatenation operator $+:\mathcal T\rightarrow\mathcal T\rightarrow\mathcal T$ and
-	the empty trace $0:\mathcal T$, which obey the following axioms.
-\begin{definition}[Trace Algebra]
-\label{def:Trace Algebra}
-\item   A trace algebra $(\mathcal T, +, 0)$, is an algebra that satisfies: 
+	This definition of trace is an interpretation of trace algebra~\cite{Foster17b}, which describes discrete-event systems.
+	Other interpretations of this algebra comprise real-time systems and hybrid systems, but that is beyond the scope of this paper.
+
+	The concatenation operator $+$ and empty trace $0$ satisfy the axioms of trace algebras: (proof needed)
 \begin{eqnarray}
 	x+(y+z)&=&(x+y)+z\label{axi:associative}\\
 	0+x&=&x+0\label{axi:lr-identity}\\
-	x+y\ =\ x+z&\Rightarrow&y=z\label{axi:right cancellation}\\
-	x+z\ =\ y+z&\Rightarrow&x=y\label{axi:left cancellation}\\
+	x+y\ =\ x+z&\Rightarrow&y=z\label{axi:left cancellation}\\
+	x+z\ =\ y+z&\Rightarrow&x=y\label{axi:right cancellation}\\
 	x+z\ =\ 0&\Rightarrow&x=0\label{axi:no inverse}
 \end{eqnarray}
-\end{definition}
 	In terms of universal algebra, equations~\ref{axi:associative} and~\ref{axi:lr-identity} state that a trace algebra is a {\em monoid}.
-	Equations~\ref{axi:right cancellation} and~\ref{axi:left cancellation} state that $+$ is {\em cancellative}.
+	Equations~\ref{axi:left cancellation} and~\ref{axi:right cancellation} state that $+$ is {\em cancellative}.
 	Equation~\ref{axi:no inverse} makes the cancellative monoid into a trace algebra.
 	It implies that there is no inverse.
 
-	In terms of information systems, a trace represents history.
-	For that purpose it makes sense to define the notion of prefix, so we can define notions like shared history.
+	It makes sense to define the notion of prefix, so we can define notions like shared history.
 \begin{definition}[Prefix]
 \label{def:Prefix}
 \begin{eqnarray}
@@ -144,74 +212,11 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	We also define subtraction of traces as a way to "cut off" a prefix from a trace.
 \begin{definition}[Subtract]
 \label{def:Subtract}
-\label{def:Subtract}
 \begin{array}[t]{rcll}
 	y-x&=&\text{if }x\leq y:&\exists z: y=x+z\Rightarrow z\\
 	   & &\text{otherwise}:&0
 \end{array}
 \end{definition}
-
-\section{History}
-\label{sct:History}
-	The history of a distributed information system (DIS) consists of events and an ordering on these events.
-	Because a DIS is distributed,
-	we may not know the temporal order of two events in the history structure.
-	For this reason we describe the history structure of a DIS as a partial order of events.
-
-	We use variables $e$, $e_1$, and $e_2$ to represent events.
-	Let $\mathbb E$ represent the set of all conceivable events.
-	We also introduce the notion of {\em history structure}
-	to represent all events that have happened up to some point in time and the precedences between those events.
-	In this paper, variables $h$, $h'$, $h_1$, and $h_2$ represent history structures.
-	Let $\mathbb H$ be the set of all conceivable history structures.
-
-	A {\em history structure} is a tuple $\la \Events, \id{prec}\ra$ in which
-\begin{eqnarray}
-	&&\Events\ \subseteq\ \mathbb E\\
-	&&\id{prec}\ \subseteq\ \Events\times\Events\label{req:precInE}\\
-	&&(e,e)\notin\id{prec}\label{req:prec irreflexive}\\
-	&&(e_1,e_2)\in\id{prec}^+\ \wedge\ (e_2,e_1)\in\id{prec}^+\ \Rightarrow\ e_1=e_2\label{req:precPlus asy}
-\end{eqnarray}
-	In a history structure $\la \Events, \id{prec}\ra$ set $\Events$ represents the events that have been registered up to some point in time.
-	For every event $e\in\Events$ we can say that it has happened (at some time in the past).
-	Let $e_1\ \id{prec}\ e_2$ represent the fact that event $e_1$ has happened before event $e_2$,
-	making $\id{prec}$ a relation on events in $\Events$.
-	Requirement~\ref{req:prec irreflexive} excludes the situation that $e$ has happened before itself.
-	To represent time faithfully, we require that $\la\Events,\id{prec}^*\ra$ is a partially ordered set,
-	meaning that $\id{prec}^*$ is reflexive, transitive, and antisymmetric.
-	For this reason we have requirement~\ref{req:precPlus asy}, which says that the transitive closure $\id{prec}^+$ must be antisymmetric.
-
-	In a history structure $\la \Events, \id{prec}\ra$, an event $e$ that precedes another event is called a {\em past} event,
-	which we define as \ $\exists e_1\in\Events: e\ \id{prec}\ e_1$.
-	All other events are called {\em current} events in that history structure.
-	Function $\id{current}:\mathbb H\rightarrow\powerset{\Events}$ computes the current events in a history structure.
-	Events in $\Events$ that have no preceding events are called {\em initial} events.
-	Function $\id{past}$ computes the past events and $\id{initial}$ computes the initial events.
-\begin{eqnarray}
-	\id{current}(\la \Events, \id{prec}\ra)&=&\{ c\in\Events|\ \neg\exists e_1\in\Events: e\ \id{prec}\ e_1 \}\\
-	\id{initial}(\la \Events, \id{prec}\ra)&=&\{ c\in\Events|\ \neg\exists e_1\in\Events: e_1\ \id{prec}\ e \}
-\end{eqnarray}
-	We define the {\em closure} of a history structure as the history structure whose order is the reflexive, transitive closure of the original ordering relation.
-\begin{eqnarray}
-	\la \Events, \id{prec}\ra^*&=&\la \Events, \id{prec}^*\ra\label{def:closure}
-\end{eqnarray}
-	Equation~\ref{def:closure} allows us to write $h^*$ for elements of $\mathbb H$.
-	The order of $h^*$ is reflexive, transitive, and antisymmetric.
-
-	The special case in which $\la\Events,\id{prec}^*\ra$ is a total order is called a {\em sequential history structure}.
-	Note that any nonempty finite sequential history structure has one current event and one first event.
-	Other finite history structures may have more.
-	In a sequential history structure, every event except the first one has precisely one preceding event.
-	In general, however, events may have multiple preceding events and multiple succeeding events.
-
-	We extend the notion of subset to historic structures and use the subset symbol $\subseteq$ for that purpose.
-	We use $h\subseteq h'$ to state that $h$ lies in the past of $h'$.
-	Let $h=\la \Events, \id{prec}\ra$ and $h'=\la \Events', \id{prec}'\ra$ in the definition of $h\subseteq h'$:
-\begin{equation}
-\label{def:lies in the past}
-	h\subseteq h'\ \Leftrightarrow\ 
-	\Events\subseteq\Events'\ \wedge\ \id{initial}(h)\subseteq\id{initial}(h')\ \wedge\ \id{prec}^*\subseteq\id{prec}'^*
-\end{equation}
 
 	Durability is meant to express that an action preserves history:
 \begin{definition}[Durability]
