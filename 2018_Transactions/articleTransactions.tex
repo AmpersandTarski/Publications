@@ -156,35 +156,41 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	In a sequential history structure, every event except the initial one has precisely one preceding event.
 	In general, however, events may have multiple preceding events and multiple succeeding events.
 
-	We define $\leq$ to represent the fact that history $\id{prec}$ has preceded history $\id{prec}'$ in time.
-	It is defined by:
-\begin{equation}
+	We define $\leq$ to represent the fact that history $\id{prec}$ lies in the past of history $\id{prec}'$.
+\begin{definition}[$\leq$]
 \label{def:lies in the past}
-	\id{prec}\leq\id{prec}'\ \Leftrightarrow\ \id{prec}^*\subseteq\id{prec}'^*
-\end{equation}
+\begin{displaymath}
+	\id{prec}\leq\id{prec}'\ \Leftrightarrow\ \id{prec}^*\subseteq\id{prec}'^*\ \wedge\ \id{initial}(\id{prec})\subseteq\id{initial}(\id{prec}')
+\end{displaymath}
+\end{definition}
+
 
 \section{Traces}
 \label{sct:Traces}
 	A transaction in a DIS may be perceived as a distributed action,
 	which leaves a trace of events in the history of a DIS.
 	Let $\mathbb T$ be the set of all conceivable traces.
-	With \id{prec} being a history, we define that every pair $(e_1,e_2)\in\id{prec}^*$ is a trace.
-	So the traces of history $\id{prec}$ are denoted ${\mathcal T}_{\id{prec}}$ with ${\mathcal T}_{\id{prec}}\subseteq\mathbb T$.
+	With \id{prec} being a history, we define a trace $(e_1,e_2)_{\id{prec}}$ as follows:
 \begin{definition}[Traces]
 \label{def:Traces}
-\item   The set of traces of history $\text{prec}$ is defined by ${\mathcal T}_{\text{prec}}\ =\ \text{prec}^*$.
+\item   $(e_1,e_2)_{\id{prec}}\in\mathbb T\ \Leftrightarrow\ (e_1,e_2)\in\text{prec}^*$
 \end{definition}
-	Pair $(e,e)$ represents the empty trace for any $e\in\id{events}(\id{prec})$ because $(e,e)\in\id{prec}^*$.
-	We will denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
-	If $(e_1,e)\in\id{prec}^*$ and $(e,e_2)\in\id{prec}'^*$ then
+	We use variables $x$, $y$, and $z$ to represent traces.
+	We 
+\begin{definition}[Empty trace]
+\label{def:Empty trace}
+\item   $\forall e: 0_{\id{prec}}\ =\ (e,e)_{\id{prec}}$
+\end{definition}
+	We denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
+	If $(e_1,e)_{\id{prec}}$ and $(e,e_2)_{\id{prec}'}$ are traces then
 	we define the concatenation operator $+:\mathbb T\rightarrow\mathbb T\rightarrow\mathbb T$ by
 \begin{definition}[Concatenation of traces]
 \label{def:concatenation}
-\item   $(e_1,e)+(e,e_2)=(e_1,e_2)$
+\item   $(e_1,e)_{\id{prec}}+(e,e_2)_{\id{prec}'}=(e_1,e_2)_{\id{prec}\cup\id{prec}'}$
 \end{definition}
-	Note that the definition of $+$ is partial, because $(e_1,e_2)+(e_3,e_4)$ is not defined unless $e_2=e_3$.
-	Also, $(e_1,e)+(e,e_2)$ is defined in the combined history $\id{prec}^*\cup\id{prec}'^*$
-	because $(e_1,e_2)\in(\id{prec}\cup\id{prec}')^*$.
+	Note that the definition of $+$ is partial, because $(e_1,e_2)_{\id{prec}}+(e_3,e_4)_{\id{prec}'}$ is not defined unless $e_2=e_3$.
+	Also, the result is defined in the combined history $\id{prec}^*\cup\id{prec}'^*$
+	because $(e_1,e_2)\in(\id{prec}\cup\id{prec}')^*$. (proof needed)
 
 	This definition of trace is an interpretation of trace algebra~\cite{Foster17b}, which describes discrete-event systems.
 	Other interpretations of this algebra comprise real-time systems and hybrid systems, but that is beyond the scope of this paper.
@@ -202,13 +208,15 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Equation~\ref{axi:no inverse} makes the cancellative monoid into a trace algebra.
 	It implies that there is no inverse.
 
-	It makes sense to define the notion of prefix, so we can define notions like shared history.
-\begin{definition}[Prefix]
-\label{def:Prefix}
+	The operator $\leq$ prefix, so we can define notions like shared history.
+$
+(e_1,e_2)\leq(e_3,e_4)
+\Leftrightarrow
+(\exists\id{prec}:(e_1,e_2)\in\id{prec}^*)\ \wedge\ (\exists\id{prec}':(e_3,e_4)\in\id{prec}'^*)\ \wedge\ \id{prec}\leq\id{prec}'
+$
 \begin{eqnarray}
-	x\leq y&\Rightarrow&\exists z:\ x+z=y
+	x\leq y&\Rightarrow&\exists z:\ x+z=y\label{def:Prefix}
 \end{eqnarray}
-\end{definition}
 	We also define subtraction of traces as a way to "cut off" a prefix from a trace.
 \begin{definition}[Subtract]
 \label{def:Subtract}
@@ -227,22 +235,37 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \end{eqnarray}
 \end{definition}
 
-	Isolation is meant to express that the effect of an action depends only on its current state.
+	An action $\id{act}_\id{prec}(e_1,e_2)$ is performed in isolation if it does not affect any other action in the system.
+	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is e_1.
+	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is e_2.
+	To define this, we need an auxiliary function
+	$\id{atomize}:\mathbb E\times\mathbb E\times\mathbb H\rightarrow\mathbb H$,
+	which replaces a trace $(e_1,e_2)_\id{prec}$ by the pair $(e_1,e_2)$
+	in a history $\id{prec}$.
+\begin{eqnarray}
+	\begin{array}[t]{r@{}l@{}l}
+	\multicolumn{3}{l}{\id{atomize}(e_1,e_2,\id{prec})}\\
+	   \ =\ \id{prec}-&(&\{ (e_1,e)\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\ \cup\\
+			  & &\{ (e,e_2)\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\\
+			  &)\\
+		\cup&&\{ (e_1,e_2) \}\\
+	\end{array}
+\end{eqnarray}
+	We can now define isolation as the property that the traces of the "atomized" history
+	are the same as the atomization of all traces in that history.
 \begin{definition}[Isolation]
-\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ works in isolation iff there is a function $f:\mathbb S\rightarrow\mathbb S$ such that:
+\item An action $\id{act}_{\id{prec}}(e_1,e_2)$ works in isolation iff:
 \label{def:Isolation}
 \begin{eqnarray}
-	(h',e')=\id{act}(h,e)&\Rightarrow&\id{stat}(h',e')=f(\id{stat}(h,e))
+	(\id{atomize}(e_1,e_2,\id{prec}))^*&=&\id{atomize}(e_1,e_2,\id{prec}^*)
 \end{eqnarray}
 \end{definition}
 
 	Atomicity expresses that a sequence of multiple actions can be treated as one.
-\begin{definition}[Atomicity]
-\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is atomic iff its constituent actions ...
+
+\begin{definition}[Atomic]
+\item An action $\id{act}_{\id{prec}}(e_1,e_2)$ is atomic iff
 \label{def:Atomicity}
-\begin{eqnarray}
-	(h',e')=\id{act}(h,e)&\Rightarrow&e\ \id{pred}^*\ e'
-\end{eqnarray}
 \end{definition}
 
 	Consistency of an action means that it preserves truth.
