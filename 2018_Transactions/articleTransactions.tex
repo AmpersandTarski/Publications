@@ -12,7 +12,7 @@
 \include{preamramics}
 \hyphenation{ExecEngine}
 \newtheorem{lemma}{Lemma}
-\def\id#1{\text{\em #1\/}}
+\def\id#1{\text{\it #1\/}}
 \def\Events{{\mathit E}}
 \begin{document}
 
@@ -137,7 +137,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Requirement~\ref{req:prec irreflexive} excludes the situation that $e$ has happened before itself.
 	To represent time faithfully, equation~\ref{req:precPlus asy} requires that the transitive closure $\id{prec}^+$ is antisymmetric.
 	This makes $\id{prec}^*$ a reflexive, transitive, and antisymmetric relation, which lets us use it as a temporal order between events.
-	So we shall call $\id{prec}$ "a history" because it represents all events that have happened up to a certain point in time and the (partial) order between them.
+	We call $\id{prec}$ ``a history'' because it represents all events that have happened up to a certain point in time and the (partial) order between them.
 	Let $\mathbb H$ be the set of all conceivable histories, meaning that every $\id{prec}\in\mathbb H$.
 
 	In a history $\id{prec}$, an event $e$ that precedes another event is called a {\em past} event,
@@ -150,13 +150,13 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	\id{initial}(\id{prec})&=&\{e |\ \exists e_1: (e,e_1)\in\id{prec}\ \wedge\ \neg\exists e_2: (e_2,e)\in\id{prec}\}
 \end{eqnarray}
 
-	The special case in which $\id{prec}^*$ is a total order is called a {\em sequential history}.
+	A history $\id{prec}$ where $\id{prec}^*$ is a total order is a special case, which we call a {\em sequential history}.
 	Note that any nonempty finite sequential history has one current event and one initial event.
 	Other finite histories may have more.
 	In a sequential history structure, every event except the initial one has precisely one preceding event.
 	In general, however, events may have multiple preceding events and multiple succeeding events.
 
-	We define $\leq$ to represent the fact that history $\id{prec}$ lies in the past of history $\id{prec}'$.
+	We define $\leq$ (called ``prefix'') to represent the fact that history $\id{prec}$ lies in the past of history $\id{prec}'$.
 \begin{definition}[$\leq$]
 \label{def:lies in the past}
 \begin{displaymath}
@@ -164,38 +164,25 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \end{displaymath}
 \end{definition}
 
-
 \section{Traces}
 \label{sct:Traces}
-	A transaction in a DIS may be perceived as a distributed action,
-	which leaves a trace of events in the history of a DIS.
+	Transactions leave traces in the history of a DIS, so let us define traces.
+	For this purpose we have chosen definitions that satisfy trace algebra
+	and represent traces in discrete-event systems.
+	Other interpretations of the same trace algebra comprise real-time systems and hybrid systems,
+	which is proven by Foster~\cite{Foster17b}.
+	We prove (TBD) that our definitions comply with Foster's axioms of trace algebra,
+	but stick to one interpretation (discrete event systems).
+
 	Let $\mathbb T$ be the set of all conceivable traces.
-	With \id{prec} being a history, we define a trace $(e_1,e_2)_{\id{prec}}$ as follows:
+	With \id{prec} being a history, we define a trace $(e_1,e_2)_\id{prec}$ as follows:
 \begin{definition}[Traces]
 \label{def:Traces}
-\item   $(e_1,e_2)_{\id{prec}}\in\mathbb T\ \Leftrightarrow\ (e_1,e_2)\in\text{prec}^*$
+\item   $(e_1,e_2)_\id{prec}\in\mathbb T\ \Leftrightarrow\ (e_1,e_2)\in\id{prec}^*$
 \end{definition}
-	We use variables $x$, $y$, and $z$ to represent traces.
-	We 
-\begin{definition}[Empty trace]
-\label{def:Empty trace}
-\item   $\forall e: 0_{\id{prec}}\ =\ (e,e)_{\id{prec}}$
-\end{definition}
-	We denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
-	If $(e_1,e)_{\id{prec}}$ and $(e,e_2)_{\id{prec}'}$ are traces then
-	we define the concatenation operator $+:\mathbb T\rightarrow\mathbb T\rightarrow\mathbb T$ by
-\begin{definition}[Concatenation of traces]
-\label{def:concatenation}
-\item   $(e_1,e)_{\id{prec}}+(e,e_2)_{\id{prec}'}=(e_1,e_2)_{\id{prec}\cup\id{prec}'}$
-\end{definition}
-	Note that the definition of $+$ is partial, because $(e_1,e_2)_{\id{prec}}+(e_3,e_4)_{\id{prec}'}$ is not defined unless $e_2=e_3$.
-	Also, the result is defined in the combined history $\id{prec}^*\cup\id{prec}'^*$
-	because $(e_1,e_2)\in(\id{prec}\cup\id{prec}')^*$. (proof needed)
-
-	This definition of trace is an interpretation of trace algebra~\cite{Foster17b}, which describes discrete-event systems.
-	Other interpretations of this algebra comprise real-time systems and hybrid systems, but that is beyond the scope of this paper.
-
-	The concatenation operator $+$ and empty trace $0$ satisfy the axioms of trace algebras: (proof needed)
+	If it is obvious from the context which history ($\id{prec}$) is meant, we may write $(e_1,e_2)$ rather than $(e_1,e_2)_\id{prec}$.
+	A trace algebra is a triple $\la\mathbb T,+,0\ra$,
+	where the operator $+$ (concatenation) and empty trace $0$ satisfy the axioms of trace algebras:
 \begin{eqnarray}
 	x+(y+z)&=&(x+y)+z\label{axi:associative}\\
 	0+x&=&x+0\label{axi:lr-identity}\\
@@ -203,41 +190,135 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	x+z\ =\ y+z&\Rightarrow&x=y\label{axi:right cancellation}\\
 	x+z\ =\ 0&\Rightarrow&x=0\label{axi:no inverse}
 \end{eqnarray}
-	In terms of universal algebra, equations~\ref{axi:associative} and~\ref{axi:lr-identity} state that a trace algebra is a {\em monoid}.
+	In terms of universal algebra,
+	equations~\ref{axi:associative} and~\ref{axi:lr-identity} state that a trace algebra is a {\em monoid}.
+	Note that $+$ is {\em not} commutative.
 	Equations~\ref{axi:left cancellation} and~\ref{axi:right cancellation} state that $+$ is {\em cancellative}.
-	Equation~\ref{axi:no inverse} makes the cancellative monoid into a trace algebra.
-	It implies that there is no inverse.
+	Equation~\ref{axi:no inverse} implies that there is no inverse.
+	It makes the cancellative monoid into a trace algebra.
 
-	The operator $\leq$ prefix, so we can define notions like shared history.
-$
-(e_1,e_2)\leq(e_3,e_4)
-\Leftrightarrow
-(\exists\id{prec}:(e_1,e_2)\in\id{prec}^*)\ \wedge\ (\exists\id{prec}':(e_3,e_4)\in\id{prec}'^*)\ \wedge\ \id{prec}\leq\id{prec}'
-$
+	For showing that definition~\ref{def:Traces} satisfies the axioms of trace algebra,
+	we define the empty trace ($0$) and the trace concatenation ($+$):
+\begin{definition}[Empty trace]
+\label{def:Empty trace}
+\item   $\forall e: 0_\id{prec}\ =\ (e,e)_\id{prec}$
+\end{definition}
+	We denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
+
+	If $(e_1,e)_\id{prec}$ and $(e,e_2)_{\id{prec}'}$ are traces then
+	we define the concatenation operator $+:\mathbb T\rightarrow\mathbb T\rightarrow\mathbb T$ by
+\begin{definition}[Concatenation of traces]
+\label{def:concatenation}
+\item   $(e_1,e)_\id{prec}+(e,e_2)_{\id{prec}'}=(e_1,e_2)_{\id{prec}\cup\id{prec}'}$
+\end{definition}
+	Note that the definition of $+$ is partial, because $(e_1,e_2)_\id{prec}+(e_3,e_4)_{\id{prec}'}$ is not defined unless $e_2=e_3$.
+	Nevertheless, the $+$ operator is closed: the result of composing two traces is always a trace.
+	(proof needed)
+
+	Let us define prefix for traces ($\leq$), to correspond closely to the prefix for histories
+	(as given in definition~\ref{def:lies in the past}):
+\begin{definition}[Prefix]
+\label{def:Prefix of traces}
+\item $\begin{array}[t]{rcl}
+	(e,e_1)_\id{prec}\leq(e,e_2)_{\id{prec}'}&\Leftrightarrow&\id{prec}\leq\id{prec}'\ \wedge\ e_1\ \id{prec}'\ e_2
+\end{array}$
+\end{definition}
+	We have defined this operator such that it satisfies Foster's algebraic definition of prefix~\cite{Foster17b}.
+	(proof needed)
 \begin{eqnarray}
 	x\leq y&\Rightarrow&\exists z:\ x+z=y\label{def:Prefix}
 \end{eqnarray}
-	We also define subtraction of traces as a way to "cut off" a prefix from a trace.
+	The prefix allows us to define subtraction of traces, to have a way to ``cut off'' an ``older'' part of a trace.
 \begin{definition}[Subtract]
 \label{def:Subtract}
-\begin{array}[t]{rcll}
-	y-x&=&\text{if }x\leq y:&\exists z: y=x+z\Rightarrow z\\
-	   & &\text{otherwise}:&0
-\end{array}
+\item $\begin{array}[t]{rcll}
+	(e,e_1)_\id{prec}-(e,e_2)_{\id{prec}'}&=&(e_1,e_2)_{\id{prec}'}&\text{if }(e,e_1)_\id{prec}\leq(e,e_2)_{\id{prec}'}\\
+	   &=&0&\text{otherwise}
+\end{array}$
 \end{definition}
+	This definition satisfies Foster's definition of subtract (eqn.~\ref{axi:Foster subtract})
+\begin{equation}
+\label{axi:Foster subtract}
+\begin{array}[t]{rcll}
+	y-x&=&z&\text{if }x\leq y\ \wedge\ \exists z: y=x+z\\
+	   &=&0&\text{otherwise}
+\end{array}
+\end{equation}
 
-	Durability is meant to express that an action preserves history:
+\section{State}
+\label{sct:State}
+	Typically, distributed information systems are stateful.
+	Every event in the history of a DIS may cause a different (local) state.
+	(The distributed nature of a DIS means that states are local.)
+	Let $\mathbb S$ be the set of all conceivable states.
+	So we assume a function $\id{state}_\id{prec}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
+	State $\id{state}_\id{prec}(e)$ represents the state immediately after $e$ has happened.
+	We assume an empty state, $\emptyset$, which is the state immediately before an initial event has happened.
+	The global state of the system, if relevant, can be computed by $\{\id{state}_\id{prec}(e) | e\in\id{current}(\id{prec})\}$.
+	Locally we work with one specific current event, $e$, with $\id{state}_\id{prec}(e)$ representing the local current state.
+
+	In a DIS, new states typically emerge as a change on an existing state.
+	So we want to describe a DIS in terms of changes.
+	Let $\mathbb D$ be the set of all conceivable changes and let $\delta_\id{prec}:\mathbb E\times\mathbb E\rightarrow\mathbb D$
+	be a function that maps a pair of events to the corresponding change.
+	The change between the states of events $e_1$ and $e_2$ is given by $\delta_\id{prec}(e_1,e_2)$.
+	Let us define a DIS as a tuple $(\id{prec},\delta_\id{prec})$,
+	in which $\id{prec}$ is a history and
+	$\delta_\id{prec}$ represents the changes of state that have taken place throughout the history.
+
+	We need operators to compute a new state ($s_2$) from a given state ($s_1$).
+	In fact, we need two operators, $\oplus:\mathbb S\times\mathbb D\rightarrow\mathbb S$ and $\ominus:\mathbb S\times\mathbb S\rightarrow\mathbb D$, such that
+\begin{equation}
+	s_2\ =\ s_1\oplus(s_2\ominus s_1)
+\label{req:oplus and ominus}
+\end{equation}
+	Let us call $s_2\ominus s_1$ the difference between states $s_2$ and $s_1$.
+	The following equations represent the laws about state.
+	They must be kept true all the time in a DIS.
+\begin{eqnarray}
+	\delta_\id{prec}(e_1,e_2)&=&\id{state}_\id{prec}(e_2)\ominus\id{state}_\id{prec}(e_1)\\
+	e_1\ \id{prec}\ e_2&\Rightarrow&\id{state}_\id{prec}(e_2)\ =\ \id{state}_\id{prec}(e_1)\oplus\delta_\id{prec}(e_1,e_2)
+\end{eqnarray}
+
+\section{Transactions}
+\label{sct:Transactions}
+	With the theory in place, let us proceed to define transactions.
+	Let us first define the notion of action ($\id{act}$)
+	and then define the classical properties of transactions: atomic, consistent, isolated, and durable.
+
+	An action is denoted as $\id{act}_{e_1,e_2,\Delta}$, which is a mapping from one DIS to another
+\begin{equation}
+\begin{array}{rl}
+	\multicolumn{2}{l}{e_2\not\in\id{events}(\id{prec})\ \wedge\ (e_1,e_2)\in\id{prec}'^*\ \Rightarrow}\\
+	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
+	&\text{where}\\
+	&\ \ \begin{array}[t]{rcll}
+		\delta'_{\id{prec}'}(e,e')&=&\Delta&\text{if }(e,e')=(e_1,e_2)\\
+		\delta'_{\id{prec}'}(e,e')&=&\delta_\id{prec}(e,e')&\text{otherwise}\\
+		\end{array}
+\end{array}
+\end{equation}
+	The state function can be computed recursively as follows:
+\begin{equation}
+\begin{array}{rcll}
+	\id{state}_\id{prec}(e)&=&\id{state}_\id{prec}(e_1)\oplus\delta(e_1,e)&\text{if }(e_1,e)\in\id{prec}\\
+	                       &=&\emptyset&\text{otherwise}
+\end{array}
+\end{equation}
+
+
+	Durability is meant to express that an action preserves history.
 \begin{definition}[Durability]
 \item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is durable iff for every $h\in\mathbb H$:
 \label{def:Durability}
 \begin{eqnarray}
-	h\subseteq\id{act}(h)
+	\id{prec}^*\subseteq\id{prec}'^*
 \end{eqnarray}
 \end{definition}
 
 	An action $\id{act}_\id{prec}(e_1,e_2)$ is performed in isolation if it does not affect any other action in the system.
-	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is e_1.
-	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is e_2.
+	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is $e_1$.
+	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is $e_2$.
 	To define this, we need an auxiliary function
 	$\id{atomize}:\mathbb E\times\mathbb E\times\mathbb H\rightarrow\mathbb H$,
 	which replaces a trace $(e_1,e_2)_\id{prec}$ by the pair $(e_1,e_2)$
@@ -254,7 +335,7 @@ $
 	We can now define isolation as the property that the traces of the "atomized" history
 	are the same as the atomization of all traces in that history.
 \begin{definition}[Isolation]
-\item An action $\id{act}_{\id{prec}}(e_1,e_2)$ works in isolation iff:
+\item An action $\id{act}_\id{prec}(e_1,e_2)$ works in isolation iff:
 \label{def:Isolation}
 \begin{eqnarray}
 	(\id{atomize}(e_1,e_2,\id{prec}))^*&=&\id{atomize}(e_1,e_2,\id{prec}^*)
@@ -264,7 +345,7 @@ $
 	Atomicity expresses that a sequence of multiple actions can be treated as one.
 
 \begin{definition}[Atomic]
-\item An action $\id{act}_{\id{prec}}(e_1,e_2)$ is atomic iff
+\item An action $\id{act}_\id{prec}(e_1,e_2)$ is atomic iff
 \label{def:Atomicity}
 \end{definition}
 
@@ -396,13 +477,6 @@ $
 \label{sct:Transactions}
 	In practice, a new state is computed from the current state by specifying a change, $\Delta$.
 	Such changes are called {\em transactions}.
-	To describe a DIS in terms of changes, we need operators to compute a new state ($s_2$) from a given state ($s_1$).
-	In fact, we need two operators, $\oplus$ and $\ominus$, such that
-\begin{equation}
-	s_2\ =\ s_1\oplus(s_2\ominus s_1)
-\label{req:oplus and ominus}
-\end{equation}
-	Let us call $s_2\ominus s_1$ the difference ($\Delta$) between states $s_2$ and $s_1$.
 	We use $s_1\oplus\Delta$ to compute a new state from an existing state $s_1$ and a change $\Delta$.
 
 	We can define a stateful history structure,
