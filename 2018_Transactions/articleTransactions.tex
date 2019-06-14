@@ -282,12 +282,12 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \section{Transactions}
 \label{sct:Transactions}
 	With the theory in place, let us proceed to define transactions.
-	Let us first define the notion of action ($\id{act}$)
+	Let us first define the notion of transaction
 	and then define the classical properties of transactions: atomic, consistent, isolated, and durable.
 
-	An action is denoted as $\id{act}_{e_1,e_2,\Delta}$, which is a mapping from one DIS to another
+	A transaction is denoted as $\id{act}_{e_1,e_2,\Delta}$, which is a mapping from one DIS to another
 \begin{equation}
-\label{def:action}
+\label{def:transaction}
 \begin{array}{rl}
 	\multicolumn{2}{l}{e_2\not\in\id{events}(\id{prec})\ \wedge\ (e_1,e_2)\in\id{prec}'^*\ \Rightarrow}\\
 	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
@@ -307,22 +307,8 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \end{equation}
 
 	Now let us define the classical characteristic properties of transactions.
-	We start with the easiest one: durability.
-	This property expresses that an action must preserve history.
-\begin{definition}[Durability]
-\item An action $\id{act}_{e_1,e_2,\Delta}$ is durable iff:
-\label{def:Durability}
-\[\begin{array}{rl}
-	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
-	\Rightarrow\\
-	&\id{prec}^*\subseteq\id{prec}'^*\ \wedge\ \delta_\id{prec}\subseteq\delta'_{\id{prec}'}
-\end{array}\]
-\end{definition}
-	Note that durability is already satisfied in the definition of action (equation~\ref{def:action}). (proof needed)
-	Such is not the case with isolation.
-	An action $\id{act}_\id{prec}(e_1,e_2)$ is isolated, i.e. performed in isolation, if it does not affect any other action in the system.
-	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is $e_1$.
-	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is $e_2$.
+	Let us start with atomic.
+	Atomicity expresses that a trace of multiple events can be treated as a single pair $\in\id{prec}$.
 	To define this, we need an auxiliary function
 	$\id{atomize}:\mathbb E\times\mathbb E\times\mathbb H\rightarrow\mathbb H$,
 	which replaces a trace $(e_1,e_2)_\id{prec}$ by the pair $(e_1,e_2)$
@@ -330,26 +316,15 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \begin{eqnarray}
 	\begin{array}[t]{r@{}l@{}l}
 	\multicolumn{3}{l}{\id{atomize}(e_1,e_2,\id{prec})}\\
-	   \ =\ \id{prec}-&(&\{ (e_1,e)\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\ \cup\\
-			  & &\{ (e,e_2)\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\\
+	   \ =\ \id{prec}-&(&\{ (e',e)\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\ \cup\\
+			  & &\{ (e,e')\in\id{prec}| e_1\ \id{prec}^*\ e\ \wedge\ e\ \id{prec}^*\ e_2\}\\
 			  &)\\
 		\cup&&\{ (e_1,e_2) \}\\
 	\end{array}
 \end{eqnarray}
-	We can now define isolation as the property that the traces of the ``atomized'' history
-	are the same as the atomization of all traces in that history.
-\begin{definition}[Isolation]
-\item An action $\id{act}_{e_1,e_2,\Delta}$ works isolated in history $\id{prec}$ iff:
-\label{def:Isolation}
-\begin{eqnarray}
-	(\id{atomize}(e_1,e_2,\id{prec}))^*&=&\id{atomize}(e_1,e_2,\id{prec}^*)
-\end{eqnarray}
-\end{definition}
-
-	Atomicity is related to isolation because it expresses that a sequence of multiple actions can be treated as one.
 
 \begin{definition}[Atomic]
-\item An action $\id{act}_{e_1,e_2,\Delta}$ is atomic in history $\id{prec}$ iff:
+\item A transaction $\id{act}_{e_1,e_2,\Delta}$ is atomic in history $\id{prec}$ iff:
 \[\begin{array}{rl}
 	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
 	\Rightarrow\\
@@ -358,14 +333,48 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \label{def:Atomicity}
 \end{definition}
 
-	Consistency of an action means that it preserves truth.
+	Now let us turn to consistency.
+	This property means that a transaction preserves truth of the state.
+	We need a predicate $\mathcal P\{\mathbb S\}$ to express that a state is consistent.
 \begin{definition}[Consistency]
-\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is consistent iff it preserves the integrity constraints of all contexts in the system.
+\item A transaction $\id{act}_{e_1,e_2,\Delta}$ is consistent w.r.t. $\mathcal P$ iff:
+\[\mathcal P\{\id{state}_\id{prec}(e_1)\}\ \Rightarrow\ \mathcal P\{\id{state}_\id{prec}(e_2)\}\]
 \label{def:Consistency}
+\end{definition}
+
+	The third property is isolation.
+	A transaction $\id{act}_\id{prec}(e_1,e_2)$ is isolated, i.e. performed in isolation, if it does not affect any other transaction in the system.
+	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is $e_1$.
+	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is $e_2$.
+	We can now define isolation as the property that the traces of the ``atomized'' history
+	are the same as the atomization of all traces in that history.
+\begin{definition}[Isolation]
+\item A transaction $\id{act}_{e_1,e_2,\Delta}$ works isolated in history $\id{prec}$ iff:
+\label{def:Isolation}
 \begin{eqnarray}
-	(h',e',r')=\id{act}(h,e,r)\ \wedge\ r(\id{stat}(h,e))&\Rightarrow&r'(\id{stat}(h',e'))
+	(\id{atomize}(e_1,e_2,\id{prec}))^*&=&\id{atomize}(e_1,e_2,\id{prec}^*)
 \end{eqnarray}
 \end{definition}
+
+	Then we have durability.
+	This property expresses that a transaction must preserve history.
+\begin{definition}[Durability]
+\item A transaction $\id{act}_{e_1,e_2,\Delta}$ is durable iff:
+\label{def:Durability}
+\[\begin{array}{rl}
+	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
+	\Rightarrow\\
+	&\id{prec}^*\subseteq\id{prec}'^*\ \wedge\ \delta_\id{prec}\subseteq\delta'_{\id{prec}'}
+\end{array}\]
+\end{definition}
+	Note that durability is already satisfied in the definition of transaction (equation~\ref{def:transaction}). (proof needed)
+
+\section{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{doc}
+
+
+\end{document}
 
 \section{Progress}
 \label{sct:Progress}
