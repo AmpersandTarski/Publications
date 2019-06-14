@@ -31,7 +31,7 @@
 	because it can become a performance bottleneck or a single point of failure.
 	Yet, transaction theory as we know it assumes a shared data space.
 	Several solutions exist, such as nested transactions and distributed transactions.
-	Practitioners tend to avoid them when possible becaus the are complicated and error prone.
+	Practitioners tend to avoid them when possible because they are complicated and error-prone.
 
 	In this contribution we let go of the shared data space requirement.
 	We propose a transaction theory based on events rather than states.
@@ -56,7 +56,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	registering data, guarding consistency, protecting that data,
 	and providing it accurately and meaningfully for its intended purpose to various users.
 	These users want predictable behaviour, even when they change a shared state,
-	e.g. when reserving a seat in a global flight reservation system like Galileo.
+	e.g. when reserving a seat in a global flight reservation system like Galileo or Amadeus.
 	Although we cannot always avoid sharing a state,
 	we usually can avoid sharing an entire database.
 	Globally distributed applications such as Netflix and LinkedIn cannot afford to rely on a shared database for obvious reasons of performance and reliability.
@@ -79,6 +79,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	{\em Consistency} means that integrity rules are warranted.
 	{\em Isolation} means that actions can be done without any knowledge of what other users are doing.
 	{\em Durability} means that history does not change.
+
 	The result of this work contributes to the body of foundational theory of information systems
 	by defining transactions in a theory of time.
 	By showing that transactions come quite naturally from an event perspective,
@@ -114,11 +115,8 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	we may not know in which order two events\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} have happened.
 	For this reason we describe the history of a DIS as a partially ordered relation of events.
 
-	We use variables $e$, $e_1$, and $e_2$ to represent events.
+	We use variables $e$, $e'$, $e_1$, and $e_2$ to represent events.
 	Let $\mathbb E$ represent the set of all conceivable events.
-%	We also introduce the notion of {\em history structure}
-%	to represent all events that have happened up to some point in time and the precedences between those events.
-%	In this paper, variables $h$, $h'$, $h_1$, and $h_2$ represent history structures.
 
 	We represent the ``history of a DIS up to some point in time'' by a relation $\id{prec}$ (pronounce: {\em precedes}),
 	being a set of pairs from $\mathbb E$.
@@ -166,11 +164,11 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 
 \section{Traces}
 \label{sct:Traces}
-	Transactions leave traces in the history of a DIS, so let us define traces.
+	Transactions leave {\em traces} in the history of a DIS, so let us define these traces.
 	For this purpose we have chosen definitions that satisfy trace algebra
 	and represent traces in discrete-event systems.
 	Other interpretations of the same trace algebra comprise real-time systems and hybrid systems,
-	which is proven by Foster~\cite{Foster17b}.
+	which has been  proven by Foster~\cite{Foster17b}.
 	We prove (TBD) that our definitions comply with Foster's axioms of trace algebra,
 	but stick to one interpretation (discrete event systems).
 
@@ -236,7 +234,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	   &=&0&\text{otherwise}
 \end{array}$
 \end{definition}
-	This definition satisfies Foster's definition of subtract (eqn.~\ref{axi:Foster subtract})
+	Definition~\ref{def:Subtract} satisfies Foster's definition of subtract:
 \begin{equation}
 \label{axi:Foster subtract}
 \begin{array}[t]{rcll}
@@ -251,10 +249,11 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Every event in the history of a DIS may cause a different (local) state.
 	(The distributed nature of a DIS means that states are local.)
 	Let $\mathbb S$ be the set of all conceivable states.
-	So we assume a function $\id{state}_\id{prec}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
+	So we need a function $\id{state}_\id{prec}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
 	State $\id{state}_\id{prec}(e)$ represents the state immediately after $e$ has happened.
+	If the history $\id{prec}$ is obvious from the context, we may write $\id{state}(e)$ rather than $\id{state}_\id{prec}(e)$.
 	We assume an empty state, $\emptyset$, which is the state immediately before an initial event has happened.
-	The global state of the system, if relevant, can be computed by $\{\id{state}_\id{prec}(e) | e\in\id{current}(\id{prec})\}$.
+	The global state of the system, if relevant, can be computed by $\{\id{state}(e) | e\in\id{current}(\id{prec})\}$.
 	Locally we work with one specific current event, $e$, with $\id{state}_\id{prec}(e)$ representing the local current state.
 
 	In a DIS, new states typically emerge as a change on an existing state.
@@ -288,6 +287,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 
 	An action is denoted as $\id{act}_{e_1,e_2,\Delta}$, which is a mapping from one DIS to another
 \begin{equation}
+\label{def:action}
 \begin{array}{rl}
 	\multicolumn{2}{l}{e_2\not\in\id{events}(\id{prec})\ \wedge\ (e_1,e_2)\in\id{prec}'^*\ \Rightarrow}\\
 	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
@@ -306,17 +306,21 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 \end{array}
 \end{equation}
 
-
-	Durability is meant to express that an action preserves history.
+	Now let us define the classical characteristic properties of transactions.
+	We start with the easiest one: durability.
+	This property expresses that an action must preserve history.
 \begin{definition}[Durability]
-\item An action $\id{act}:\mathbb H\rightarrow\mathbb H$ is durable iff for every $h\in\mathbb H$:
+\item An action $\id{act}_{e_1,e_2,\Delta}$ is durable iff:
 \label{def:Durability}
-\begin{eqnarray}
-	\id{prec}^*\subseteq\id{prec}'^*
-\end{eqnarray}
+\[\begin{array}{rl}
+	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
+	\Rightarrow\\
+	&\id{prec}^*\subseteq\id{prec}'^*\ \wedge\ \delta_\id{prec}\subseteq\delta'_{\id{prec}'}
+\end{array}\]
 \end{definition}
-
-	An action $\id{act}_\id{prec}(e_1,e_2)$ is performed in isolation if it does not affect any other action in the system.
+	Note that durability is already satisfied in the definition of action (equation~\ref{def:action}). (proof needed)
+	Such is not the case with isolation.
+	An action $\id{act}_\id{prec}(e_1,e_2)$ is isolated, i.e. performed in isolation, if it does not affect any other action in the system.
 	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is $e_1$.
 	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is $e_2$.
 	To define this, we need an auxiliary function
@@ -332,20 +336,25 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 		\cup&&\{ (e_1,e_2) \}\\
 	\end{array}
 \end{eqnarray}
-	We can now define isolation as the property that the traces of the "atomized" history
+	We can now define isolation as the property that the traces of the ``atomized'' history
 	are the same as the atomization of all traces in that history.
 \begin{definition}[Isolation]
-\item An action $\id{act}_\id{prec}(e_1,e_2)$ works in isolation iff:
+\item An action $\id{act}_{e_1,e_2,\Delta}$ works isolated in history $\id{prec}$ iff:
 \label{def:Isolation}
 \begin{eqnarray}
 	(\id{atomize}(e_1,e_2,\id{prec}))^*&=&\id{atomize}(e_1,e_2,\id{prec}^*)
 \end{eqnarray}
 \end{definition}
 
-	Atomicity expresses that a sequence of multiple actions can be treated as one.
+	Atomicity is related to isolation because it expresses that a sequence of multiple actions can be treated as one.
 
 \begin{definition}[Atomic]
-\item An action $\id{act}_\id{prec}(e_1,e_2)$ is atomic iff
+\item An action $\id{act}_{e_1,e_2,\Delta}$ is atomic in history $\id{prec}$ iff:
+\[\begin{array}{rl}
+	&\id{act}_{e_1,e_2,\Delta}(\id{prec},\delta_\id{prec})\ =\ (\id{prec}',\delta'_{\id{prec}'})\\
+	\Rightarrow\\
+	&\id{atomize}(e_1,e_2,\id{prec})\ \leq\ \id{prec}'
+\end{array}\]
 \label{def:Atomicity}
 \end{definition}
 
