@@ -113,7 +113,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	A treatment of time lays the foundation of our theory of distributed information systems (DIS).
 	Because of the distributed nature of a DIS,
 	we may not know in which order two events\footnote{Cambridge Dictionary defines ``event'' as: anything that happens} have happened.
-	For this reason we describe the history of a DIS as a partially ordered relation of events.
+	For this reason a partial order is used to describe the history of a DIS.
 
 	We use variables $e$, $e'$, $e_1$, and $e_2$ to represent events.
 	Let $\mathbb E$ represent the set of all conceivable events.
@@ -125,12 +125,12 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	making $\id{prec}$ a relation on events in $\mathbb E$.
 	We require:
 \begin{eqnarray}
-	&&(e,e)\notin\id{prec}\label{req:prec irreflexive}\\
-	&&(e_1,e_2)\in\id{prec}^+\ \wedge\ (e_2,e_1)\in\id{prec}^+\ \Rightarrow\ e_1=e_2\label{req:precPlus asy}
+	&&\id{prec}\ \subseteq\ \overline{I}\label{req:prec irreflexive}\\
+	&&\id{prec}^+\cap{\flip{\id{prec}}}^+\ \subseteq\ I\label{req:precPlus asy}
 \end{eqnarray}
 	The events in the DIS, of which $\id{prec}$ represents the history, are 
 \begin{eqnarray}
-	&&\id{events}(\id{prec})\ =\ \{e_1|(e_1,e_2)\in\id{prec}\}\cup\{e_2|(e_1,e_2)\in\id{prec}\}\label{req:events}
+	\id{events}(\id{prec})&=&(V;\id{prec}\cap I)\ \cup\ (I\cap\id{prec};V)
 \end{eqnarray}
 	Requirement~\ref{req:prec irreflexive} excludes the situation that $e$ has happened before itself.
 	To represent time faithfully, equation~\ref{req:precPlus asy} requires that the transitive closure $\id{prec}^+$ is antisymmetric.
@@ -144,8 +144,8 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Function $\id{current}$ computes the current events in history $\id{prec}$.
 	Function $\id{initial}$ computes the initial events, which are the events without preceding events.
 \begin{eqnarray}
-	\id{current}(\id{prec})&=&\{e |\ \exists e_1: (e_1,e)\in\id{prec}\ \wedge\ \neg\exists e_2: (e,e_2)\in\id{prec}\}\\
-	\id{initial}(\id{prec})&=&\{e |\ \exists e_1: (e,e_1)\in\id{prec}\ \wedge\ \neg\exists e_2: (e_2,e)\in\id{prec}\}
+	\id{current}(\id{prec})&=&\overline{\id{prec}}^+;\id{prec}^+\cap I\\
+	\id{initial}(\id{prec})&=&\id{prec}^+;\overline{\id{prec}}^+\cap I
 \end{eqnarray}
 
 	A history $\id{prec}$ where $\id{prec}^*$ is a total order is a special case, which we call a {\em sequential history}.
@@ -176,7 +176,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	With \id{prec} being a history, we define a trace $(e_1,e_2)_\id{prec}$ as follows:
 \begin{definition}[Traces]
 \label{def:Traces}
-\item   $(e_1,e_2)_\id{prec}\in\mathbb T\ \Leftrightarrow\ (e_1,e_2)\in\id{prec}^*$
+\item $(e_1,e_2)_\id{prec}\ =\ e_1;\id{prec}^*\cap\id{prec}^*;e_2$
 \end{definition}
 	If it is obvious from the context which history ($\id{prec}$) is meant, we may write $(e_1,e_2)$ rather than $(e_1,e_2)_\id{prec}$.
 	A trace algebra is a triple $\la\mathbb T,+,0\ra$,
@@ -196,22 +196,11 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	It makes the cancellative monoid into a trace algebra.
 
 	For showing that definition~\ref{def:Traces} satisfies the axioms of trace algebra,
-	we define the empty trace ($0$) and the trace concatenation ($+$):
-\begin{definition}[Empty trace]
-\label{def:Empty trace}
-\item   $\forall e: 0_\id{prec}\ =\ (e,e)_\id{prec}$
+	we define the empty trace ($0$) and the trace concatenation ($+$) as $I_\mathbb E$ and $;$ (relation composition).
+\begin{definition}[trace operators]
+\item $0\ =\ I$
+\item $x+y\ =\ x;y$
 \end{definition}
-	We denote the empty trace as $0$ and define $(e_1,e_1)=0=(e_2,e_2)$.
-
-	If $(e_1,e)_\id{prec}$ and $(e,e_2)_{\id{prec}'}$ are traces then
-	we define the concatenation operator $+:\mathbb T\rightarrow\mathbb T\rightarrow\mathbb T$ by
-\begin{definition}[Concatenation of traces]
-\label{def:concatenation}
-\item   $(e_1,e)_\id{prec}+(e,e_2)_{\id{prec}'}=(e_1,e_2)_{\id{prec}\cup\id{prec}'}$
-\end{definition}
-	Note that the definition of $+$ is partial, because $(e_1,e_2)_\id{prec}+(e_3,e_4)_{\id{prec}'}$ is not defined unless $e_2=e_3$.
-	Nevertheless, the $+$ operator is closed: the result of composing two traces is always a trace.
-	(proof needed)
 
 	Let us define prefix for traces ($\leq$), to correspond closely to the prefix for histories
 	(as given in definition~\ref{def:lies in the past}):
@@ -249,12 +238,12 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Every event in the history of a DIS may cause a different (local) state.
 	(The distributed nature of a DIS means that states are local.)
 	Let $\mathbb S$ be the set of all conceivable states.
-	So we need a function $\id{state}_\id{prec}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
-	State $\id{state}_\id{prec}(e)$ represents the state immediately after $e$ has happened.
-	If the history $\id{prec}$ is obvious from the context, we may write $\id{state}(e)$ rather than $\id{state}_\id{prec}(e)$.
+	So we need a function $\id{state}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
+	State $\id{state}(e)$ represents the state immediately after $e$ has happened.
+	If the history $\id{prec}$ is obvious from the context, we may write $\id{state}(e)$ rather than $\id{state}(e)$.
 	We assume an empty state, $\emptyset$, which is the state immediately before an initial event has happened.
 	The global state of the system, if relevant, can be computed by $\{\id{state}(e) | e\in\id{current}(\id{prec})\}$.
-	Locally we work with one specific current event, $e$, with $\id{state}_\id{prec}(e)$ representing the local current state.
+	Locally we work with one specific current event, $e$, with $\id{state}(e)$ representing the local current state.
 
 	In a DIS, new states typically emerge as a change on an existing state.
 	So we want to describe a DIS in terms of changes.
@@ -275,8 +264,8 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	The following equations represent the laws about state.
 	They must be kept true all the time in a DIS.
 \begin{eqnarray}
-	\delta_\id{prec}(e_1,e_2)&=&\id{state}_\id{prec}(e_2)\ominus\id{state}_\id{prec}(e_1)\\
-	e_1\ \id{prec}\ e_2&\Rightarrow&\id{state}_\id{prec}(e_2)\ =\ \id{state}_\id{prec}(e_1)\oplus\delta_\id{prec}(e_1,e_2)
+	\delta_\id{prec}(e_1,e_2)&=&\id{state}(e_2)\ominus\id{state}(e_1)\\
+	e_1\ \id{prec}\ e_2&\Rightarrow&\id{state}(e_2)\ =\ \id{state}(e_1)\oplus\delta_\id{prec}(e_1,e_2)
 \end{eqnarray}
 
 \section{Transactions}
@@ -301,13 +290,23 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	The state function can be computed recursively as follows:
 \begin{equation}
 \begin{array}{rcll}
-	\id{state}_\id{prec}(e)&=&\id{state}_\id{prec}(e_1)\oplus\delta(e_1,e)&\text{if }(e_1,e)\in\id{prec}\\
+	\id{state}(e)&=&\id{state}(e_1)\oplus\delta(e_1,e)&\text{if }(e_1,e)\in\id{prec}\\
 	                       &=&\emptyset&\text{otherwise}
 \end{array}
 \end{equation}
 
 	Now let us define the classical characteristic properties of transactions.
 	Let us start with atomic.
+
+	In his paper "Splitting Atoms Safely"~\cite{JONES2007109} Cliff Jones\footnote{%
+	Jones is author of the Atomicity Manifesto and author of the formal method VDM.}
+	describes the intended meaning of atomicity in natural language:
+	``If an action is said to be executed “atomically”, it is assumed that it will not be affected by interference
+	and that the environment will not be able to observe intermediate steps of the action in question.''
+	Jones argues that interference must be tolerated, however.
+	With shared state programs, he says, an action must achieve some required result even though its state can be changed by other interfering processes.
+
+	The purpose of this paper is to propose a useful formal definition of atomicity.
 	Atomicity expresses that a trace of multiple events can be treated as a single pair $\in\id{prec}$.
 	To define this, we need an auxiliary function
 	$\id{atomize}:\mathbb E\times\mathbb E\times\mathbb H\rightarrow\mathbb H$,
@@ -338,12 +337,12 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	We need a predicate $\mathcal P\{\mathbb S\}$ to express that a state is consistent.
 \begin{definition}[Consistency]
 \item A transaction $\id{act}_{e_1,e_2,\Delta}$ is consistent w.r.t. $\mathcal P$ iff:
-\[\mathcal P\{\id{state}_\id{prec}(e_1)\}\ \Rightarrow\ \mathcal P\{\id{state}_\id{prec}(e_2)\}\]
+\[\mathcal P\{\id{state}(e_1)\}\ \Rightarrow\ \mathcal P\{\id{state}(e_2)\}\]
 \label{def:Consistency}
 \end{definition}
 
 	The third property is isolation.
-	A transaction $\id{act}_\id{prec}(e_1,e_2)$ is isolated, i.e. performed in isolation, if it does not affect any other transaction in the system.
+	A transaction $\id{act}(e_1,e_2)$ is isolated, i.e. performed in isolation, if it does not affect any other transaction in the system.
 	This means that the only event in trace $(e_1,e_2)_\id{prec}$ that precedes events outside that trace is $e_1$.
 	Likewise, the only event in trace $(e_1,e_2)_\id{prec}$ that is preceded by events outside that trace is $e_2$.
 	We can now define isolation as the property that the traces of the ``atomized'' history
