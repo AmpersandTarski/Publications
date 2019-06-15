@@ -13,8 +13,6 @@ datatype 'a Action = Action (src:"'a set")
                             (tgt:"'a set")
                             (mark:"'a set")
 
-find_theorems name:Action
-
 fun ins where "ins x = tgt x - src x"
 fun del where "del x = src x - tgt x"
 fun change where "change x = ins x \<union> del x"

@@ -1,0 +1,73 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{isabelle,isabellesym}
+\usepackage{fullpage}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{document}
+
+% further packages required for unusual symbols (see also
+% isabellesym.sty), use only when needed
+
+\usepackage{amssymb}
+  %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
+  %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
+  %\<triangleq>, \<yen>, \<lozenge>
+
+\usepackage[english]{babel}
+  %option greek for \<euro>
+  %option english (default language) for \<guillemotleft>, \<guillemotright>
+
+\usepackage{stmaryrd}
+  %for \<Sqinter>
+
+\usepackage{eufrak}
+  %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
+
+%\usepackage{textcomp}
+  %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
+  %\<currency>
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+% urls in roman style, theory text in math-similar italics
+\urlstyle{rm}
+\isabellestyle{it}
+
+% for uniform font size
+%\renewcommand{\isastyle}{\isastyleminor}
+
+\begin{document}
+
+\title{Generalised Reactive Processes in Isabelle/UTP}
+
+\author{Simon Foster \and Samuel Canham}
+
+\maketitle
+
+\begin{abstract}
+  Hoare and He's UTP theory of reactive processes provides a unifying foundation for the semantics
+  of process calculi and reactive programming. A reactive process is a form of UTP relation which
+  can refer to both state variables and also a trace history of events. In their original presentation,
+  a trace was modelled solely by a discrete sequence of events. Here, we generalise the trace model 
+  using ``trace algebra'', which characterises traces abstractly using cancellative monoids, and 
+  thus enables application of the theory to a wider family of computational models, including 
+  hybrid computation. We recast the reactive healthiness conditions in this setting, and prove
+  all the associated distributivity laws. We tackle parallel composition of reactive processes
+  using the ``parallel-by-merge'' scheme from UTP. We also identify the associated theory of
+  ``reactive relations'', and use it to define generic reactive laws, a Hoare logic, and a weakest
+  precondition calculus.
+\end{abstract}
+
+\tableofcontents
+
+% sane default for proof documents
+\parindent 0pt\parskip 0.5ex
+
+% generated text of all theories
+\input{session}
+
+% optional bibliography
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}
