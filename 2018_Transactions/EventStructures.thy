@@ -1,5 +1,5 @@
 theory EventStructures
-  imports Main "reactive/Trace_Algebra"
+  imports Main
 begin
 
 locale dependencies =
@@ -92,13 +92,13 @@ proof(standard)
   fix e assume "e \<in> \<Union> S"
   then obtain s where es:"s \<in> S" "e \<in> s" by blast
   with assms have "durable_set s" by auto
-  then obtain lst where "\<forall>t. dependencies t e = Some lst \<and> ran\<^sub>l lst \<subseteq> s \<or>
+  then obtain lst where "\<forall>t. dependencies t e = Some lst \<and> set lst \<subseteq> s \<or>
                  dependencies t e = None"
     unfolding durable_set_def using es(2) by auto
-  hence "\<forall>t. dependencies t e = Some lst \<and> ran\<^sub>l lst \<subseteq> \<Union> S \<or>
+  hence "\<forall>t. dependencies t e = Some lst \<and> set lst \<subseteq> \<Union> S \<or>
             dependencies t e = None"
     using subset_trans[OF _ Union_upper[OF es(1)]] by metis
-  thus "\<exists>s. \<forall>t. dependencies t e = Some s \<and> ran\<^sub>l s \<subseteq> \<Union> S \<or>
+  thus "\<exists>s. \<forall>t. dependencies t e = Some s \<and> set s \<subseteq> \<Union> S \<or>
                 dependencies t e = None" by blast
 qed
 
@@ -134,12 +134,12 @@ proof
     unfolding durable_set_def[of "insert _ _"] ball_simps
   proof
     show "\<exists>s. \<forall>t. dependencies t e = Some s \<and>
-            ran\<^sub>l s \<subseteq> insert e (\<Union> (Collect durable_set)) \<or>
+            set s \<subseteq> insert e (\<Union> (Collect durable_set)) \<or>
             dependencies t e = None" using as unfolding durable_collect
       by (metis (no_types, lifting) DiffI Diff_eq_empty_iff empty_iff insert_absorb subset_insert_iff)
     show "\<forall>ea\<in>\<Union> (Collect durable_set).
        \<exists>s. \<forall>t. dependencies t ea = Some s \<and>
-               ran\<^sub>l s \<subseteq> insert e (\<Union> (Collect durable_set)) \<or>
+               set s \<subseteq> insert e (\<Union> (Collect durable_set)) \<or>
                dependencies t ea = None"
       using durable_set_collect unfolding durable_set_def[of "Union _"]
       using subset_insertI2[of "set _" "\<Union> (Collect durable_set)" e]
