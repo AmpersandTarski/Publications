@@ -3,24 +3,57 @@ theory EventStructures
 begin
 
 locale dependencies =
+  (* dep_list representeert de afhankelijkheid tussen resultaat (bijv "3+4") en zijn argumenten ("3" en "4")
+     door "3+4" af te beelden op "3" en "4".
+  *)
   fixes "dep_list" :: "'e \<rightharpoonup> 'e list"
 begin           
-definition events where
+definition events :: "'e set" where
   "events = dom dep_list"
+
+  (* preorder representeert de tijdsvolgorde   *)
 definition preorder :: "( 'e \<times> 'e ) set" where
   "preorder \<equiv> {(e\<^sub>1,e\<^sub>2) | e\<^sub>1 e\<^sub>2 l.
                   e\<^sub>2 \<in> events \<and> dep_list e\<^sub>1 = Some l \<and> List.member l e\<^sub>2 \<and> e\<^sub>2 \<noteq> e\<^sub>1}"
+
 definition event_order :: "( 'e \<times> 'e ) set" where
   "event_order \<equiv> preorder\<^sup>+"
-definition well_formed where
-  "well_formed \<longleftrightarrow> irrefl event_order"
+definition cycle_free where
+  "cycle_free \<longleftrightarrow> irrefl event_order"
 
-lemma event_order_digraph[intro]:
+(* This lemma says that preorder is a directed graph, in which events is the set of vertices. *)
+lemma preorder_digraph:
+  "Domain (preorder) \<subseteq> events"
+  "Range (preorder) \<subseteq> events"
+  unfolding events_def preorder_def by auto
+
+(* This lemma says that event_order is a directed graph, in which events is the set of vertices. *)
+lemma event_order_digraph:
   "Domain (event_order) \<subseteq> events"
   "Range (event_order) \<subseteq> events"
-  unfolding event_order_def events_def preorder_def by auto
+  by (auto simp add: event_order_def preorder_digraph)
 
-definition atomic where
+definition minima :: "( 'e \<times> 'e ) set \<Rightarrow> 'e set"  where
+  "minima evs \<equiv> {e\<^sub>2 | e\<^sub>1 e\<^sub>2 e\<^sub>3. (e\<^sub>1,e\<^sub>2) \<notin> evs \<and> (e\<^sub>2,e\<^sub>3) \<in> evs}"
+
+definition maxima :: "( 'e \<times> 'e ) set \<Rightarrow> 'e set"  where
+  "maxima evs \<equiv> {e\<^sub>2 | e\<^sub>1 e\<^sub>2 e\<^sub>3. (e\<^sub>1,e\<^sub>2) \<in> evs \<and> (e\<^sub>2,e\<^sub>3) \<notin> evs}"
+
+definition is_minimum :: " 'e set \<Rightarrow> 'e \<Rightarrow> bool" where
+   "is_minimum E e \<equiv> e\<in>E \<and> (\<forall> e\<^sub>1\<in>E. (e\<^sub>1,e) \<notin> event_order)"
+
+definition is_maximum :: " 'e set \<Rightarrow> 'e \<Rightarrow> bool" where
+   "is_maximum E e \<equiv> e\<in>E \<and> (\<forall> e\<^sub>1\<in>E. (e,e\<^sub>1) \<notin> event_order)"
+
+(* To substitute a set of events by a single event may compromise the integrity of the time structure.
+This means that the resulting time structure must be cycle free.
+We call a set of events "atomic" if that set can be substituted by a single event safely,
+i.e. without introducing cycles in the time structure.
+First we must define this substitution within event_order.
+Then we must show that substituting the subgraph consisting of events E can indeed be substituted
+by one event such that no new cycles are introduced in the resulting time structure.
+*)
+definition atomic :: "'e set \<Rightarrow> bool" where
   "atomic E \<equiv> \<forall> ext \<in> events - E. \<forall> i\<^sub>1 \<in> E. \<forall> i\<^sub>2 \<in> E.
     (ext, i\<^sub>1) \<notin> event_order \<or> (i\<^sub>2, ext) \<notin> event_order"
 
@@ -79,6 +112,7 @@ locale timed_system = ordered_events +
   assumes "t\<^sub>1 \<le> t\<^sub>2 \<Longrightarrow> less_h (history t\<^sub>1) (history t\<^sub>2)"
     and "well_formed (history t)"
 begin
+
 definition durable_set where
   "durable_set E \<equiv>
     \<forall> e \<in> E. \<exists> s. \<forall> t. (dependencies t e = Some s \<and> set s \<subseteq> E)
