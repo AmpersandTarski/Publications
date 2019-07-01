@@ -38,6 +38,7 @@ lemma atomize_pair_e:
   assumes "e \<notin> evs order - E"
   shows "(a,e) \<in> atomize E e order \<Longrightarrow> \<exists> i \<in> E. (a,i) \<in> order"
     and "(e,a) \<in> atomize E e order \<Longrightarrow> \<exists> i \<in> E. (i,a) \<in> order"
+    and "(e,e) \<in> atomize E e order \<Longrightarrow> False"
   using assms unfolding atomize_def
   by (auto split:if_splits)
 
@@ -118,7 +119,7 @@ Note that (x,y)\<in>order\<^sup>+ implies a path from x to y.
 definition atomic_order :: "'e set \<Rightarrow> ( 'e \<times> 'e ) set \<Rightarrow> bool" where
   "atomic_order E order \<equiv> 
                     (\<forall> ext. \<forall> i\<^sub>1 \<in> E. \<forall> i\<^sub>2 \<in> E.
-                    ((ext, i\<^sub>1) \<in> order \<and> (i\<^sub>2, ext) \<in> order) \<longrightarrow> ext \<in> E)"
+                    (ext, i\<^sub>1) \<in> order \<longrightarrow> (i\<^sub>2, ext) \<in> order \<longrightarrow> ext \<in> E)"
 
 (* An easy test of atomicity is to compute "order `` E \<inter> order\<inverse> `` E \<subseteq> E".
 Which we must prove, of course...
@@ -153,35 +154,29 @@ lemma preserveAtomic :
    and e:"e  \<notin>  evs order - E"
   shows "cycle_free order \<Longrightarrow> cycle_free (atomize E e order)"
 proof(standard,standard)
-  note tran: trancl_id[OF trans]
+  note tran= trancl_id[OF trans]
   from e have e':"e \<in> evs order \<Longrightarrow> e \<in> evs order \<inter> E" by blast
   let ?at = "atomize E e order"
   fix a
   assume cf:"cycle_free order" and aa: "(a, a) \<in> ?at\<^sup>+"
-  note * = assms this
+  from aa obtain b where b:"(a,b) \<in> ?at" "(b,a) \<in> ?at\<^sup>+" by (meson converse_tranclE)
   from cf have aao:"(a, a) \<notin> order\<^sup>+" unfolding irrefl_def by auto
   from cf have cf_e:
     "(e,c) \<in> order \<Longrightarrow> e \<in> E"
     "(c,e) \<in> order \<Longrightarrow> e \<in> E" for c using cf e unfolding irrefl_def by auto
-  show False proof(cases "a \<in> E")
-    case True
-    then show ?thesis sorry
-  next
-    case False
-    { assume "a = e"
-      with False e have "a \<notin> evs order" by auto
-      hence False using aa by auto
-    }
-    with aa e have not_e:"a \<noteq> e" unfolding atomize_def apply auto try sorry
-    from atomize_path_e[OF e not_e] atomize_paths[OF e aa aao not_e not_e]
-    have "\<exists>i\<in>E. (a, i) \<in> order\<^sup>+" "\<exists>i\<in>E. (i, a) \<in> order\<^sup>+" by auto
-    thus False using atomic unfolding atomic_order_def
-      using False tran by blast
-  qed
-  obtain b where b:"(a, b) \<in> ?at" "(b,a) \<in> ?at\<^sup>+" by blast
-  have "b\<noteq>a" using cf b(1) cf_e unfolding atomize_def irrefl_def by (auto split:if_splits)
- 
-  show "False" using * sorry
+  { assume ae:"a = e"
+    from b[unfolded ae] have bE:"b \<notin> E" unfolding atomize_def by (auto split:if_splits)
+    hence "b \<noteq> e" using b(1) cf_e unfolding atomize_def ae by auto
+    from atomize_path_e[OF e this b(2)[unfolded ae],unfolded tran]
+      atomize_pair_e(2)[OF e b(1)[unfolded ae]]
+      atomic[unfolded atomic_order_def,rule_format] bE
+    have False by blast
+  }
+  hence not_e:"a \<noteq> e" by auto
+  from atomize_path_e[OF e not_e] atomize_paths[OF e aa aao not_e not_e]
+  have "\<exists>i\<in>E. (a, i) \<in> order\<^sup>+" "\<exists>i\<in>E. (i, a) \<in> order\<^sup>+" by auto
+  hence "a \<in> E" using atomic unfolding atomic_order_def tran by blast
+  with b(1)[unfolded atomize_def] not_e show False by (auto split:if_splits)
 qed
 
 
@@ -232,7 +227,8 @@ definition atomic :: "'e set \<Rightarrow> bool" where
 lemma atomic_atomic_order:
   shows "atomic_order E event_order = atomic E"
 proof
-  show "atomic_order E event_order \<Longrightarrow> atomic E" unfolding atomic_order_def atomic_def by auto
+  show "atomic_order E event_order \<Longrightarrow> atomic E"
+    unfolding atomic_order_def atomic_def by blast
   assume "atomic E"
   thus "atomic_order E event_order" unfolding atomic_order_def atomic_def
     using event_order_digraph 
@@ -275,13 +271,6 @@ abbreviation well_formed
   where "well_formed h \<equiv> cycle_free (event_order h)"
 definition less_h where
   "less_h h\<^sub>1 h\<^sub>2 \<longleftrightarrow> (events h\<^sub>1 \<subseteq> events h\<^sub>2) \<and> ((event_order h\<^sub>1)\<^sup>+ \<subseteq> (event_order h\<^sub>2)\<^sup>+)"
-end
-
-locale timed_system = ordered_events +
-  fixes "history" :: "'t::order \<Rightarrow> 'a"
-  assumes "t\<^sub>1 \<le> t\<^sub>2 \<Longrightarrow> less_h (history t\<^sub>1) (history t\<^sub>2)"
-    and "well_formed (history t)"
-begin
 
 definition durable_set where
   "durable_set E \<equiv>
@@ -522,4 +511,11 @@ lemma occur_preserves_hs:
   shows "historic_structure (occur P e H)"
   using assms by(cases H,auto intro!:trancl_asym)
 
+locale timed_system = ordered_events +
+  fixes "history" :: "'t::order \<Rightarrow> 'a"
+  assumes "t\<^sub>1 \<le> t\<^sub>2 \<Longrightarrow> less_h (history t\<^sub>1) (history t\<^sub>2)"
+    and "well_formed (history t)"
+begin
+
+end
 end
