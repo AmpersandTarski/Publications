@@ -42,7 +42,6 @@
 	The soundness of the theory has been established by means of formal proof.
 	To show that the theory works, the theory is demonstrated by a prototype developed in Ampersand\footnote{\tt https://github.com/AmpersandTarski/Ampersand}.
 	To demonstrate that the theory is about real transactions, this contribution defines semantics of conventional database transactions.
-	To fulfill our promise, we also gives semantics of transactions on the semantic web.
 \end{abstract}
 
 \begin{keyword}
@@ -64,21 +63,44 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Examples are event stores (e.g.\ Kafka), triple stores (e.g.\ semantic web), graph databases (e.g. Neo4J) and others.
 	Many so-called NoSQL databases lack functionality for transactions,
 	leaving the problems for the user to solve.
-	As a result, architectural patterns exist for the purpose of doing transactions in a distributed setting.
-	Some of these patterns simply circumvent the problem.
-	Others will isolate transactionality into a smaller sub-problem.
+	As a result, many architectural patterns have emerged for the purpose of doing transactions in a distributed setting.
+	Some of these patterns simply advise how to avoid or circumvent the problem.
+	Others will isolate transactionality into a smaller sub-problem,
+        downsizing the problem and hoping to deal with the sub-problem in a conventional transactional database.
 	Still others introduce locking mechanisms to do the job.
+        However, sometimes we must avoid locking for performance reasons and avoid a globally shared database for reasons of size.
+        As is the case with large, globally distributed information systems such as Facebook, LinkedIn, and Netflix.
+        In case we want full transactional behaviour in such systems, we have a problem.
 
-	Our work is inspired by the observation that the merge of Git corresponds to the commit that we know from transactional databases.
+        This problem seems to be solved by Git.
+	Our work is inspired by the observation that the merge of Git corresponds to a transactional commit.
 	We show this correspondence by expressing the characteristic properties of transactions in a theory of time.
 	For this purpose we build on a well-known theory of time~\cite{DBLP:journals/ipl/FosterCWZ18},
 	which is generally applicable,
 	well-established, and founded in a solid mathematical structure~\cite{Foster14}.
-	This means we have to redefine Atomicity, Consistency, Isolation, and Durability in terms of events.
+	For expressing transactions in terms of events we have to redefine Atomicity, Consistency, Isolation, and Durability.
 	Informally, {\em Atomicity} means that a sequence of primitive actions can be executed as though it were a single action.
 	{\em Consistency} means that integrity rules are warranted.
 	{\em Isolation} means that actions can be done without any knowledge of what other users are doing.
 	{\em Durability} means that history does not change.
+
+We define the history of a distributed information system as a directed acyclig graph $\la\mathcal E,\mathcal C\ra$ with
+\begin{definition}
+\begin{eqnarray}\mathcal C\subseteq\mathcal E\times\mathcal E\\
+\mathcal C^+\cap I_{\mathcal E}=\emptyset
+\end{eqnarray}
+\end{definition}
+A transaction is a set of events.
+\begin{enumerate}
+\item   Atomic\\
+A transaction is atomic if it can be replaced by a single event without consequences for other parts of the system.
+\item   Consistent\\
+If the initial states of a transaction satisfy a given set of rules, we say that a transaction maintains consistency if its final state satisfies that same set of rules.
+\item   Isolated\\
+A transaction is isolated if its events are not shared by other transactions.
+\item   Durable\\
+A transaction is durable if it is part of every future history.
+\end{enumerate}
 
 	The result of this work contributes to the body of foundational theory of information systems
 	by defining transactions in a theory of time.
@@ -234,15 +256,16 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 
 \section{State}
 \label{sct:State}
-	Typically, distributed information systems are stateful.
-	Every event in the history of a DIS may cause a different (local) state.
-	(The distributed nature of a DIS means that states are local.)
+	Typically, distributed information systems may have states.
+%        Consider for example Twitter: the entire timeline on your smartphone represents the state.
+	Every new event in the history of a DIS may cause a different state.
+	The distributed nature of a DIS means that states are local.
 	Let $\mathbb S$ be the set of all conceivable states.
-	So we need a function $\id{state}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
+	We need a function $\id{state}:\mathbb E\rightarrow\mathbb S$ that assigns one state to every event $e$ in history $\id{prec}$.
 	State $\id{state}(e)$ represents the state immediately after $e$ has happened.
 	If the history $\id{prec}$ is obvious from the context, we may write $\id{state}(e)$ rather than $\id{state}(e)$.
 	We assume an empty state, $\emptyset$, which is the state immediately before an initial event has happened.
-	The global state of the system, if relevant, can be computed by $\{\id{state}(e) | e\in\id{current}(\id{prec})\}$.
+	The global state of the system, if deemed relevant, can be computed by $\{\id{state}(e) | e\in\id{current}(\id{prec})\}$.
 	Locally we work with one specific current event, $e$, with $\id{state}(e)$ representing the local current state.
 
 	In a DIS, new states typically emerge as a change on an existing state.
@@ -298,7 +321,7 @@ relation algebra\sep software development\sep legal reasoning\sep information sy
 	Now let us define the classical characteristic properties of transactions.
 	Let us start with atomic.
 
-	In his paper "Splitting Atoms Safely"~\cite{JONES2007109} Cliff Jones\footnote{%
+	In his paper ``Splitting Atoms Safely''~\cite{JONES2007109} Cliff Jones\footnote{%
 	Jones is author of the Atomicity Manifesto and author of the formal method VDM.}
 	describes the intended meaning of atomicity in natural language:
 	``If an action is said to be executed “atomically”, it is assumed that it will not be affected by interference
