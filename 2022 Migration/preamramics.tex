@@ -1,0 +1,73 @@
+% Ampersand -----------------------------------------------------------
+
+\def\id#1{\text{\em #1\/}}
+\newcommand{\code}[1]{\text{\tt\small #1}}
+\newcommand{\stmtText}[1]{``{\small\tt #1}''}
+\newcommand{\dom}[1]{\id{dom}(#1)}
+\newcommand{\cod}[1]{\id{cod}(#1)}
+\renewcommand{\int}[2]{\id{inter}(#1,#2)}
+\newcommand{\pop}[1]{\id{pop}(#1)}
+\newcommand{\src}[1]{\id{src}(#1)}
+\newcommand{\trg}[1]{\id{trg}(#1)}
+\newcommand{\powerset}[1]{\cal{P}\{#1\}}
+\newcommand{\theCode}{\url{http://cs.ru.nl/~B.Joosten/ampTypes/}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+\newcommand{\full}{V}
+\newcommand{\declare}[3]{\id{#1}_{\pair{\id{\small #2}}{\id{\small #3}}}}
+\newcommand{\fullt}[2]{V_{\pair{#1}{#2}}}
+\newcommand{\iden}[1]{I}
+\newcommand{\ident}[1]{I_{\id{\small #1}}}
+\newcommand{\expr}[3]{(#1)_{#2\times #3}}
+\newcommand{\pair}[2]{\la{#1},{#2}\ra}
+\newcommand{\atom}[1]{{\tt\small #1}}
+\newcommand{\atoms}{\mathcal{A}}
+\newcommand{\concepts}{\mathcal{C}}
+\newcommand{\decls}{\mathcal{D}}  %% names of relations
+\newcommand{\rels}{\mathcal{R}}   %% all relations
+\newcommand{\relations}{\mathcal{M}} % representing terms. M is a subset of R.
+\newcommand{\terms}{\mathcal{T}}
+\newcommand{\vertices}{N}
+\newcommand{\rules}{\mathcal{H}}
+\newcommand{\tf}[1]{\mathfrak{T}(#1)}
+\newcommand{\ptf}[1]{\mathfrak{T}'(#1)}
+\newcommand{\ti}[1]{\mathfrak{I}(#1)}
+\newcommand{\tic}[1]{I_{\cal C}(#1)}
+\newcommand{\relAdd}{\dagger}
+\newcommand{\flip}[1]{{#1}^\smallsmile} %formerly:  {#1}^\backsim
+\newcommand{\kleeneplus}[1]{{#1}^+}
+\newcommand{\kleenestar}[1]{{#1}^*}
+\newcommand{\cmpl}[1]{\overline{#1}}
+\newcommand{\rel}{\times}
+\newcommand{\compose}{;}
+\newcommand{\subs}{\subseteq}%{\models}
+\newcommand{\fun}{\rightarrow}
+\newcommand{\isa}{\preceq}
+%\newcommand{\isaClos}{\sqsubseteq}
+\newcommand{\typetest}{?}
+\newcommand{\meet}{\sqcap}
+\newcommand{\join}{\sqcup}
+\newcommand{\Meet}{\bigsqcap}
+\newcommand{\Moin}{\bigsqcup} % because LaTeX has already defined command \Join.
+\newcommand{\order}{\ominus}
+\newcommand{\anything}{\top}
+\newcommand{\nothing}{\bot}
+\newcommand{\rewriteto}{\rightarrow}
+\newcommand{\calc}{\implies}
+\newcommand{\alland}{\bigwedge}
+\newcommand{\mph}[3]{#1_{#2\times #3}}
+\newcommand{\mphu}[1]{#1_{\univ\times\univ}}
+
+%-----------------------------------------
+\newcommand{\kse}{\hspace*{1.7em}}
+\newcommand{\ksf}{\hspace*{1em}}
+\newcommand{\ksg}{\hspace*{1em}}
+\newenvironment{derivation}{\begin{tabbing}\kse \= \ksf \= \ksg \= \kill}{\end{tabbing}}
+\newtheorem{definition}{Definition}
+\newcommand{\term}[1]{\>\>\(#1\)\\[1ex]}
+\newcommand{\rela}[2]{\>\(#1\)\>\>\{ \ #2 \ \}\\[1ex]}
+\newcommand{\weg}[1]{}
+
+\def\define#1{\label{dfn:#1}{\em #1}\index{#1}}
+\def\definem#1{\label{dfn:#1}{\em #1}\index{#1}\marge{#1}}
+\newcommand{\marg}[1]{\index{#1}\marge{#1}}

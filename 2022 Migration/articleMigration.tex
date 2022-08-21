@@ -1,0 +1,58 @@
+\documentclass{elsarticle}
+\usepackage{graphicx}
+%\usepackage{multicol}
+%\usepackage{footmisc}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[english]{babel}
+%\usepackage[official,right]{eurosym}
+\selectlanguage{english}
+\include{preamramics}
+\hyphenation{ExecEngine}
+\newtheorem{lemma}{Lemma}
+\def\id#1{\text{\it #1\/}}
+\def\Events{{\mathit E}}
+\begin{document}
+
+\title{A Theory for Migration of Information Systems}
+\author[ou,ordina]{Stef Joosten\fnref{fn1}}
+\ead{stef.joosten@ou.nl}
+\author[umn]{Sebastiaan Joosten\fnref{fn2}}
+\address[ou]{Open Universiteit Nederland, Heerlen, the Netherlands}
+\address[ordina]{Ordina NV, Nieuwegein, the Netherlands}
+\address[umn]{University of Minnesota, Minneapolis, USA}
+\fntext[fn1]{ORCID 0000-0001-8308-0189}
+\fntext[fn2]{ORCID 0000-0002-6590-6220}
+
+\begin{abstract}
+	The Ampersand project has provided the theory and tools to generate semantic information systems from an algebraic specification.
+	However, information systems in practice may change repeatedly after their maiden deployment.
+	Changes that affect the data model typically result in a data migration.
+	In such cases, simply regenerating the system is not enough.
+
+	In this contribution we develop a theory for data migration that aims at automating the migration,
+	to enable more frequent migrations.
+	A theory is needed to do this reliably, without mistakes.
+	This paper proposes such a theory.
+
+	The ultimate target is to generate the entire migration from two specifications: the as-is specification and the to-be specification.
+	The theory for doing that is the topic of this paper.
+	The software generator that embodies this theory is subject of future research.
+\end{abstract}
+
+\begin{keyword}
+relation algebra\sep software development\sep data migration\sep software migration\sep Ampersand
+\end{keyword}
+\maketitle
+
+\section{Introduction}
+\label{sct:Introduction}
+
+\section{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{doc}
+
+
+\end{document}
