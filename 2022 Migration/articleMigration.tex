@@ -54,7 +54,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \label{sct:Basics}
 	In this section we explain the basic notions to describe migration.
 	We introduce the notion of dataset.
-	A dataset is a triple $\la\rules,\rels,\concepts,\pairs,\atoms\ra$,
+	A dataset is a quintuple $\la\rules,\rels,\concepts,\pairs,\atoms\ra$,
 	which consists of a set of rules $\rules$, a set of relations $\rels$, a set of concepts $\concepts$, a set of pairs $\pairs$, and a set of atoms $\atoms$.
 	Let us introduce these five notions one by one.
 
@@ -71,10 +71,9 @@ relation algebra\sep software development\sep data migration\sep software migrat
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
 	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
 	The expression $a \in A$ means that atom $a$ is an \emph{instance} of concept $A$.
-	The declaration of $A\isa B$ (pronounce: $A$ is a $B$)
-	in an Ampersand script states that any instance of $A$ is an instance of $B$ as well.
+	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-	Specialization is needed to allow statements such as: ``An orange is a fruit''.
+	Specialization is needed to allow statements such as: ``A woman is a human.'' or ``A human is a mammal.''.
 
 	Pairs (from set $\pairs$) are used to relate two atoms.
 	A pair $\pair{\atom{Peter}}{\atom{074238991}}$ might bear the meaning that the ``thing'' that \atom{Peter} refers to
@@ -83,24 +82,34 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	leaving it entirely up to a user which meaning (s)he attaches to this pair.
 
 	Relations (from set $\rels$) are used in information systems to store data as pairs.
-%	A \define{fact} is a statement that is true in a business context.
-%	Facts are stored and kept as data in a computer.
 	In this paper relations are represented by variables $r$, $s$, and $d$.
-	We represent the declaration of a relation $r$ by $\declare{nm}{A}{B}$,
-	in which \id{nm} is a name and $A$ and $B$ are concepts.
-	We call $A$ the source concept and $B$ the target concept of the relation.
-	The pair $\pair{A}{B}$ is called the \emph{type} of the relation.
+	Every relation has a source concept and a target concept.
+	If we need to be specific about the source and target concepts, we write $\declare{r}{A}{B}$ instead of just $r$.
+	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
 	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
-
-	The meaning of relations in Ampersand is defined by an interpretation function $\mathfrak{I}$.
+	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
+	The meaning of relations is defined by an interpretation function $\mathfrak{I}$.
 	It maps each relation to a set of pairs.
-	The type system of Ampersand guarantees that each pair in $r$ respects the type of $r$:
+
+	The typing rule guarantees that each pair in $r$ respects the type of $r$:
 \begin{equation}
-	\pair{a}{b}\in\ti{\declare{nm}{A}{B}} \Rightarrow\ a \in A \wedge b \in B \label{typing of relations}
+	\tag{typing rule}
+	\pair{a}{b}\in\ti{\declare{r}{A}{B}} \Rightarrow\ a \in A \wedge b \in B \label{typing of relations}
 \end{equation}
 
+\begin{equation}
+	\tag{population}
+	\pairs\ =\ \{ \pair{a}{b}|\ r\in\rels,\ \pair{a}{b}\in\ti{r}\} \label{def. population}
+\end{equation}
+
+\begin{equation}
+	\tag{atoms}
+	\atoms\ =\ \{ a |\ \pair{b}{c}\in\pairs,\ a\in\{b,c\}\ \} \label{def atoms}
+\end{equation}
+
+
 	A rule is an equality between two terms that constrains the data stored in relations,
-	ensuring that the dataset is at all times consistent with all rules in the dataset ($\rules$).
+	to ensure that the dataset is at all times consistent with all rules in the dataset ($\rules$).
 	Terms are used to combine relations using operators.
 	The set of terms is called $\terms$.
 \begin{definition}[terms]
@@ -125,18 +134,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Throughout the remainder of this paper,	terms are represented by variables $r$, $s$, $d$, and $t$.
 	The \define{type} of a term $r$ is a pair of concepts, given by $\tf{r}$.
 	$\mathfrak{T}$ is a partial function that maps terms to types.
-	If a term has one type, it is called \define{type correct}.
-	The Ampersand compiler requires all terms to be type correct.
-	If no type can be assigned, the compiler gives an error message.
-	If multiple types are assignable to a term, the ambiguity is signalled by the compiler.
-	In that case it will also emit an error message and prompt the programmer to disambiguate the term by adding type information.
-	In practice, the derivation of types can disambiguate most terms.
-	So, the programmer experiences some freedom to denote distinct relations by the same name without the obligation to specify their types at all occurrences.
-	The compiler does not generate any code if there is a term that is not type correct.
 	The type function and its restrictions are discussed in~\cite{Joosten2015}
 	and have no consequences for the remainder of this paper.
+	(\emph{\@Bas, komen we ermee weg als we de definitie van $\tf{r}$ hier weglaten?})
 
- 	The meaning of terms in Ampersand is given by an interpretation function $\mathfrak{I}$.
+ 	The meaning of terms is given by an interpretation function $\mathfrak{I}$.
 	Let $A$ and $B$ be finite sets of atoms, then $\mathfrak{I}$ maps each term to the set of pairs for which that term stands.
 \begin{definition}[interpretation of terms]
 \label{interpretation of terms}
@@ -159,20 +161,26 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \end{definition}
 %	The Kleene closure operators (postfix $\kleeneplus{\ }$ and $\kleenestar{\ }$) have been implemented partially in the current Ampersand implementation.
 
-	A \define{rule} is a pair of terms $r,s\in\terms$ with $\tf{r}=\tf{s}$, which is syntactically recognizable as a rule.
+	A \define{rule} is a pair of terms $r,s\in\terms$ with the same types ($\tf{r}=\tf{s}$).
 \[\text{RULE}\ r = s\]
 	This means \(\ti{r} = \ti{s}\). In practice, many rules are written as:
 \[\text{RULE}\ r\subs s\]
 	This is a shorthand for 
 \[\text{RULE}\ r\cap s = r\]
-	We have enhanced the type function $\mathfrak{T}$ and the interpretation function $\mathfrak{I}$ to cover rules as well.
+	We have enhanced the type function $\mathfrak{T}$ to cover rules as well.
 	If $\tf{r}=\tf{s}$ and $\tf{s}=\pair{A}{B}$:
 \begin{eqnarray}
 	\tf{\text{RULE}\ r = s}   &=&\pair{A}{B}\\
-	\tf{\text{RULE}\ r\subs s}&=&\pair{A}{B}\\
- resolved this \end{eqnarray}
+	\tf{\text{RULE}\ r\subs s}&=&\pair{A}{B}
+ \end{eqnarray}
 
-	We call a rule $\text{RULE}\ r = s$ \define{satisfied} when its interpretation equals $\ti{\fullt{A}{B}}$.
+	We call a rule $\text{RULE}\ r = s$ \define{satisfied} if \(\ti{r} = \ti{s}\).
+
+	The data in a data set $\la\rules,\rels,\concepts,\pairs,\atoms\ra$ are the pairs in the interpretation of all relations in $\rels$.
+	This constitutes the set $\pairs$, also known as the population of the dataset.
+	In response to messages such as
+\[\text{INSERT}\ <3,{\tt Brown}> \text{INTO}\ \declare{r}{Age}{Name}\]
+ 	the population of a dataset changes. 
 	As the population of relations used in $r$ changes with time, the satisfaction of the rule changes accordingly.
 	A software developer, who conceives these rules, must consider how to keep each one of them satisfied.
 	We call a rule \define{violated} if it is not satisfied.
@@ -181,19 +189,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \footnote{To \define{restore invariance} is sometimes used as a synonym to resolving violations.
 	To \define{preserve invariance} is sometimes used as a synonym to keeping a rule satisfied.}.
 	Consequently, such a rule may also be referred to as \define{invariant}.
-	Some ways of resolving violations are presented in section~\ref{sct:Code Fragments}.
 	Each pair in the violation set of a rule is called a violation of that rule.
-
-	The software developer must define how to resolve violations when they occur.
-	She does so by inserting and/or deleting pairs in appropriately chosen relations.
-	Whatever choice she makes, she must ensure that her code yields data that satisfies the rules.
-	When we say: ``rule $r$ specifies this action'' we mean that satisfaction of rule $r$ is a postcondition of any action specified by rule $r$. 
-
-	The Ampersand compiler generates a database from relations in the script.
-	A database application%
-\footnote{Ampersand generates an application that consists of a relational database and interface components.
-	Currently this application runs server-side on a PHP/MySQL platform and on a web-browser on the client-side.}
-	assists users to keep rules satisfied throughout the lifetime of the database. It is also generated by Ampersand.
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
