@@ -50,6 +50,151 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \section{Introduction}
 \label{sct:Introduction}
 
+\section{Basics}
+\label{sct:Basics}
+	In this section we explain the basic notions to describe migration.
+	We introduce the notion of dataset.
+	A dataset is a triple $\la\rules,\rels,\concepts,\pairs,\atoms\ra$,
+	which consists of a set of rules $\rules$, a set of relations $\rels$, a set of concepts $\concepts$, a set of pairs $\pairs$, and a set of atoms $\atoms$.
+	Let us introduce these five notions one by one.
+
+	Atoms are values that have no internal structure, meant to represent data elements in a database.
+	From a business perspective, atoms are used to represent concrete items of the world,
+	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
+	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
+	The set of all atoms is called $\atoms$.
+    Each atom is an instance of a \emph{concept}.
+
+	Concepts (from set $\concepts$) are names we use to classify atoms in a meaningful way.
+	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
+	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
+    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
+	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
+	The expression $a \in A$ means that atom $a$ is an \emph{instance} of concept $A$.
+	The declaration of $A\isa B$ (pronounce: $A$ is a $B$)
+	in an Ampersand script states that any instance of $A$ is an instance of $B$ as well.
+	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
+	Specialization is needed to allow statements such as: ``An orange is a fruit''.
+
+	Pairs (from set $\pairs$) are used to relate two atoms.
+	A pair $\pair{\atom{Peter}}{\atom{074238991}}$ might bear the meaning that the ``thing'' that \atom{Peter} refers to
+	has \atom{074238991} as a telephone number.
+	In the formal world, we do not care about that meaning,
+	leaving it entirely up to a user which meaning (s)he attaches to this pair.
+
+	Relations (from set $\rels$) are used in information systems to store data as pairs.
+%	A \define{fact} is a statement that is true in a business context.
+%	Facts are stored and kept as data in a computer.
+	In this paper relations are represented by variables $r$, $s$, and $d$.
+	We represent the declaration of a relation $r$ by $\declare{nm}{A}{B}$,
+	in which \id{nm} is a name and $A$ and $B$ are concepts.
+	We call $A$ the source concept and $B$ the target concept of the relation.
+	The pair $\pair{A}{B}$ is called the \emph{type} of the relation.
+	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
+
+	The meaning of relations in Ampersand is defined by an interpretation function $\mathfrak{I}$.
+	It maps each relation to a set of pairs.
+	The type system of Ampersand guarantees that each pair in $r$ respects the type of $r$:
+\begin{equation}
+	\pair{a}{b}\in\ti{\declare{nm}{A}{B}} \Rightarrow\ a \in A \wedge b \in B \label{typing of relations}
+\end{equation}
+
+	A rule is an equality between two terms that constrains the data stored in relations,
+	ensuring that the dataset is at all times consistent with all rules in the dataset ($\rules$).
+	Terms are used to combine relations using operators.
+	The set of terms is called $\terms$.
+\begin{definition}[terms]
+\label{def:terms}
+\item   The set of terms, $\terms$, is the smallest set that satisfies, for all $r,s \in \terms$, $d\in\rels$ and $A,B \in \concepts$: 
+\begin{eqnarray}
+	d&\in&\terms         \quad\quad\text{(every relation is a term)}\\
+	(r \cup s)&\in&\terms\quad\quad\text{(union)}\\
+	(r \cap s)&\in&\terms\quad\quad\text{(intersection)}\\
+	(r-s)&\in&\terms     \quad\quad\text{(difference)}\label{def:difference}\\
+	(r;s)&\in&\terms     \quad\quad\text{(composition)}\\
+	(r\backslash s)&\in&\terms     \quad\quad\text{(right residual)}\\
+	(r\slash s)&\in&\terms     \quad\quad\text{(left residual)}\\
+	\flip r&\in&\terms   \quad\quad\text{(converse)}\\
+	\cmpl{r}&\in&\terms   \quad\quad\text{(complement)}\\
+%	\kleeneplus r&\in&\terms   \quad\quad\text{(Kleene closure)}\\
+%	\kleenestar r&\in&\terms   \quad\quad\text{(Kleene closure)}\\
+	\ident{A}&\in&\terms \quad\quad\text{(identity)}\\
+	\fullt{A}{B}&\in&\terms \quad\quad\text{(full set)}
+\end{eqnarray}
+\end{definition}
+	Throughout the remainder of this paper,	terms are represented by variables $r$, $s$, $d$, and $t$.
+	The \define{type} of a term $r$ is a pair of concepts, given by $\tf{r}$.
+	$\mathfrak{T}$ is a partial function that maps terms to types.
+	If a term has one type, it is called \define{type correct}.
+	The Ampersand compiler requires all terms to be type correct.
+	If no type can be assigned, the compiler gives an error message.
+	If multiple types are assignable to a term, the ambiguity is signalled by the compiler.
+	In that case it will also emit an error message and prompt the programmer to disambiguate the term by adding type information.
+	In practice, the derivation of types can disambiguate most terms.
+	So, the programmer experiences some freedom to denote distinct relations by the same name without the obligation to specify their types at all occurrences.
+	The compiler does not generate any code if there is a term that is not type correct.
+	The type function and its restrictions are discussed in~\cite{Joosten2015}
+	and have no consequences for the remainder of this paper.
+
+ 	The meaning of terms in Ampersand is given by an interpretation function $\mathfrak{I}$.
+	Let $A$ and $B$ be finite sets of atoms, then $\mathfrak{I}$ maps each term to the set of pairs for which that term stands.
+\begin{definition}[interpretation of terms]
+\label{interpretation of terms}
+\item   For every $A,B\in\concepts$ and $r,s\in\terms$
+\begin{eqnarray}
+	\ti{r}		 &=&\{\pair{a}{b}|\ a\ r\ b\}	\\
+	\ti{r \cup s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\ti{r}\ \text{or }\ \pair{a}{b}\in\ti{s}\}	\\
+	\ti{r \cap s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\ti{r}\ \text{and}\ \pair{a}{b}\in\ti{s}\}	\\
+	\ti{r-s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\ti{r}\ \text{and}\ \pair{a}{b}\notin\ti{s}\}	\\
+	\ti{r;s}	 &=&\{\pair{a}{c}|\ \text{for some}\ b,\ \pair{a}{b}\in\ti{r}\ \text{and}\ \pair{b}{c}\in\ti{s}\}	\\
+	\ti{r\backslash s}	 &=&\{\pair{b}{c}|\ \text{for all}\ a,\ \pair{a}{b}\in\ti{r}\ \text{implies}\ \pair{a}{c}\in\ti{s}\}	\\
+	\ti{r\slash s}	 &=&\{\pair{a}{b}|\ \text{for all}\ c,\ \pair{b}{c}\in\ti{s}\ \text{implies}\ \pair{a}{c}\in\ti{r}\}	\\
+	\ti{\flip{r}}	 &=&\{\pair{b}{a}|\ \pair{a}{b}\in\ti{r}    \}	\\
+	\ti{\cmpl{\declare{r}{A}{B}}}	 &=&\fullt{A}{B}-r	\\
+%	\ti{\kleeneplus{r}}	 &=&\text{the smallest set that satisfies }\kleeneplus{r}=r\ \cup\ \kleeneplus{r};\kleeneplus{r}	\\
+%	\ti{\kleenestar{\declare{r}{A}{A}}}	 &=&\ident{A}\cup\kleeneplus{r}\\
+	\ti{\ident{A}} 	 &=&\{\pair{a}{a}|\ a\in A\}	\\
+	\ti{\fullt{A}{B}}&=&\{\pair{a}{b}|\ a\in A, b\in B\}
+\end{eqnarray}
+\end{definition}
+%	The Kleene closure operators (postfix $\kleeneplus{\ }$ and $\kleenestar{\ }$) have been implemented partially in the current Ampersand implementation.
+
+	A \define{rule} is a pair of terms $r,s\in\terms$ with $\tf{r}=\tf{s}$, which is syntactically recognizable as a rule.
+\[\text{RULE}\ r = s\]
+	This means \(\ti{r} = \ti{s}\). In practice, many rules are written as:
+\[\text{RULE}\ r\subs s\]
+	This is a shorthand for 
+\[\text{RULE}\ r\cap s = r\]
+	We have enhanced the type function $\mathfrak{T}$ and the interpretation function $\mathfrak{I}$ to cover rules as well.
+	If $\tf{r}=\tf{s}$ and $\tf{s}=\pair{A}{B}$:
+\begin{eqnarray}
+	\tf{\text{RULE}\ r = s}   &=&\pair{A}{B}\\
+	\tf{\text{RULE}\ r\subs s}&=&\pair{A}{B}\\
+ resolved this \end{eqnarray}
+
+	We call a rule $\text{RULE}\ r = s$ \define{satisfied} when its interpretation equals $\ti{\fullt{A}{B}}$.
+	As the population of relations used in $r$ changes with time, the satisfaction of the rule changes accordingly.
+	A software developer, who conceives these rules, must consider how to keep each one of them satisfied.
+	We call a rule \define{violated} if it is not satisfied.
+	The set $\ti{(s-r)\cup(r-s)}$ is called the \emph{violation set} of \(\text{RULE}\ r = s\).
+	To \define{resolve} violations means to change the contents of relations such that the rule is satisfied%
+\footnote{To \define{restore invariance} is sometimes used as a synonym to resolving violations.
+	To \define{preserve invariance} is sometimes used as a synonym to keeping a rule satisfied.}.
+	Consequently, such a rule may also be referred to as \define{invariant}.
+	Some ways of resolving violations are presented in section~\ref{sct:Code Fragments}.
+	Each pair in the violation set of a rule is called a violation of that rule.
+
+	The software developer must define how to resolve violations when they occur.
+	She does so by inserting and/or deleting pairs in appropriately chosen relations.
+	Whatever choice she makes, she must ensure that her code yields data that satisfies the rules.
+	When we say: ``rule $r$ specifies this action'' we mean that satisfaction of rule $r$ is a postcondition of any action specified by rule $r$. 
+
+	The Ampersand compiler generates a database from relations in the script.
+	A database application%
+\footnote{Ampersand generates an application that consists of a relational database and interface components.
+	Currently this application runs server-side on a PHP/MySQL platform and on a web-browser on the client-side.}
+	assists users to keep rules satisfied throughout the lifetime of the database. It is also generated by Ampersand.
+
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
 \bibliography{doc}
