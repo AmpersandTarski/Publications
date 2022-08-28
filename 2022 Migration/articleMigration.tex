@@ -13,7 +13,7 @@
 \newtheorem{lemma}{Lemma}
 \def\Events{{\mathit E}}
 \begin{document}
-\include{preamramics}
+\include{preambleMigrations}
 
 \title{A Theory for Migration of Information Systems}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
@@ -51,20 +51,18 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Basics}
 \label{sct:Basics}
-	In this section we explain the basic notions to describe migration.
-	We introduce the notion of dataset.
-	A dataset is a quintuple $\la\rules,\rels,\concepts,\pairs,\atoms\ra$,
-	which consists of a set of rules $\rules$, a set of relations $\rels$, a set of concepts $\concepts$, a set of pairs $\pairs$, and a set of atoms $\atoms$.
-	Let us introduce these five notions one by one.
+	To describe migration, we first introduce the notion of dataset.
+	A dataset describes a set of data, which is typically stored persistently in a database of some kind.
+	Before defining datasets, we must first define the constituent notions of atom, concept, relation, rule, and role.
 \subsection{Atoms}
-	Atoms (from set $\atoms$) are values that have no internal structure, meant to represent data elements in a database.
+	Atoms are values that have no internal structure, meant to represent data elements in a database.
 	From a business perspective, atoms are used to represent concrete items of the world,
 	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
 	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
 	The set of all atoms is called $\atoms$.
-    Each atom is an instance of a \emph{concept}.
+	
 \subsection{Concepts}
-	Concepts (from set $\concepts$) are names we use to classify atoms in a meaningful way.
+	Concepts are names we use to classify atoms in a meaningful way.
 	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
 	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
@@ -72,141 +70,72 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	The expression $a \in A$ means that atom $a$ is an \emph{instance} of concept $A$.
 	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-	Specialization is needed to allow statements such as: ``A woman is a human.'' or ``A human is a mammal.''.
-\subsection{Pairs}
-	Pairs (from set $\pairs$) are used to relate two atoms.
-	A pair $\pair{\text{\atom{Peter}}}{\text{\atom{074238991}}}$ might bear the meaning that the ``thing'' that \atom{Peter} refers to
+	Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
+	The set of all concepts is called $\concepts$.
+	
+\subsection{Triples}
+	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
 	has \atom{074238991} as a telephone number.
-	In the formal world, we do not care about that meaning,
-	leaving it entirely up to a user which meaning (s)he attaches to this pair.
+	Triples are used to relate two atoms and a relation.
+	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
+	The practical meaning has no consequences in the formal world.
+	The set of all triples is called $\triples$.
+
 \subsection{Relations}
-	Relations (from set $\rels$) are used in information systems to store data as pairs.
+	Relations are used in information systems to store data.
 	In this paper relations are represented by variables $r$, $s$, and $d$.
-	Every relation $r$ has a set of pairs, $\pop{r}$, which we call the population of $r$.
-	Every relation has a source concept and a target concept.
-	If we need to be specific about the source and target concepts, we write $\declare{r}{A}{B}$ instead of just $r$.
+
+	Every relation $r$ has a set of pairs, which we call the population of $r$:
+\begin{equation}
+	\pairs{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\popR\}
+\end{equation}
+	Every relation has a name, a source concept, and a target concept.
+	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
+	% To disassemble a relation in its name, source and target, there exist three functions:
+% \[\begin{array}[3]{rcl}
+	% \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
+	% \id{src}&:&\rels\rightarrow\concepts\\
+	% \id{tgt}&:&\rels\rightarrow\concepts
+% \end{array}\]
+	% Or, stated otherwise, the denotation $\declare{nm}{A}{B}$ stands for a relation with
+	% \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
+	% \(\src{\declare{nm}{A}{B}}=A\), and
+	% \(\tgt{\declare{nm}{A}{B}}=B\).
 	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
-	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
+	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
 	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
 
-	The signature rule guarantees that each pair in $r$ respects the signature of $r$:
-\begin{equation}
-	\tag{signature rule}
-	\pair{a}{b}\in\pop{\declare{r}{A}{B}} \Rightarrow\ a \in A \wedge b \in B \label{typing of relations}
-\end{equation}
+\subsection{Roles}
+	A role is a name that identifies a group of users that get the same privileges in a data set.
+	The set of all roles is called $\roles$.
 
-	The population rule defines the population of a dataset:
-\begin{equation}
-	\tag{population rule}
-	\pairs\ =\ \{ \pair{a}{b}|\ r\in\rels,\ \pair{a}{b}\in\pop{r}\} \label{def. population}
-\end{equation}
+\subsection{Constraints}
+	Each constraint $u\in\rules$ has a signature $\signat{u}$, which is a pair of concepts.
+	Each constraint $u$ also has a function $\id{viol}_u:\powerset{\atoms\times\rels\times\atoms}\ \rightarrow\ \powerset{\atoms\times\atoms}$.
+	We call the set $\viol{\popR}{u}$ the \define{violation set} of constraint $u$ in population $\popR$.
+	We call every element $\pair{a}{b}\in\viol{\popR}{u}$ a \define{violation} of constraint $u$ in $\popR$.
+	Note that the signature of $u$ is the same for every population, whereas the violation set may be different for every $\popR$.
 
-	The atoms rule defines all atoms in a dataset:
-\begin{equation}
-	\tag{atoms rule}
-	\atoms\ =\ \{ a |\ \pair{b}{c}\in\pairs,\ a\in\{b,c\}\ \} \label{def atoms}
-\end{equation}
-\subsection{Terms}
-	A term is a combination of relations (from $\rels$), which we use to express constraints from the real world.
-	For this purpose we use the operators from relation algebra~\cite{BrinkKahlSchmidt1997}.
-\begin{definition}[terms]
-\label{def:terms}
-\item   The set of terms, $\terms$, is the smallest set that satisfies, for all $r,s \in \terms$, $d\in\rels$ and $A,B \in \concepts$: 
-\begin{eqnarray*}
-	d&\in&\terms         \quad\quad\text{(every relation is a term)}\\
-	(r \cup s)&\in&\terms\quad\quad\text{(union)}\\
-	(r \cap s)&\in&\terms\quad\quad\text{(intersection)}\\
-	(r-s)&\in&\terms     \quad\quad\text{(difference)}\label{def:difference}\\
-	(r;s)&\in&\terms     \quad\quad\text{(composition)}\\
-	(r\backslash s)&\in&\terms     \quad\quad\text{(right residual)}\\
-	(r\slash s)&\in&\terms     \quad\quad\text{(left residual)}\\
-	\flip r&\in&\terms   \quad\quad\text{(converse)}\\
-	\cmpl{r}&\in&\terms   \quad\quad\text{(complement)}\\
-%	\kleeneplus r&\in&\terms   \quad\quad\text{(Kleene closure)}\\
-%	\kleenestar r&\in&\terms   \quad\quad\text{(Kleene closure)}\\
-	\ident{A}&\in&\terms \quad\quad\text{(identity)}\\
-	\fullt{A}{B}&\in&\terms \quad\quad\text{(full set)}
-\end{eqnarray*}
-\end{definition}
-	Throughout the remainder of this paper,	terms are represented by variables $r$, $s$, $d$, and $t$.
-
-	The relations used in a term $t$ are given by $\relsIn{t}$:
-\begin{definition}[relations in terms]
-	\label{relations in terms}
-	\item   For every $A,B\in\concepts$ and $r,s\in\terms$
-	\begin{eqnarray*}
-		\relsIn{r}		 &=&\{r\}	\\
-		\relsIn{r \cup s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{r \cap s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{r-s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{r;s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{r\backslash s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{r\slash s}	 &=&\relsIn{r}\cup\relsIn{s}\\
-		\relsIn{\flip{r}}	 &=&\relsIn{r}\\
-		\relsIn{\cmpl{\declare{r}{A}{B}}}	 &=&\relsIn{r}\\
-	%	\relsIn{\kleeneplus{r}}	 &=&\relsIn{r}\\
-	%	\relsIn{\kleenestar{r}}	 &=&\relsIn{r}\\
-		\relsIn{\ident{A}} 	 &=&\emptyset\\
-		\relsIn{\fullt{A}{B}}&=&\emptyset\\
-	\end{eqnarray*}
-\end{definition}
-	The \define{signature} of a term $r$ is a pair of concepts, given by $\tf{r}$.
-	$\mathfrak{T}$ is a function that maps terms to signatures.
-	This function and its peculiarities are discussed in~\cite{Joosten2015}
-	and have no consequences for the remainder of this paper.
-	(\emph{\@Bas, komen we ermee weg als we de definitie van $\tf{r}$ hier weglaten?})
-
-	Every term $t$ has a set of pairs $\pop{t}$, which we call the population of that term.
- 	Let $A$ and $B$ be finite sets of atoms, then the population of term is defined as follows:
-\begin{definition}[population of terms]
-\label{population of terms}
-\item   For every $A,B\in\concepts$ and $r,s\in\terms$
-\begin{eqnarray*}
-	\pop{r}		 &=&\{\pair{a}{b}|\ a\ r\ b\}	\\
-	\pop{r \cup s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\pop{r}\ \text{or }\ \pair{a}{b}\in\pop{s}\}	\\
-	\pop{r \cap s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\pop{r}\ \text{and}\ \pair{a}{b}\in\pop{s}\}	\\
-	\pop{r-s}	 &=&\{\pair{a}{b}|\ \pair{a}{b}\in\pop{r}\ \text{and}\ \pair{a}{b}\notin\pop{s}\}	\\
-	\pop{r;s}	 &=&\{\pair{a}{c}|\ \text{for some}\ b,\ \pair{a}{b}\in\pop{r}\ \text{and}\ \pair{b}{c}\in\pop{s}\}	\\
-	\pop{r\backslash s}	 &=&\{\pair{b}{c}|\ \text{for all}\ a,\ \pair{a}{b}\in\pop{r}\ \text{implies}\ \pair{a}{c}\in\pop{s}\}	\\
-	\pop{r\slash s}	 &=&\{\pair{a}{b}|\ \text{for all}\ c,\ \pair{b}{c}\in\pop{s}\ \text{implies}\ \pair{a}{c}\in\pop{r}\}	\\
-	\pop{\flip{r}}	 &=&\{\pair{b}{a}|\ \pair{a}{b}\in\pop{r}    \}	\\
-	\pop{\cmpl{\declare{r}{A}{B}}}	 &=&\fullt{A}{B}-r	\\
-%	\pop{\kleeneplus{r}}	 &=&\text{the smallest set that satisfies }\kleeneplus{r}=r\ \cup\ \kleeneplus{r};\kleeneplus{r}	\\
-%	\pop{\kleenestar{\declare{r}{A}{A}}}	 &=&\ident{A}\cup\kleeneplus{r}\\
-	\pop{\ident{A}} 	 &=&\{\pair{a}{a}|\ a\in A\}	\\
-	\pop{\fullt{A}{B}}&=&\{\pair{a}{b}|\ a\in A, b\in B\}
-\end{eqnarray*}
+\subsection{Datasets}
+	We can now define the notion of dataset.
+	Let
+	$\concepts$ be a set of concept symbols,
+	$\rels$ be a set of relation symbols,
+	$\roles$ be a set of roles,
+	$\rules$ be a set of constraints, and
+	$\atoms$ be a set of atoms.
+\begin{definition}[dataset]
+	\label{def:dataset}
+	\item A dataset is a tuple $\la\concepts,\rels,\roles,\rules,\maintain,\atoms,\popR,\popC\ra$ with
+	\[\begin{array}[3]{rcl}
+		\id{maintain}&:&\roles\times\rules\\
+		\id{popR}&:&\atoms\times\rels\times\atoms\\
+		\id{popC}&:&\concepts\times\atoms\\
+		\multicolumn{3}{l}{\triple{a}{r}{b}\in\popR\ \Rightarrow\ \pair{\src{r}}{a}\in\popC \wedge \pair{\tgt{r}}{b}\in\popC}\\
+		\forall a\in\atoms\ \exists A\in\concepts&:&\pair{A}{a}\in\popC
+	\end{array}\]
 \end{definition}
 
-\subsection{Rules}
-	A rule (from set $\rules$) is an equality between two terms that constrains the data stored in relations,
-	to ensure that all rules in the dataset are satisfied.
-	A \define{rule} is a pair of terms $r,s\in\terms$ with the same types ($\tf{r}=\tf{s}$), which we denote as:
-\[\text{RULE}\ r = s\]
-	This means that the constraint \(\pop{r} = \pop{s}\) is satisfied throughout the dataset.
-	In practice, we will also use \(\text{RULE}\ r\subs s\) as a shorthand for \(\text{RULE}\ r\cap s = r\).
-
-	We call a rule $\text{RULE}\ r = s$ \define{satisfied} if \(\pop{r} = \pop{s}\).
-	Each relation that is used in a term of a dataset $\la\rules,\rels,\concepts,\pairs,\atoms\ra$ is an element of $\rels$ as well:
-\begin{equation}
-	\tag{relations in dataset}
-	\{ r|\ \text{RULE}\ t = s\in\rules,\ r\in\relsIn{t}\cup\relsIn{s}\ \}\subseteq\rels\label{def relations in dataset}
-\end{equation}
-
-	The data in a data set $\la\rules,\rels,\concepts,\pairs,\atoms\ra$ are the pairs in the population of all relations in $\rels$.
-	This constitutes the set $\pairs$, also known as the population of the dataset.
-	In response to messages such as
-\[\text{INSERT}\ <3,{\tt Brown}> \text{INTO}\ \declare{r}{Age}{Name}\]
- 	the population of a dataset changes. 
-	As the population of relations used in $r$ changes with time, the satisfaction of the rule changes accordingly.
-	A software developer, who conceives these rules, must consider how to keep each one of them satisfied.
-	We call a rule \define{violated} if it is not satisfied.
-	The set $\pop{(s-r)\cup(r-s)}$ is called the \emph{violation set} of \(\text{RULE}\ r = s\).
-	To \define{resolve} violations means to change the contents of relations such that the rule is satisfied%
-\footnote{To \define{restore invariance} is sometimes used as a synonym to resolving violations.
-	To \define{preserve invariance} is sometimes used as a synonym to keeping a rule satisfied.}.
-	Consequently, such a rule may also be referred to as \define{invariant}.
-	Each pair in the violation set of a rule is called a violation of that rule.
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}

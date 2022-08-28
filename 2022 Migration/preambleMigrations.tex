@@ -1,15 +1,23 @@
 % Ampersand -----------------------------------------------------------
 
-\def\id#1{\text{\it #1\/}}
+%\def\id#1{\text{\it #1\/}}
+\newcommand{\id}[1]{\text{\it #1\/}}
 \newcommand{\code}[1]{\text{\tt\small #1}}
 \newcommand{\stmtText}[1]{``{\small\tt #1}''}
 \newcommand{\dom}[1]{\id{dom}(#1)}
 \newcommand{\cod}[1]{\id{cod}(#1)}
 \renewcommand{\int}[2]{\id{inter}(#1,#2)}
 \newcommand{\relsIn}[1]{\id{relsIn}(#1)}    % maps a Term to a set of Relations
-\newcommand{\pop}[1]{\id{pop}(#1)}
+\newcommand{\maintain}{\id{maintain}}
+\newcommand{\popC}{\id{popC}}
+\newcommand{\popR}{\id{popR}}
+\newcommand{\popT}[1]{\id{popT}(#1)}
+\newcommand{\popH}[1]{\id{popH}(#1)}
+\newcommand{\relname}[1]{\id{relname}(#1)}
 \newcommand{\src}[1]{\id{src}(#1)}
-\newcommand{\trg}[1]{\id{trg}(#1)}
+\newcommand{\tgt}[1]{\id{tgt}(#1)}
+\newcommand{\viol}[2]{\id{viol}_{#2}(#1)}
+\newcommand{\signat}[1]{\id{signat}(#1)}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
 \newcommand{\theCode}{\url{http://cs.ru.nl/~B.Joosten/ampTypes/}}
 \newcommand{\la}{\langle}
@@ -21,17 +29,19 @@
 \newcommand{\ident}[1]{I_{\id{\small #1}}}
 \newcommand{\expr}[3]{(#1)_{#2\times #3}}
 \newcommand{\pair}[2]{\la{#1},{#2}\ra}
+\newcommand{\triple}[3]{\la{#1},{#2},{#3}\ra}
 \newcommand{\atom}[1]{{\tt\small #1}}
 \newcommand{\concept}[1]{{\tt\small #1}}
 \newcommand{\atoms}{\mathcal{A}}
-\newcommand{\pairs}{\mathcal{P}}
+\newcommand{\pairs}[1]{\id{pairs}(#1)}
 \newcommand{\concepts}{\mathcal{C}}
 \newcommand{\decls}{\mathcal{D}}  %% names of relations
 \newcommand{\rels}{\mathcal{R}}   %% all relations
 \newcommand{\relations}{\mathcal{M}} % representing terms. M is a subset of R.
-\newcommand{\terms}{\mathcal{T}}
+\newcommand{\triples}{\mathcal{T}}
 \newcommand{\vertices}{N}
-\newcommand{\rules}{\mathcal{H}}
+\newcommand{\rules}{\mathcal{U}}
+\newcommand{\roles}{\mathcal{O}}
 \newcommand{\tf}[1]{\mathfrak{T}(#1)}
 \newcommand{\ptf}[1]{\mathfrak{T}'(#1)}
 \newcommand{\ti}[1]{\mathfrak{I}(#1)}
