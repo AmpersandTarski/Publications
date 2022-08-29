@@ -51,15 +51,20 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Basics}
 \label{sct:Basics}
-	To describe migration, we first introduce the notion of dataset.
-	A dataset describes a set of data, which is typically stored persistently in a database of some kind.
+	To define migration, let us first introduce the notion of dataset.
+	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
+	To abstract away from a particular database implementation,
+	we represent data elements as triples.
+	This makes our theory valid for any kind of database that triple stores can represent,
+	such as SQL databases, graph databases and other no-SQL databases
+
 	Before defining datasets, we must first define the constituent notions of atom, concept, relation, rule, and role.
 \subsection{Atoms}
 	Atoms are values that have no internal structure, meant to represent data elements in a database.
 	From a business perspective, atoms are used to represent concrete items of the world,
 	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
 	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
-	The set of all atoms is called $\atoms$.
+	The set of atoms is called $\atoms$.
 	
 \subsection{Concepts}
 	Concepts are names we use to classify atoms in a meaningful way.
@@ -67,11 +72,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
 	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
-	The expression $a \in A$ means that atom $a$ is an \emph{instance} of concept $A$.
+	The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
 	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
 	Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
-	The set of all concepts is called $\concepts$.
+	The set of concepts is called $\concepts$.
 	
 \subsection{Triples}
 	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
@@ -79,15 +84,15 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Triples are used to relate two atoms and a relation.
 	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
 	The practical meaning has no consequences in the formal world.
-	The set of all triples is called $\triples$.
+	The set of triples is called $\triples$.
 
 \subsection{Relations}
-	Relations are used in information systems to store data.
+	Relations are used in datasets to store data.
 	In this paper relations are represented by variables $r$, $s$, and $d$.
 
 	Every relation $r$ has a set of pairs, which we call the population of $r$:
 \begin{equation}
-	\pairs{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\popR\}
+	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
 	Every relation has a name, a source concept, and a target concept.
 	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
@@ -101,38 +106,40 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	% \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
 	% \(\src{\declare{nm}{A}{B}}=A\), and
 	% \(\tgt{\declare{nm}{A}{B}}=B\).
+
 	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
 	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
 	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
+	The set of relations is called $\rels$.
 
-\subsection{Roles}
-	A role is a name that identifies a group of users that get the same privileges in a data set.
-	The set of all roles is called $\roles$.
-
+% \subsection{Roles}
+% 	A role is a name that identifies a group of users that get the same privileges in a data set.
+% 	The set of roles is called $\roles$.
+	
 \subsection{Constraints}
 	Each constraint $u\in\rules$ has a signature $\signat{u}$, which is a pair of concepts.
 	Each constraint $u$ also has a function $\id{viol}_u:\powerset{\atoms\times\rels\times\atoms}\ \rightarrow\ \powerset{\atoms\times\atoms}$.
-	We call the set $\viol{\popR}{u}$ the \define{violation set} of constraint $u$ in population $\popR$.
-	We call every element $\pair{a}{b}\in\viol{\popR}{u}$ a \define{violation} of constraint $u$ in $\popR$.
-	Note that the signature of $u$ is the same for every population, whereas the violation set may be different for every $\popR$.
+	We call the set $\viol{\triples}{u}$ the \define{violation set} of constraint $u$ in population $\triples$.
+	We call every element $\pair{a}{b}\in\viol{\triples}{u}$ a \define{violation} of constraint $u$ in $\triples$.
+	Note that the signature of $u$ does not depend on the population, whereas the violation set of $u$ may be different for every $\triples$.
+	The set of constraints is called $\rules$.
 
 \subsection{Datasets}
 	We can now define the notion of dataset.
-	Let
-	$\concepts$ be a set of concept symbols,
-	$\rels$ be a set of relation symbols,
-	$\roles$ be a set of roles,
-	$\rules$ be a set of constraints, and
-	$\atoms$ be a set of atoms.
+	Let	$\concepts$ be a set of concept symbols,
+	$\rels$ be a set of relations,
+	$\atoms$ be a set of atoms,
+	let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
+	% let $\roles$ be a set of roles,
+	and $\rules$ be a set of constraints.
 \begin{definition}[dataset]
 	\label{def:dataset}
-	\item A dataset is a tuple $\la\concepts,\rels,\roles,\rules,\maintain,\atoms,\popR,\popC\ra$ with
+	\item A dataset is a tuple $\la\concepts,\rels,\atoms,\inst,\triples,\rules\ra$ with
 	\[\begin{array}[3]{rcl}
-		\id{maintain}&:&\roles\times\rules\\
-		\id{popR}&:&\atoms\times\rels\times\atoms\\
-		\id{popC}&:&\concepts\times\atoms\\
-		\multicolumn{3}{l}{\triple{a}{r}{b}\in\popR\ \Rightarrow\ \pair{\src{r}}{a}\in\popC \wedge \pair{\tgt{r}}{b}\in\popC}\\
-		\forall a\in\atoms\ \exists A\in\concepts&:&\pair{A}{a}\in\popC
+		% \id{maintain}&:&\roles\times\rules\\
+		\forall\triple{a}{r}{b}\in\triples&:&a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}\\
+		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
+		\forall u\in\rules&:&\viol{\triples}{u}=\emptyset
 	\end{array}\]
 \end{definition}
 
