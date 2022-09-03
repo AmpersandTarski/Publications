@@ -51,12 +51,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Basics}
 \label{sct:Basics}
-	To define migration, let us first introduce the notion of dataset.
+	To define migration, we must introduce the notion of dataset because migration aims to preserve data whilst changing the software that manipulates data.
 	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
 	To abstract away from a particular database implementation,
 	we represent data elements as triples.
-	This makes our theory valid for any kind of database that triple stores can represent,
-	such as SQL databases, graph databases and other no-SQL databases
+	This makes our theory valid for any kind of database that triples can represent,
+	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
 
 	Before defining datasets, we must first define the constituent notions of atom, concept, relation, rule, and role.
 \subsection{Atoms}
@@ -83,14 +83,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	has \atom{074238991} as a telephone number.
 	Triples are used to relate two atoms and a relation.
 	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
-	The practical meaning has no consequences in the formal world.
+	This ``meaning from practice'' has no consequences in the formal world.
 	The set of triples is called $\triples$.
 
 \subsection{Relations}
-	Relations are used in datasets to store data.
+	Relations in datasets are used to store data.
 	In this paper relations are represented by variables $r$, $s$, and $d$.
 
-	Every relation $r$ has a set of pairs, which we call the population of $r$:
+	Every relation $r$ contains a set of pairs, which we call the population of $r$:
 \begin{equation}
 	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
@@ -109,6 +109,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
 	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
+	It contains all pairs that can be made of elements of $A$ and $B$:
+\[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A, \}\]
 	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
 	The set of relations is called $\rels$.
 
@@ -134,14 +136,38 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	and $\rules$ be a set of constraints.
 \begin{definition}[dataset]
 	\label{def:dataset}
-	\item A dataset is a tuple $\la\concepts,\rels,\atoms,\inst,\triples,\rules\ra$ with
+	\item A dataset is a tuple $\la\concepts,\isa,\rels,\atoms,\inst,\triples,\rules\ra$ with
 	\[\begin{array}[3]{rcl}
 		% \id{maintain}&:&\roles\times\rules\\
+		\isa\text{\ is a partial order}\\
 		\forall\triple{a}{r}{b}\in\triples&:&a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}\\
 		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
 		\forall u\in\rules&:&\viol{\triples}{u}=\emptyset
 	\end{array}\]
 \end{definition}
+
+\subsection{Motivations}
+	We have already motivated the use of triples in a dataset:
+	It is a generic way of representing structured data, which maps to most (if not all) existing database technologies.
+	Changes in the data means changing the set of triples, adding or removing triples from the set.
+	That is not migration; that is regular operational behaviour.
+	If the software changes, this means that the concepts, relations, and constraints change as well.
+	However, a dataset can contain atoms that do not partake in any triple.
+	That is why we need a set of atoms, $\atoms$ too.
+
+	Atoms serve as data elements. Changes in the dataset are reflected in $\atoms$.
+	Concepts serve to classify atoms in a partial order (the classification) so we can implement a typing regime on the dataset.
+	This type system ensures that the dataset can be interpreted as a meaningful database.
+	As a consequence, the relations $\isa$ and $\inst$
+
+	The choice of elements in the tuple that represents a dataset is determined by the dynamics of a dataset.
+	Anything that can change needs to be in that tuple.
+	It is not only the data that changes. Rules can change, relations and concepts can change, the taxonomy can change,
+	rules can change.
+	In migrations we want to cope with any conceivable change,
+	ensuring that the dataset satisfies its defining properties (from definition~\ref{def:dataset}).
+	The migration must also ensure that the population remains intact as much as possible.
+
 
 
 \section{Bibliography}
