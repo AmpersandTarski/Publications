@@ -48,125 +48,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-
-\section{Basics}
-\label{sct:Basics}
-	To define migration, we must introduce the notion of dataset
-	because migration aims to preserve data while changing the software that manipulates data.
-	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
-	To abstract away from a particular database implementation,
-	we represent data elements as triples.
-	This makes our theory valid for any kind of database that triples can represent,
-	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
-
-	Before defining datasets, we must first define the constituent notions of atom, concept, relation, rule, and role.
-\subsection{Atoms}
-	Atoms serve as data elements.
-	They are values without internal structure of interest, meant to represent data elements in a database.
-	From a business perspective, atoms are used to represent concrete items of the world,
-	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
-	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
-	The set of atoms is called $\atoms$.
-	
-\subsection{Concepts}
-	Concepts are names we use to classify atoms in a meaningful way.
-	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
-	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
-    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
-	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
-	The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
-	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-	Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
-	The set of concepts is called $\concepts$.
-	
-\subsection{Triples}
-	Triples are used to represent data.
-	Each triple relates two atoms to a relation.
-	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
-	has \atom{074238991} as a telephone number.
-	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
-	This ``meaning from practice'' has no consequences in the formal world.
-	The set of triples is called $\triples$.
-
-\subsection{Relations}
-	Relations in datasets are used to store data.
-	In this paper relations are represented by variables $r$, $s$, and $d$.
-
-	Every relation $r$ contains a set of pairs, which we call the population of $r$:
-\begin{equation}
-	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
-\end{equation}
-	Every relation has a name, a source concept, and a target concept.
-	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
-	% To disassemble a relation in its name, source and target, there exist three functions:
-% \[\begin{array}[3]{rcl}
-	% \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
-	% \id{src}&:&\rels\rightarrow\concepts\\
-	% \id{tgt}&:&\rels\rightarrow\concepts
-% \end{array}\]
-	% Or, stated otherwise, the denotation $\declare{nm}{A}{B}$ stands for a relation with
-	% \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
-	% \(\src{\declare{nm}{A}{B}}=A\), and
-	% \(\tgt{\declare{nm}{A}{B}}=B\).
-
-	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
-	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
-	It contains all pairs that can be made of elements of $A$ and $B$:
-\[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
-	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
-	The set of relations is called $\rels$.
-
-% \subsection{Roles}
-% 	A role is a name that identifies a group of users that get the same privileges in a data set.
-% 	The set of roles is called $\roles$.
-	
-\subsection{Constraints}
-	Constraints are the invariants of a dataset: restrictions that are kept true at all times.
-	Their purpose is to ensure the semantics of a dataset, i.e. the preservation of meaning as data changes.
-	Each constraint $u\in\rules$ has a signature $\signat{u}$, which is a pair of concepts.
-	Each constraint $u$ also has a function $\id{viol}_u:\powerset{\atoms\times\rels\times\atoms}\ \rightarrow\ \powerset{\atoms\times\atoms}$.
-	We call the set $\viol{\triples}{u}$ the \define{violation set} of constraint $u$ in population $\triples$.
-	We call every element $\pair{a}{b}\in\viol{\triples}{u}$ a \define{violation} of constraint $u$ in $\triples$.
-	Note that the signature of $u$ does not depend on the population, whereas the violation set of $u$ may be different for every $\triples$.
-	The set of constraints is called $\rules$.
-
-\subsection{Datasets}
-	We can now define the notion of dataset.
-	Let	$\concepts$ be a set of concept symbols,
-	let $\isa$ be a partial order on $\concepts$,
-	let $\rels$ be a set of relations,
-	let $\atoms$ be a set of atoms,
-	let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
-	% let $\roles$ be a set of roles,
-	and let $\rules$ be a set of constraints.
-\begin{definition}[dataset]
-	\label{def:dataset}
-	\item A dataset is a tuple $\la\concepts,\isa,\rels,\atoms,\inst,\triples,\rules\ra$ with
-	\begin{eqnarray}
-		\forall r\in\rels&:&\src{r}\in\concepts\ \wedge\ \tgt{r}\in\concepts\\
-		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
-		% \id{maintain}&:&\roles\times\rules\\
-		\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
-		\forall\triple{a}{r}{b}\in\triples&:&r\in\rels\ \wedge\ a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}\\
-		\forall u\in\rules&:&\viol{\triples}{u}=\emptyset\label{violation free}
-	\end{eqnarray}
-\end{definition}
-
-\subsection{Motivation}
-% The purpose of this section is to explain why a dataset is structured the way it is.
-	The challenge of migration is to preserve meaning rather than just copy data from one place to another.
-	The bearer of meaning to users of a dataset is the data.
-	That is represented by the population, i.e. the sets of triples and atoms, $\triples$ and $\atoms$.
-	How a user interprets the data is up to the user and may therefore have no consequence to the dataset.
-	So we attach no intrinsic meaning to a triple and take $\triples$ and $\atoms$ for granted.
-	In a migration we seek to preserve that data where we can.
-	The other elements in a dataset, $\isa$, $\concepts$, $\rels$, and $\rules$ do have consequences, however.
-	Definition~\ref{def:dataset} implies that changes to data may cause violations of rules,
-	so measures must be taken to get rid of those violations (eqn.~\ref{violation free}).
-	Changes to $\isa$, $\concepts$, $\rels$ change the data structure in a dataset.
-	Changes to $\rules$ change the invariants of the dataset.
-	This paper studies those changes and seeks to preserve the rules in definition~\ref{def:dataset} in such a way that large portions of migration can be automated.
+	The challenge of migration is to preserve meaning rather than just copy the data from one place to another.
 
 \section{Migration steps}
 	A smooth migration from an old system to a new system would go as follows:
@@ -195,12 +77,160 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	To mitigate these issues, we:
 	
 	\begin{enumerate}
-	\item Allow `missing' data-points requirements to be ignored during migration.
-	\item Allow data-points to be migrated while being marked as needing correction.
-	\item Allow invariants in the new system to be ignored for certain data-points during migration.
+	\item Allow `missing' triples requirements to be ignored during migration.
+	\item Allow triples to be migrated while being marked as needing correction.
+	\item Allow invariants in the new system to be ignored for certain triples during migration.
 	\item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
 	\item Retain data in the old system until it can be marked as ready to be phased out.
 	\end{enumerate}	
+
+\section{Terminology}
+\label{sct:Terminology}
+	Migration is sometimes called data migration, because most people understand that data from "the old system" is fed into "the new system".
+	The idea is that the new system lets the business continu without interruption, after its software has been upgraded.
+	Since data is so central to migration, we start by introducing the notion of dataset.
+	To abstract away from a particular database implementation,
+	we represent data elements as triples.
+	This makes our theory valid for any kind of database that triples can represent,
+	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
+
+	Migration is not just about porting data.
+	It is about preserving the meaning of that data.
+	For that purpose, section~\ref{sct:Information Systems} introduces the notion of information system.
+
+\subsection{Datasets}
+	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
+
+	Before defining datasets, we must first define the constituent notions of atom, concept, triple, and relation.
+	
+	Atoms serve as data elements.
+	They are values without internal structure of interest, meant to represent data elements in a database.
+	From a business perspective, atoms are used to represent concrete items of the world,
+	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
+	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
+	The set of atoms is called $\atoms$.
+	
+
+	Concepts are names we use in a conceptual model during the design of a dataset.
+	They are also used to assign signatures to relations, to enable type checking on the dataset.
+	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
+	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
+    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
+	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
+	The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
+	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
+	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
+	Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
+	The set of concepts is called $\concepts$.
+	
+	Triples are used to represent data.
+	Each triple relates two atoms to a relation.
+	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
+	has \atom{074238991} as a telephone number.
+	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
+	This ``meaning from practice'' has no consequences in the formal world.
+	The set of triples is called $\triples$.
+
+	Relations in datasets are used to store data.
+	In this paper relations are represented by variables $r$, $s$, and $d$.
+
+	Every relation $r$ contains a set of pairs, which we call the population of $r$:
+\begin{equation}
+	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
+\end{equation}
+	Every relation has a name, a source concept, and a target concept.
+	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
+	% To disassemble a relation in its name, source and target, there exist three functions:
+% \[\begin{array}[3]{rcl}
+	% \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
+	% \id{src}&:&\rels\rightarrow\concepts\\
+	% \id{tgt}&:&\rels\rightarrow\concepts
+% \end{array}\]
+	% Or, stated otherwise, the denotation $\declare{nm}{A}{B}$ stands for a relation with
+	% \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
+	% \(\src{\declare{nm}{A}{B}}=A\), and
+	% \(\tgt{\declare{nm}{A}{B}}=B\).
+
+	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
+	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
+	It contains all pairs that can be made of elements of $A$ and $B$:
+\[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
+	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
+	The set of relations is called $\rels$.
+	
+	We can now define the notion of dataset.
+	Let	$\concepts$ be a set of concept symbols,
+	let $\isa$ be a partial order on $\concepts$,
+	let $\rels$ be a set of relations,
+	let $\atoms$ be a set of atoms,
+	and let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
+\begin{definition}[dataset]
+	\label{def:dataset}
+	\item A dataset is a tuple $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ with
+	\begin{eqnarray}
+		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
+		\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
+		\forall r\in\rels&:&\src{r}\in\concepts\ \wedge\ \tgt{r}\in\concepts\\
+		\forall\triple{a}{r}{b}\in\triples&:&r\in\rels\ \wedge\ a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}\\
+	\end{eqnarray}
+\end{definition}
+
+\subsection{Information Systems}
+\label{sct:Information Systems}
+	Information systems process information from many different users, each with their own tasks and responsibilities.
+	Users work from different locations and on different moments.
+	This collective use serves a purpose which we loosely call "the business".
+	As a consequence, the data in an information system changes continually.
+	To preserve meaning, users are trying to maintain semantic constraints on the data.
+	Before defining information systems for the purpose of data migration,
+	let us first define the constituent notions role and constraint, which are part of that definition.
+
+	A \define{role} is a name that identifies a group of users.
+	The purpose of a role is to mention an individual user without knowing who that user is.
+	In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the information system.
+	The set of roles is called $\roles$.
+
+	A \define{constraint} is a restriction on a dataset, to be enforced by a role.
+	The purpose of constraints is to ensure the semantics of a dataset, i.e. the preservation of meaning as data changes.
+	Each constraint $u\in\rules$ has a signature $\signat{u}$, which is a pair of concepts.
+	Each constraint $u$ also has a function $\id{viol}_u:\powerset{\atoms\times\rels\times\atoms}\ \rightarrow\ \powerset{\atoms\times\atoms}$.
+	We call the set $\viol{\triples}{u}$ the \define{violation set} of constraint $u$ in population $\triples$.
+	We call every element $\pair{a}{b}\in\viol{\triples}{u}$ a \define{violation} of constraint $u$ in $\triples$.
+	We say that a constraint \define{is satisfied} if its violation set is empty (i.e. if $\viol{\triples}{u}$ is the empty set).
+	The set of constraints is called $\rules$.
+
+	Note that the signature of $u$ does not depend on the population, whereas the violation set of $u$ may be different for every $\triples$.
+	Since $\triples$ changes continuallyin an information system, the violations are changing along. 
+
+	We can now define the notion of information system.
+	Let $\roles$ be a set of roles,
+	let $\rules$ be a set of constraints, 
+	let $\maintain$ be a surjective relation $\roles\times\rules$,
+	and let $\dataset$ be a dataset.
+\begin{definition}[information system]
+	\label{def:information system}
+	\item An information system is a tuple $\la\roles,\rules,\id{maintain},\dataset\ra$\\
+	with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
+	in which $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{\triples}{u}$ empty.
+\end{definition}
+	If a constraint $u$ has violations, i.e. $\viol{\triples}{u}$ is not empty, there is a role whose job it is to remove those violations.
+	The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
+	Which means that all constraints are being kept satisfied in the collective effort of users, even if the data changes.
+	In another section we will give some options on how users can keep rules satisfied.
+
+\subsection{Changes}
+% The purpose of this section is to explain why a dataset is structured the way it is.
+	In the migration of a dataset we deal with changes to the elements that are not data:
+	$\isa$, $\inst$, $\concepts$, and $\rels$.
+	Such changes have further reaching consequences, however.
+	Changes to $\isa$, $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
+	We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ as a change in which one or more of $\isa$, $\inst$, $\concepts$, or $\rels$ change.
+	To satisfy definition~\ref{def:dataset}, $\triples$ and $\atoms$ must change too,
+	but the migration should try to preserve the maximal amount of data.
+
+	This paper studies those changes and seeks to preserve the rules in definition~\ref{def:dataset}
+	in such a way that large portions of migration can be automated.
+
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
