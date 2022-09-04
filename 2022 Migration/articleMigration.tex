@@ -168,7 +168,39 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	ensuring that the dataset satisfies its defining properties (from definition~\ref{def:dataset}).
 	The migration must also ensure that the population remains intact as much as possible.
 
+\section{Migration steps}
+	A smooth migration from an old system to a new system would go as follows:
+	Launch the new system in parallel to the old, copy data from the old to the new system, and have everyone use the new system.
+	We identify the following possible issues in this approach:
 
+	\begin{enumerate}
+	\item Data required in the new system is missing in the old system.
+	There may be no way in the old system to enter that data.
+	An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
+	The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
+	\item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
+	An example is if the old system only allows approvals to be entered as the current user, and the CEO insists that her administrative staff enters his approvals into the system for her.
+	This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
+	\item Data in the old system does not satisfy invariants of the new system.
+	There may be no way in the old system of making the data satisfy those invariants. We can use the same example as in the previous bullet point, but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+	\item A way of entering data into the old system is missing in the new system.
+	People or automated processes might rely on these ways of entering data.
+	An example could be that when employees turned their computers on or off, an ad-hoc script would automatically clock them in- and out to determine the number of hours they worked.
+	A handful of employees still relies on this.
+	\item Data present in the old system cannot be stored in the new system.
+	An example could be that references to physical locations where original receipts are kept are stored in the old system, but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
+	Until the original receipts are scanned, the old data should be kept.
+	\end{enumerate}
+	
+	To mitigate these issues, we:
+	
+	\begin{enumerate}
+	\item Allow `missing' data-points requirements to be ignored during migration.
+	\item Allow data-points to be migrated while being marked as needing correction.
+	\item Allow invariants in the new system to be ignored for certain data-points during migration.
+	\item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
+	\item Retain data in the old system until it can be marked as ready to be phased out.
+	\end{enumerate}	
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
