@@ -171,19 +171,19 @@ relation algebra\sep software development\sep data migration\sep software migrat
 		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
 		\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
 		\forall r\in\rels&:&\src{r}\in\concepts\ \wedge\ \tgt{r}\in\concepts\\
-		\forall\triple{a}{r}{b}\in\triples&:&r\in\rels\ \wedge\ a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}\\
+		\forall\triple{a}{r}{b}\in\triples&:&r\in\rels\ \wedge\ a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}
 	\end{eqnarray}
 \end{definition}
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
-	Information systems process information from many different users, each with their own tasks and responsibilities.
-	Users work from different locations and on different moments.
+	Information systems process information from many different users,
+	all with their own tasks and responsibilities,
+	and all working from different locations and on different moments.
 	This collective use serves a purpose which we loosely call "the business".
 	As a consequence, the data in an information system changes continually.
 	To preserve meaning, users are trying to maintain semantic constraints on the data.
-	Before defining information systems for the purpose of data migration,
-	let us first define the constituent notions role and constraint, which are part of that definition.
+	So, let us first define the constituent notions role and constraint before defining information systems proper.
 
 	A \define{role} is a name that identifies a group of users.
 	The purpose of a role is to mention an individual user without knowing who that user is.
@@ -200,7 +200,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	The set of constraints is called $\rules$.
 
 	Note that the signature of $u$ does not depend on the population, whereas the violation set of $u$ may be different for every $\triples$.
-	Since $\triples$ changes continuallyin an information system, the violations are changing along. 
+	Since $\triples$ changes continually in an information system, the violations are changing along. 
 
 	We can now define the notion of information system.
 	Let $\roles$ be a set of roles,
