@@ -1,0 +1,640 @@
+\documentclass[11pt,a4paper,fleqn,oneside]{article}
+\usepackage{amssymb}
+\parskip 10pt plus 2.5pt minus 4pt  % Extra vertical space between paragraphs.
+\parindent 0em                      % Width of paragraph indentation.
+\addtolength{\textwidth}{.5in}
+\newcommand{\tick}{\mbox{\(\surd\)}}
+\long\def\@savemarbox#1#2{\global\setbox#1\vtop{\hsize\marginparwidth 
+   \@parboxrestore\smal #2}}
+\def\bottomfraction{.5}
+\renewcommand{\textfraction}{0.2}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{tocdepth}{1}
+\makeatletter
+\def\@dummydocumentstyle{\@ifnextchar[{\@@dds}{\@@dds[]}}
+\def\@@dds[#1]#2{\relax}
+
+\def\getchapter#1{{\def\documentstyle{\@dummydocumentstyle}%
+		   \def\document{\relax}%
+		   \def\enddocument{\relax}\include{#1}}} 
+\makeatother
+\newlength{\Example}\setlength{\Example}{\textwidth}
+\addtolength{\Example}{-0.5in}
+\newlength{\Exinside}\setlength{\Exinside}{\Example}
+\addtolength{\Exinside}{-0.5in}
+\def\theor{\list{}{\leftmargin .5in}\item[]{\ }\\*[-\itemsep] \rm}
+\let\endtheor=\endlist
+\newtheorem{lemma}[equation]{Lemma}
+\newtheorem{define}[equation]{Definition}
+\newtheorem{examp}[equation]{Example}
+%% end taken from preamble
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\def\rbracket{\text{]}}
+\def\lbracket{\text{[}}
+%\newcommand{\powerset}[1]{{\cal P}\{#1\}}
+\newcommand{\one}[1]{{\cal\bf 1}_{#1}}
+\newcommand{\choice}[2]{#1\ |\ #2}
+\newcommand{\all}[2]{#1 + #2}
+\newcommand{\seq}[2]{#1 ; #2}
+\newcommand{\eca}[2]{{\tt ON}~#1~{\tt DO}~#2}
+\newcommand{\subst}[3]{#3_{\tt [#1 := #2]}}
+\newcommand{\assign}[2]{#1~{\tt :=}~#2}
+\newcommand{\code}[1]{\text{\tt\small #1}}
+\newcommand{\relAdd}{\dagger}
+\newcommand{\dom}[1]{\id{dom}_#1}
+\newcommand{\cod}[1]{\id{cod}_#1}
+\newcommand{\conts}[1]{\id{contents}_#1}
+\newcommand{\name}[1]{\id{name}_#1}
+\def\id#1{\text{\em #1\/}}
+\def\define#1{\label{dfn:#1}{\em #1}\index{#1}}
+\def\definem#1{\label{dfn:#1}{\em #1}\index{#1}\marginpar{\flushright\small\em #1}}
+\newcommand{\marg}[1]{\index{#1}\marginpar{\flushright\small\em #1}}
+\newcommand{\uni}{\text{\small UNI}}
+\newcommand{\tot}{\text{\small TOT}}
+\newcommand{\inj}{\text{\small INJ}}
+\newcommand{\sur}{\text{\small SUR}}
+\newcommand{\univalent}[1]{\id{univalent}(#1)}
+\newcommand{\total}[1]{\id{total}(#1)}
+\newcommand{\surjective}[1]{\id{surjective}(#1)}
+\newcommand{\injective}[1]{\id{injective}(#1)}
+\newcommand{\transitive}[1]{\id{transitive}(#1)}
+\newcommand{\symmetric}[1]{\id{symmetric}(#1)}
+\newcommand{\antisymmetric}[1]{\id{antisymmetric}(#1)}
+\newcommand{\reflexive}[1]{\id{reflexive}(#1)}
+\newcommand{\ident}[1]{\mathbb{I}_{#1}}
+\newcommand{\iden}{\mathbb{I}}
+\newcommand{\full}{\mathbb{V}}
+\newcommand{\flip}[1]{{#1}^\smallsmile}
+\newcommand{\kleeneplus}[1]{{#1}^+}
+\newcommand{\kleenestar}[1]{{#1}^*}
+\newcommand{\cmpl}[1]{\overline{#1}}
+\newcommand{\rel}{\times}
+\newcommand{\compose}{;}
+\newcommand{\subs}{\subseteq}
+\newcommand{\fun}{\rightarrow}
+\newcommand{\N}{\mbox{\msb N}}
+\newcommand{\disjn}[1]{\id{disjoint}(#1)}
+\newcommand{\fsignat}[3]{\id{#1}:\id{#2}\mbox{$\rightarrow$}\id{#3}}
+\newcommand{\signat}[3]{\mbox{${#1}_{[{#2},{#3}]}$}}
+\newcommand{\declare}[3]{\id{#1}:\id{#2}\mbox{$\times$}\id{#3}}
+
+\title{AMMBR: A Method to Maintain Business Rules}
+\author{Stef Joosten}
+\begin{document}
+\maketitle
+\begin{abstract} % 149 words counted.
+%<claim>
+	This paper proposes a method, AMMBR, to generate software for maintaining the transactional integrity of a dataset.
+%</claim>
+	The purpose of this method is to enhance development environments that generate information systems with the feature of built-in compliance.
+	Inspiration for this problem came from the author's practice of designing business processes in organisations.
+	The idea is to let a dataset represent the facts of an organization,
+	and let each business rule correspond to one invariant on that dataset.
+	Business rules can be maintained by using software to detect violations of the invariants.
+	That software can be generated in full by a generator, which analyses the invariants and compiles them into computer code.
+	Thus, AMMBR determines the computer code to restore the invariants, when broken by events that change the dataset.
+	This method has been tried and implemented in Ampersand, a tool that generates functional specifications and information systems.
+\end{abstract}
+keywords: compliance, business rule, relation algebra, software generation, provable software, process control.
+\section{Introduction}
+	In order to define an information system to support an organization,
+	we look at organizations as systems that maintain rules.
+	An ideal information infrastructure supports employees and other stakeholders to maintain the rules of the business.
+	Yet rules must be concrete if they are to be used by computers.
+	The method is therefore restricted to those rules of which
+	violation can be established unambiguously and objectively.
+	To {\em maintain} a rule means to prevent or correct all violations, either by human or automated actions.
+	Temporary violation of a rule is only acceptable for rules that are maintained by humans,
+	but the infrastructure must signal these violations and make them available to those people
+	
+	The problem addressed in this paper is how to define software services to maintain all rules that apply in a given context.
+	This paper proposes a method, AMMBR (pronounce: Amber), to derive software services from a set of rules and
+	to assemble these services into an information system (i.e. a system of people and computers) that maintains these rules.
+	AMMBR consists of the following steps:
+\begin{description}
+\item[represent rules]
+	Business rules are represented in a relation algebra \cite{Maddux2006}.
+	Requirement elicitation and reuse of existing patterns produce the desired set of rules.
+	This is the only step in AMMBR that requires human effort.
+	The following steps are all purely algorithmic, meaning that a computer can do the work.
+\item[determine clauses]
+	Once the set of rules is checked and found type consistent,
+	it is reduced to clauses.
+	A clause is a rule that cannot be broken in smaller pieces without losing meaning.
+\item[derive code fragments]
+	From the clauses, code fragments are derived for violation detection and for automated actions.
+\item[assemble services]
+	For every role, a set of services is defined that allows a user (who has that role)
+	to change the state of the system while maintaining all rules.
+\end{description}
+	In AMMBR, human involvement is required only in representing rules.
+	So, there is a tool that generates the specification of a service layer directly from the business rules.
+	This tool has been built in the form of a compiler, which produces functional specifications.
+	It compiles from a language called ADL, which contains a particular relation algebra made suitable for compilation by a computer.
+	The functional specification produced by this tool defines a service layer
+	that maintains the rules defined in the ADL source code.
+	The tool provides physical proof that an information system can be defined up to its service layer by means of rules only.
+
+	Using experimental, earlier versions of AMMBR and ADL, information systems have been defined for banks, insurance companies and governmental organizations.
+
+	The contribution of this paper is that business rules can define software,
+	thus providing a piece of the bridge to span the abyss between information technology and business.
+	From a computing perspective this is a step towards automating the design of information systems.
+	From a business perspective this provides mathematical certainty that business rules are being maintained.
+
+\section{Preliminaries}
+	Deze sectie is zwaar in aanbouw.
+	Ik heb hier `eventjes' een aantal regels bijeengezocht die verderop in bewijzen gebruikt worden.
+	Nog aanvullen en tekst van maken (de hele sectie is nog niet voor review geschikt; doorlezen bij sectie \ref{sct:Clauses}).
+	
+	This section defines the formalism in which rules are described.
+	The first two laws (\ref{axi:right identity} and \ref{axi:left identity})
+	state that an identity relation may be removed
+	if it stands left or right of a semicolon (the composition operator).
+	Equation \ref{axi:associative compose} states that the semicolon is an associative operator.
+	This means that it does not matter how brackets are placed in an expression with two or more semicolons.
+	In the sequel brackets are omitted in situations with associative operators.
+\begin{eqnarray}
+r\compose\iden&=&r\label{axi:right identity}\\
+\iden\compose r&=&r\label{axi:left identity}\\
+(p\compose q)\compose r&=&p\compose(q\compose r)\ =\ p\compose q\compose r\label{axi:associative compose}\\
+(p\relAdd q)\relAdd r&=&p\relAdd(q\relAdd r)\ =\ p\relAdd q\relAdd r\label{axi:associative relAdd}
+\end{eqnarray}
+	The following laws show how the conversion operator behaves.
+\begin{eqnarray}
+\flip{\flip{r}}&=&r\label{axi:flipflip}\\
+\flip{(r\cup q)}&=&\flip{r}\cup\flip{q}\label{axi:flipcup}\\
+\flip{(r\cap q)}&=&\flip{r}\cap\flip{q}\label{axi:flipcap}\\
+\flip{(r\compose s)}&=&\flip{s}\compose\flip{r}\label{axi:flipcombi}\\
+\flip{(r\relAdd s)}&=&\flip{s}\relAdd\flip{r}\label{axi:fliprelAdd}
+\end{eqnarray}
+	These laws are useful to show, for instance, that the conversion of an injective relation is univalent.
+	Let $r$ be injective.
+\[\begin{array}{cl}
+&r\compose\flip{r}\ \subs\ \iden\\
+\Leftrightarrow&\hspace{1in}\{\text{$r=\flip{\flip{r}}$ by law \ref{axi:flipflip}}\}\\
+&\flip{\flip{r}}\compose\flip{r}\ \subs\ \iden
+\end{array}\]
+	The last line in this derivation says that $\flip{r}$ is univalent (definition \ref{def:univalent}).
+	So the derivation proves that
+\begin{equation}
+\injective{r}\ \Leftrightarrow\ \univalent{\flip{r}}\label{eqn:dual injective univalent}
+\end{equation}
+
+	Another useful law is the following:
+\begin{eqnarray}
+p\subs r&=&\cmpl{p}\cup r\label{eqn:rid of subseteq}
+\end{eqnarray}
+	It shows how to remove a subset operator ($\subs$) from any equation.
+	Of similar use is a law to replace an equality by two subsets.
+\begin{eqnarray}
+(p=r)&=&p\subs r \cup r\subs p\label{axi:rid of eq}
+\end{eqnarray}
+	
+	The following law shows how the union operator can be removed from compositions of relations.
+\begin{eqnarray}
+p\compose(q\cup r)\compose s&=&p\compose q\compose s \cup p\compose r\compose s\label{axi:distributive cup}
+\end{eqnarray}
+	It would have been nice if the same distribution property holds for the intersect operator, $\cap$,
+	but this is not always the case.
+	This property holds only if $p$ is univalent and $s$ is injective:
+\begin{equation}
+p\compose(q\cap r)\compose s\ =\ p\compose q\compose s\cap p\compose r\compose s\label{prop:cap distr compo}
+\end{equation}
+	Since the identity relation $\iden$ is both injective and univalent,
+	this law can also be replaced by the following two laws:
+\begin{eqnarray}
+\injective{s} & \Rightarrow & (q\cap r)\compose s\ =\ q\compose s\cap r\compose s\\
+\univalent{p} & \Rightarrow & p\compose (q\cap r)\ =\ p\compose q\cap p\compose r
+\end{eqnarray}
+	Another way to formulate these laws in an unconditional way is:
+\begin{equation}
+	p\compose (q\cap r)\compose s\ \subs\ p\compose q\compose s\cap p\compose r\compose s
+\label{axi:distributive cap}
+\end{equation}
+
+	Two other useful laws move relations across the $\subs$ symbol.
+	However, this law is conditional too.
+	If $f$ is a function (that is: a univalent and total relation) then
+\begin{eqnarray}
+r\subs s\compose\flip{f} & \Leftrightarrow & r\compose f\subs s\label{law:move function over subset right}\\
+r\subs f\compose s        & \Leftrightarrow & \flip{f}\compose r\subs s\label{law:move function over subset left}
+\end{eqnarray}
+
+	The following equivalences are attributed to the famous mathematician De Morgan:
+\begin{equation}
+\begin{array}[m]{lcr}
+	\cmpl{r}\cup\cmpl{s}&=&\cmpl{r\cap s}\\
+	\cmpl{r}\cap\cmpl{s}&=&\cmpl{r\cup s}
+\end{array}
+\label{eqn:De Morgan}
+\end{equation}
+	De Morgan's equivalences turn out to be among the most frequently used laws,
+	because the allow you to `move around' the complement operator.
+	The operators $\compose$ and $\relAdd$ satisfy similar laws:
+\begin{equation}
+\begin{array}[m]{lcr}
+	\cmpl{r}\compose\cmpl{s}&=&\cmpl{r\relAdd s}\\
+	\cmpl{r}\relAdd\cmpl{s}&=&\cmpl{r\compose s}
+\end{array}
+\label{eqn:De Morgan ;}
+\end{equation}
+	Equations \ref{eqn:De Morgan} and \ref{eqn:De Morgan ;} are known as De Morgan's laws.
+	
+	Less well known, but equally important are the following equivalences, which De Morgan called ``Theorem K''.
+\begin{equation}
+\begin{array}[m]{llcr}
+	&p\compose q&\subs&r\\=\\
+	&\flip{p}\compose\cmpl{r}&\subs&\cmpl{q}\\=\\
+	&\cmpl{r}\compose\flip{q}&\subs&\cmpl{p}
+\end{array}
+\label{eqn:theorem K}
+\end{equation}
+
+	Well known properties of relations are the so called `multiplicity properties', or \define{multiplicities}:
+	univalent, total, surjective, and injective.
+\begin{itemize}
+\item{\bf univalent}\\A relation $\declare{r}{A}{B}$ is \define{univalent}
+	if each element of $A$ corresponds to at most one element of $B$.
+	This property is defined by:
+\begin{equation}
+\flip{r}\compose r\ \subs\ \ident{B}\label{def:univalent}
+\end{equation}
+	The definition says that $a\ r\ b$ and $a\ r\ b'$ imply $b=b'$ for all $a$, $b$, and $b'$.
+	To denote that relation $r$ is univalent, we write $\univalent{r}$.
+\item{\bf total}\\A relation $\declare{r}{A}{B}$ is \define{total}
+	if each element of $A$ corresponds to at least one element of $B$.
+	This property is defined by:
+\begin{equation}
+\ident{A}\ \subs\ r\compose\flip{r}\label{def:total}
+\end{equation}
+	The definition says that for all $a\in A$ there exists $b\in B$ such that $a\ r\ b$.
+	To denote that relation $r$ is univalent, we write $\univalent{r}$.
+\item{\bf function}\\
+	A relation is a \define{function} if it is both univalent and total.
+	That is: a relation $\declare{r}{A}{B}$ is a function
+	if every element of $A$ corresponds to precisely one element of $B$.
+	If $r$ is univalent but not total then it is called a \define{partial function}.
+\item{\bf injective}\\A relation $\declare{r}{A}{B}$ is \define{injective}
+	if each element of $B$ corresponds to at most one element of $A$.
+	This property is defined by:
+\begin{equation}
+r\compose\flip{r}\ \subs\ \ident{A}\label{def:injective}
+\end{equation}
+	The definition says that $b\ r\ a$ and $b\ r\ a'$ imply $a=a'$ for all $a$, $a'$, and $b$.
+	Notice that the property injective is defined conversely to the property univalent.
+	To denote that relation $r$ is injective, we write $\injective{r}$.
+\item{\bf surjective}\\A relation $\declare{r}{A}{B}$ is \define{surjective}
+	if each element of $B$ corresponds to at least one element of $A$.
+	This property is defined by:
+\begin{equation}
+\ident{B}\ \subs\ \flip{r}\compose r\label{def:surjective}
+\end{equation}
+	The definition says that for all $b\in B$ there exists $a\in A$ such that $a\ r\ b$.
+\end{itemize}
+
+\section{Clauses}
+\label{sct:Clauses}
+	This section explains:
+\begin{enumerate}
+\item	how to derive clauses from a set of rules, by a normalization procedure.
+\item	how to transform clauses into left identity clauses and right identity clauses, if possible.
+\item	how to derive multiplicity properties from clauses thus obtained.
+\end{enumerate}
+	A \define{rule} is an expression $e$ that must be kept true.
+	To \define{maintain} rule $r$ means to ensure that $\full\subs r$ is true,
+	where $\full$ is the complete relation (i.e. everything is an pair of $\full$).
+	In order to discuss maintaining rules, we must introduce some vocabulary.
+	As long as $\full\subs r$, we say that $r$ is \define{satisfied}, or simply that it \define{holds}.
+	If $r$ is not $\full$, we say that \define{invariance is broken},
+	or rule $r$ is \define{not satisfied}, or it \define{does not hold}.
+	Since $r\cup\cmpl{r}=\full$, the missing pairs are determined by $\cmpl{r}$.
+	Each pair of $\cmpl{r}$ is called a \define{violation} of $r$.
+	To \define{restore invariance} of rule $r$ means to change the contents of $r$ in such a way that $\full\subs r$.
+
+	Let $r_0$, $r_1$, $...$, $r_n$ be the rules that apply in context $C$.
+	Let $R_C$ be defined by $r_0\cap r_1\cap ... \cap r_n$.
+	Expression $R_C$ is called the \define{conjunction} of $r_0$, $r_1$, $...$, $r_n$, because all expressions (conjuncts) $r_i$ are separated by the conjunction operator $\cap$.
+	Maintaining all rules (every $r_i$) in context $C$ means to ensure that $R_C=\full$ at all times\footnote{Informally: $R_C$ is kept true at all times}.
+	
+	A \define{clause} is the smallest expression that is still a rule (i.e. are equal to $\full$).
+	Let $e_0$, $e_1$, $...$, $e_m$ be unique expressions such that:
+\begin{equation}
+	r_0\cap r_1\cap ... \cap r_n\ =\ e_0\cap e_1\cap ... \cap e_m
+\end{equation}
+	with $m$ the largest possible number and `unique' meaning that for every $i$ and $j$
+\begin{equation}
+	e_i=e_j\ \Rightarrow\ i=j
+\end{equation}
+	So each $e_i$ thus defined is a clause.
+	Since this definition calls for `as many unique expressions as possible',
+	no clause $e$ can be written as a conjunction.
+	(If an $a$ and $b$ would exist such that $e=a\cap b$, then we could have had one clause more. This contradicts the definition of clause.)
+
+\subsection{Normalization}
+	In order to transform a set of rules into clauses,
+	a normalization procedure is performed.
+	This procedure transforms a set of rules by meaning preserving transformations.
+	Consequently, the result has the appropriate form and still has the exact same meaning.
+	All normalization rules in this section have the form $a\rightarrow b$,
+	and they all satisfy $a=b$ (which means they are meaning preserving).
+\begin{enumerate}
+\item	Move all $\flip{}$ operators inward, using the following transformations:
+  \[\begin{array}{rcl}
+	\flip{(r\cup s)}&\rightarrow&\flip{r}\cup\flip{s}\\
+	\flip{(r\cap s)}&\rightarrow&\flip{r}\cap\flip{s}\\
+	\flip{(r\compose s)}&\rightarrow&\flip{s}\compose\flip{r}\\
+	\flip{(r\dagger s)}&\rightarrow&\flip{s}\dagger\flip{r}\\
+	\flip{\cmpl{r}}&\rightarrow&\cmpl{\flip{r}}
+  \end{array}\]
+\item	Move all $\compose$ operators inwards, as much as possible, using the following transformations:
+  \[\begin{array}{rcll}
+	q\compose(r\cup s)&\rightarrow&q\compose r\ \cup\ q\compose s\\
+	(q\cup r)\compose s&\rightarrow&q\compose s\ \cup\ r\compose s\\
+	q\compose(r\cap s)&\rightarrow&q\compose r\ \cap\ q\compose s&\text{if $q$ is a function}\\
+	(q\cap r)\compose s&\rightarrow&q\compose s\ \cap\ r\compose s&\text{if $\flip{s}$ is a function}
+  \end{array}\]
+\item	Distribute $\cup$ over $\cap$, using the following transformations:
+  \[\begin{array}{rcl}
+	q\cup(r\cap s)&\rightarrow&(q\cup r)\ \cap\ (q\cup s)\\
+	(q\cap r)\cup s&\rightarrow&(q\cup s)\ \cap\ (r\cup s)
+  \end{array}\]
+\item	Move all complement operators inward across $\cap$ and $\cup$, using the following transformations:
+  \[\begin{array}{rcl}
+	\cmpl{r\cup s}&\rightarrow&\cmpl{r}\ \cap\ \cmpl{s}\\
+	\cmpl{r\cap s}&\rightarrow&\cmpl{r}\ \cup\ \cmpl{s}
+  \end{array}\]
+\item	Remove identical clauses and terms:
+  \[\begin{array}{rcl}
+	r\cup r&\rightarrow&r\\
+	r\cap r&\rightarrow&r
+  \end{array}\]
+\item	Remove opposite clauses and terms:
+  \[\begin{array}{rcl}
+	r\cup \cmpl{r}&\rightarrow&\full\\
+	r\cap \cmpl{r}&\rightarrow&\cmpl{\full}
+  \end{array}\]
+\item	Absorb redundant terms:
+  \[\begin{array}{rcl}
+	r\cap(\cmpl{r}\cup s)&\rightarrow&r\cap s\\
+	r\cup(\cmpl{r}\cap s)&\rightarrow&r\cup s\\
+	r\cap(r\cup s)&\rightarrow&r\\
+	r\cup(r\cap s)&\rightarrow&r
+  \end{array}\]
+\item	Remove redundant clauses and terms:
+  \[\begin{array}{rcl}
+	r\cup \full&\rightarrow&\full\\
+	r\cup \cmpl{\full}&\rightarrow&r\\
+	r\cap \full&\rightarrow&r\\
+	r\cap \cmpl{\full}&\rightarrow&\cmpl{\full}
+  \end{array}\]
+\item	Remove redundant brackets:
+  \[\begin{array}{rcl}
+	q\cap(r\cap s)&\rightarrow&q\cap r\cap s\\
+	(q\cap r)\cap s&\rightarrow&q\cap r\cap s\\
+	q\cup(r\cup s)&\rightarrow&q\cup r\cup s\\
+	(q\cup r)\cup s&\rightarrow&q\cup r\cup s\\
+	q\compose(r\compose s)&\rightarrow&q\compose r\compose s\\
+	(q\compose r)\compose s&\rightarrow&q\compose r\compose s\\
+	q\dagger(r\dagger s)&\rightarrow&q\dagger r\dagger s\\
+	(q\dagger r)\dagger s&\rightarrow&q\dagger r\dagger s
+  \end{array}\]
+\end{enumerate}
+	The normalization procedure continues to apply these transformations until none of them are applicable.
+	If the normalization procedure reduces one or more clauses to $\cmpl{\full}$,
+	there is an inconsistency.
+	Note that this renders the entire set of rules inconsistent (i.e. equivalent to $\cmpl{\full}$).
+	Any clause that is reduced to $\full$ is a tautology and is consequently removed by the normalization procedure.
+
+	Without proof, we claim that:
+\begin{itemize}
+\item	The normalization procedure terminates.
+\item	The result is a conjunction of clauses.
+\item	Each clause can be written as a disjunction of (zero or more) positive and negative expressions:
+\begin{equation}
+	\cmpl{a_1}\cup\cmpl{a_2}\cup ... \cup\cmpl{a_k}\ \cup\ c_1\cup c_2\cup ... \cup c_l
+\label{eqn:clause}
+\end{equation}
+\end{itemize}
+	Expressions that are separated by disjunctions are called \define{disjuncts} or \define{terms}.
+	A term is called \define{negative} if it is an expression enclosed by a complement operator.
+	A \define{positive term} is any term that is not negative.
+	Each expression $a_i$ in equation \ref{eqn:clause} is called an \define{antecedent} of the clause and 
+	each expression $c_j$ is called a \define{consequent} of the clause.
+
+\subsection{Left- and right identity clauses}
+	The clauses that are produced by the normalization procedure can be distinguished further into three categories:
+\begin{enumerate}
+\item	A clause with only one negative term, which is equal to $\iden$ is called a \define{left identity clause}.
+\item	A clause with only one positive term, which is equal to $\iden$ is called a \define{right identity clause}.
+\item	All other clauses.
+\end{enumerate}
+
+	Let $\cmpl{a}\cup c$ be a clause and let $a$ be of the form
+\[f_1\compose f_2\compose ... \compose f_n\compose g_1\compose g_2\compose ... \compose g_m\]
+	in which every $g_i$ is a function and every $\flip{f_j}$ is a function too.
+	In that case, $\cmpl{a}\cup c$ is a left identity clause, which we write as:
+\[\cmpl{\iden}\cup \flip{(f_1\compose f_2\compose ... \compose f_n)}\compose c\compose\flip{(g_1\compose g_2\compose ... \compose g_m)}\]
+
+	Let $\cmpl{a}\cup c$ be a clause and let $c$ be of the form
+\[t\ =\ f_1\compose f_2\compose ... \compose f_n\compose g_1\compose g_2\compose ... \compose g_m\]
+	in which every $f_i$ is a function and every $\flip{g_j}$ is a function too.
+	In that case, $\cmpl{a}\cup c$ is a right identity clause, which we write as:
+\[\cmpl{\flip{(f_1\compose f_2\compose ... \compose f_n)}\compose c\compose\flip{(g_1\compose g_2\compose ... \compose g_m)}}\ \cup\ \iden\]
+
+	Note that $c$ in the left identity clause and $c$ in the right identity clause may consist of several terms.
+	Therefore one clause $\cmpl{a}\cup c$ may yield multiple (or no) right identity clauses and multiple (or no) left identity clauses.
+
+\subsection{Multiplicity derivation}
+	Multiplicity information is important for deriving data structures.
+	Some multiplicities are given (by the modeler)
+	and others can be derived from those already given.
+	This section shows how multiplicities can be derived from given ones.
+
+	For deriving multiplicities, we use the following laws.
+\begin{eqnarray}
+	\injective{r}&=&\univalent{\flip{r}}\label{eqn:flip univalent}\\
+	\surjective{r}&=&\total{\flip{r}}\label{eqn:flip total}\\
+	\univalent{r}\cap\univalent{s}&\subs&\univalent{r\compose s}\label{eqn:combi univalent}\\
+	\surjective{s}\cap \surjective{r}&\subs&\surjective{r\compose s}\label{eqn:combi surjective}\\
+	\total{s}\cap\total{r}&\subs&\total{r\compose s}\label{eqn:combi total}\\
+	\injective{s}\cap\injective{r}&\subs&\injective{r\compose s}\label{eqn:combi injective}\\
+	\univalent{r}\cup\univalent{s}&\subs&\univalent{r\cap s}\label{eqn:cap univalent}\\
+	\injective{r}\cup\injective{s}&\subs&\injective{r\cap s}\label{eqn:cap injective}\\
+	\total{r}\cap\total{s}&\subs&\total{r\cup s}\label{eqn:cup total}\\
+	\univalent{r\cup s}&\subs&\univalent{r}\cap\univalent{s}\label{eqn:cup univalent}\\
+	\injective{r\cup s}&\subs&\injective{r}\cap\injective{s}\\
+	\surjective{r\cup s}&\subs&\surjective{r}\cap\surjective{s}\label{eqn:cup surjective}\\
+	\total{r\cup s}&\subs&\total{r}\cap\total{s}
+\end{eqnarray}
+	
+
+
+\subsection{old stuff}
+
+	
+	After this example, let us analyze how to restore invariants in all possible cases.	
+	Suppose we have clause $r$, and an operation $t$.
+	We define: operation $t$ \define{respects invariance of $r$} means
+\begin{equation}
+r\ \subs\ t(r)
+\label{axi:invariance}
+\end{equation}	
+	This definition can be understood by saying that the effect of $t$,
+	which is $t(r)$,
+	must hold under the condition that $r$ holds.
+
+	In a database both people and computer programs
+	can take any action at an arbitrary moment.
+	We call that an event.
+	An \define{event} is an insertion or deletion of items (i.e. pairs) in a relation.
+	If that relation is used in a clause, that clause may be affected by the event.
+	Let $a(r)$ be the result of event $a$ on clause $r$.
+	That result might not be equal to $\full$, i.e. there may be violations $\cmpl{a(r)}$ of the clause.
+	So, in order to restore invariance, a reaction $t$ is required that satisfies $t(a(r))=\full$.
+	So if we propose a response $t$ to an event $a$, we must prove for all possible $r$:
+\begin{equation}
+	r\ \subs\ t(a(r))
+\label{axi:code fragment}
+\end{equation}
+
+	A \define{code fragment} is a computer program that consists of an action $t$
+	that is taken in response to an event $a$.
+	In order to derive code fragments, we first define the possible events.
+	An event occurs as a result of changing the contents of relations.
+	So the relevant ones are those relations $m$ that affect (i.e. are used in) $r$.
+	Let $\id{mors}(r)$ be the set of relations that affect $r$.
+	The set of possible events consists of insert- and delete events on relations $\id{mors}(r)$.
+	Some of these events, however, do not violate clause $e$.
+	If absence of violations can be proven for every $\Delta$,
+	there is no need to consider the event.
+	Therefore, rule $r$ is affected by the following set of possible events
+\[\id{events}(r)\ =\ \begin{array}[t]{@{}l}	
+       \{\id{insert}_m |\ m\in\id{mors}(r)\text{ and }\forall\Delta: r\ \not\subs\ \id{insert}_m(\Delta,r)\}\\
+               \cup\\
+       \{\id{delete}_m |\ m\in\id{mors}(r)\text{ and }\forall\Delta: r\ \not\subs\ \id{delete}_m(\Delta,r)\}\\
+\end{array}\]
+
+	Any reaction on one of these actions must restore invariance of $e$.
+	This allows us to specify all code fragments $f_e$ by the following equation:
+\begin{equation}
+    f_e\ \in\ \begin{array}[t]{l}
+               \{\langle e,\ \id{insert}_m,\ e{\tt :=}e\cup\cmpl{\id{insert}_m(\Delta,e)}\rangle
+               |m\in\id{mors}(e)\text{ and }\cmpl{\id{insert}_m(\Delta,e)}\not = \emptyset\}\\
+               \cup\\
+               \{\langle e,\ \id{delete}_m,\ e{\tt :=}e\cup\cmpl{\id{delete}_m(\Delta,e)}\rangle
+               |m\in\id{mors}(e)\text{ and }\cmpl{\id{delete}_m(\Delta,e)}\not = \emptyset\}\\
+              \end{array}
+\label{axi:code fragments}
+\end{equation}
+	Note that there are choices involved when inserting violations $\cmpl{a(e)}$ in $e$.
+	Any choice that satisfies equation \ref{axi:code fragments} is acceptable,
+	because the resulting code fragment will satisfy equation \ref{axi:code fragment}.
+	Therefore, the designer of the code fragments is free to make his or her own choices.
+
+	By way of illustration, let us elaborate one possible choice.
+	Suppose we restrict insertion of violations to just one of the terms of $e$.
+	Let $\id{terms}(e)$ be the set of terms in $e$,
+	then the possible reactions are
+\[\{t\code{:=}t\cup\cmpl{a(e)} | t\in\id{terms}(e)\}\]
+	If actions are restricted to individual terms as well,
+	we can enumerate possible fragments.
+	Suppose for example, that we have a clause $e$
+\[e\ =\ \cmpl{p}\cup\cmpl{q}\cup s\cup t\]
+	If compensation is restricted to terms, table \ref{tbl:code fragments} enumerates all possibilities.
+\begin{table}[ht]
+\begin{center}
+\(\begin{array}{|r|r@{~\tt :=~}l@{~}c@{~}c|}
+\hline
+\text{event $a$}&\multicolumn{4}{|l|}{\text{action $r$}}\\\hline
+\id{insert}_p(\Delta,r)&q&q&\cap&\cmpl{a(r)}\\
+\id{insert}_p(\Delta,r)&s&s&\cup&a(r)\\
+\id{insert}_p(\Delta,r)&t&t&\cup&a(r)\\
+\id{insert}_q(\Delta,r)&p&p&\cap&\cmpl{a(r)}\\
+\id{insert}_q(\Delta,r)&s&s&\cup&a(r)\\
+\id{insert}_q(\Delta,r)&t&t&\cup&a(r)\\
+\id{delete}_s(\Delta,r)&p&p&\cap&\cmpl{a(r)}\\
+\id{delete}_s(\Delta,r)&q&q&\cap&\cmpl{a(r)}\\
+\id{delete}_s(\Delta,r)&t&t&\cup&a(r)\\
+\id{delete}_t(\Delta,r)&p&p&\cap&\cmpl{a(r)}\\
+\id{delete}_t(\Delta,r)&q&q&\cap&\cmpl{a(r)}\\
+\id{delete}_t(\Delta,r)&s&s&\cup&a(r)\\
+\hline
+\end{array}\)
+\end{center}
+\caption{Code fragments for $r\ =\ \cmpl{p}\cup\cmpl{q}\cup s\cup t$}
+\label{tbl:code fragments}
+\end{table} 
+	
+	Each of the code fragments from table \ref{tbl:code fragments} will preserve invariance of $e$.
+	We shall prove this for one code fragment only (we have arbitrarily picked the third code fragment):
+	This gives
+\[\begin{array}{rl}
+&\cmpl{(p\cup\Delta)}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ (t\cup\cmpl{a(e)})\\
+=&~~~~~~~~\{a(e)\ =\ \cmpl{(p\cup\Delta)}\cup\cmpl{q}\cup s\cup t\}\\
+&\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ \cmpl{\cmpl{(p\cup\Delta)}\cup\cmpl{q}\cup s\cup t}\\
+=&~~~~~~~~\{\text{De Morgan (\ref{eqn:De Morgan})}\}\\
+&\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ (\cmpl{\cmpl{(p\cup\Delta)}}\cap\cmpl{\cmpl{q}}\cap\cmpl{s}\cap\cmpl{t})\\
+=&~~~~~~~~\{\text{remove double complement}\}\\
+&\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ ((p\cup\Delta)\cap q\cap\cmpl{s}\cap\cmpl{t})\\
+=&~~~~~~~~\{\text{Distribute $\cap$ over $\cup$}\}\\
+&(\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ (p\cup\Delta))\ \cap\\
+&(\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ q)\ \cap\\
+&(\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ \cmpl{s})\ \cap\\
+&(\cmpl{p\cup\Delta}\ \cup\ \cmpl{q}\ \cup\ s\ \cup\ t\ \cup\ \cmpl{t})\\
+=&~~~~~~~~\{\cmpl{p\cup\Delta}\ \cup\ p\cup\Delta=\full\text{~and~}\cmpl{q}\cup q=\full\text{~and~}s\ \cup\ \cmpl{s}=\full\text{~and~}t\ \cup\ \cmpl{t}=\full\}\\
+&\full\cap \full\cap \full\cap \full\\
+=\\
+&\full\\
+\end{array}\]
+
+
+	This derivation proves that the action of inserting an arbitrary $\Delta$ in $p$ can be reacted upon by
+	inserting the violations $\cmpl{a(e)}$ into $t$.
+	Although this particular table is specific for rules of the form $\cmpl{p}\cup\cmpl{q}\cup s\cup t$,
+	it can be generalized to clauses with any number (0 or more) negative terms
+	and 1 or more positive terms.
+	
+	A special situation occurs if a clause contains no negative terms,
+	as in:
+\[s\cup t\]
+	To keep this clause invariant means to keep $\full\subs s\cup t$ equal to $\full$ at all times.
+	In a database, a representation of $\full$ might change when
+	$\Delta$ contains new instances, i.e. instances that are not (yet) in $\full$.
+	Then, either $s$ or $t$ must be extended with $\Delta\compose \full\cup \full\compose\Delta$.
+	
+\begin{table}[ht]
+\begin{center}
+\(\begin{array}{|r@{~\tt :=~}l@{~}c@{~}c|r@{~\tt :=~}l@{~}c@{~}c|}
+\hline
+\multicolumn{4}{|l|}{\text{action $a$}}&\multicolumn{4}{|l|}{\text{reaction $r$}}\\\hline
+\ident{A}&\ident{A}&\cup&\Delta&s&s&\cup&\Delta\compose \full\\
+\ident{A}&\ident{A}&\cup&\Delta&t&t&\cup&\Delta\compose \full\\
+\ident{B}&\ident{B}&\cup&\Delta&s&s&\cup&\full\compose\Delta\\
+\ident{B}&\ident{B}&\cup&\Delta&t&t&\cup&\full\compose\Delta\\
+\hline
+\end{array}\)
+\end{center}
+\caption{Code fragments for $s\cup t$}
+\end{table}
+
+\begin{eqnarray}
+\id{Ins}_\Delta(\cmpl{x})&=&\id{Del}_\Delta(x)\\
+\id{Ins}_\Delta(x\cup y)&=&\choice{\id{Ins}_\Delta(x)}{\id{Ins}_\Delta(y)}\\
+\id{Ins}_\Delta(x\cap y)&=&\all{\id{Ins}_\Delta(x)}{\id{Ins}_\Delta(y)}\\
+\id{Ins}_\Delta(x\compose y)&=&\begin{array}[t]{@{}l}\text{let $n\in\id{target}(x)$ (arbitrarily chosen) in}\\ \all{\id{Ins}_{(\Delta\cap\cmpl{x\compose y})\compose\full\compose\one{n}}(x)}{\id{Ins}_{\one{n}\compose\full\compose(\Delta\cap\cmpl{x\compose y})}(y)}\end{array}\\
+\id{Ins}_\Delta(m)&=&\assign{m}{m\cup\Delta}\\
+\id{Del}_\Delta(\cmpl{x})&=&\choice{\choice{\id{Ins}_\Delta(x)}{\id{Del}_{(\Delta\compose\full)}(I_{[\id{source}(x)]})}}{\id{Del}_{(\full\compose\flip{\Delta})}(I_{[\id{target}(x)]})}\\
+\id{Del}_\Delta(x\cup y)&=&\all{\id{Del}_\Delta(x)}{\id{Del}_\Delta(y)}\\
+\id{Del}_\Delta(x\cap y)&=&\choice{\id{Del}_\Delta(x)}{\id{Del}_\Delta(y)}\\
+\id{Del}_\Delta(x\compose y)&=&\begin{array}[t]{@{}l}\id{Del}_{\Delta\compose\full\ \cap\ \full\compose\flip{y}}(x)\ \ |\\
+\id{Del}_{\flip{x}\compose\full\ \cap\ \full\compose\Delta}(y) \end{array}\\
+\id{Del}_\Delta(m)&=&\assign{m}{m\cap\cmpl{\Delta}}
+\end{eqnarray}
+
+
+\section{Services}
+	
+\end{document}

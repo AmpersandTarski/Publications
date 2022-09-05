@@ -1,0 +1,219 @@
+\documentclass[11pt,a4paper,fleqn,oneside]{article}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\parskip 10pt plus 2.5pt minus 4pt  % Extra vertical space between paragraphs.
+\parindent 0em                      % Width of paragraph indentation.
+\addtolength{\textwidth}{.5in}
+\newcommand{\tick}{\mbox{\(\surd\)}}
+\long\def\@savemarbox#1#2{\global\setbox#1\vtop{\hsize\marginparwidth 
+   \@parboxrestore\smal #2}}
+\def\bottomfraction{.5}
+\renewcommand{\textfraction}{0.2}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{tocdepth}{1}
+\makeatletter
+\def\@dummydocumentstyle{\@ifnextchar[{\@@dds}{\@@dds[]}}
+\def\@@dds[#1]#2{\relax}
+
+\def\getchapter#1{{\def\documentstyle{\@dummydocumentstyle}%
+		   \def\document{\relax}%
+		   \def\enddocument{\relax}\include{#1}}} 
+\makeatother
+\newlength{\Example}\setlength{\Example}{\textwidth}
+\addtolength{\Example}{-0.5in}
+\newlength{\Exinside}\setlength{\Exinside}{\Example}
+\addtolength{\Exinside}{-0.5in}
+\def\theor{\list{}{\leftmargin .5in}\item[]{\ }\\*[-\itemsep] \rm}
+\let\endtheor=\endlist
+\newenvironment{derivation}{\begin{tabbing}\advance\mathindent -1em\hspace*{1em}\=\hspace*{\mathindent}\=\hspace*{.6in}\=etc.\+\kill}{\end{tabbing}}
+\newtheorem{lemma}[equation]{Lemma}
+\newtheorem{define}[equation]{Definition}
+\newtheorem{examp}[equation]{Example}
+%% end taken from preamble
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\def\rbracket{\text{]}}
+\def\lbracket{\text{[}}
+%\newcommand{\powerset}[1]{{\cal P}\{#1\}}
+\newcommand{\one}[1]{{\cal\bf 1}_{#1}}
+\newcommand{\choice}[2]{#1\ |\ #2}
+\newcommand{\all}[2]{#1 + #2}
+\newcommand{\seq}[2]{#1 ; #2}
+\newcommand{\eca}[2]{{\tt ON}~#1~{\tt DO}~#2}
+\newcommand{\subst}[3]{#3_{\tt [#1 := #2]}}
+\newcommand{\assign}[2]{#1~{\tt :=}~#2}
+\newcommand{\code}[1]{\text{\tt\small #1}}
+\newcommand{\relAdd}{\dagger}
+\newcommand{\dom}[1]{\id{dom}_#1}
+\newcommand{\cod}[1]{\id{cod}_#1}
+\newcommand{\conts}[1]{\id{contents}_#1}
+\newcommand{\name}[1]{\id{name}_#1}
+\def\id#1{\text{\em #1\/}}
+\def\define#1{\label{dfn:#1}{\em #1}\index{#1}}
+\def\definem#1{\label{dfn:#1}{\em #1}\index{#1}\marginpar{\flushright\small\em #1}}
+\newcommand{\marg}[1]{\index{#1}\marginpar{\flushright\small\em #1}}
+\newcommand{\uni}{\text{\small UNI}}
+\newcommand{\tot}{\text{\small TOT}}
+\newcommand{\inj}{\text{\small INJ}}
+\newcommand{\sur}{\text{\small SUR}}
+\newcommand{\univalent}[1]{\id{univalent}(#1)}
+\newcommand{\total}[1]{\id{total}(#1)}
+\newcommand{\surjective}[1]{\id{surjective}(#1)}
+\newcommand{\injective}[1]{\id{injective}(#1)}
+\newcommand{\transitive}[1]{\id{transitive}(#1)}
+\newcommand{\symmetric}[1]{\id{symmetric}(#1)}
+\newcommand{\antisymmetric}[1]{\id{antisymmetric}(#1)}
+\newcommand{\reflexive}[1]{\id{reflexive}(#1)}
+\newcommand{\iden}{\mathbb{I}}
+\newcommand{\ident}[1]{\mathbb{I}_{#1}}
+\newcommand{\full}{\mathbb{V}}
+\newcommand{\fullt}[1]{\mathbb{V}_{[#1]}}
+\newcommand{\relAdd}{\dagger}
+\newcommand{\flip}[1]{{#1}^\smallsmile} %formerly:  {#1}^\backsim
+\newcommand{\kleeneplus}[1]{{#1}^+}
+\newcommand{\kleenestar}[1]{{#1}^*}
+\newcommand{\cmpl}[1]{\overline{#1}}
+\newcommand{\rel}{\times}
+\newcommand{\compose}{;}
+\newcommand{\subs}{\vdash}
+\newcommand{\fun}{\rightarrow}
+\newcommand{\N}{\mbox{\msb N}}
+\newcommand{\disjn}[1]{\id{disjoint}(#1)}
+\newcommand{\super}[2]{\{\id{cast}_{#1}(x)| x\in #2\}\ \subseteq\ #1}
+\newcommand{\fsignat}[3]{\id{#1}:\id{#2}\mbox{$\rightarrow$}\id{#3}}
+\newcommand{\signat}[3]{\mbox{${#1}_{[{#2}\times{#3}]}$}}
+\newcommand{\declare}[3]{\id{#1}:\id{#2}\mbox{$\times$}\id{#3}}
+
+\begin{document}
+	Johan, wat een leuk oefentool. Mag ik hem gebruiken in de cursus bedrijfsregels, maar dan met de volgende set van herschrijfregels? (Eventueel (maar alleen indien nodig) wil ik wel helpen met het ombouwen....)
+
+\subsection{Herschrijfregels}
+	Elk van de volgende regels is een equivalentie, maar wordt van links naar rechts in het herschrijven gebruikt.
+	Wanneer geen van de regels toepasbaar is, hebben we een disjunctieve normaalvorm gevonden.
+	Voor de vertaling van wiskunde naar ASCII hanteer ik de volgende symbolen:
+
+\begin{tabular}{|c|c|l|}
+\hline
+	ADL	&	relatie algebra&	betekenis\\
+\hline
+\verb#r\/s#	&	$r\cup s$	&	vereniging van $r$ en $s$\\
+\verb#r/\s#	&	$r\cap s$	&	doorsnede $r$ en $s$\\
+\verb#r|-s#	&	$r\subs s$	&	$r$ deelverzameling $s$\\
+\verb#r=s#	&	$r=s$		&	$r$ gelijk aan $s$\\
+\verb#r;s#	&	$r;s$		&	relatief product (ook wel: compositie) van $r$ en $s$\\
+\verb#r!s#	&	$r\dagger s$	&	relatieve som van $r$ en $s$\\
+\verb#r~#	&	$\flip{r}$	&	converse van $r$\\
+\verb#-r#	&	$\cmpl{r}$	&	complement van $r$\\
+\hline
+\end{tabular}
+
+\begin{enumerate}
+\item	Alle $\flip{}$ operatoren naar binnen verplaatsen:
+  \[\begin{array}{rcl}
+	\flip{(r\cup s)}&\rightarrow&\flip{r}\cup\flip{s}\\
+	\flip{(r\cap s)}&\rightarrow&\flip{r}\cap\flip{s}\\
+	\flip{(r\compose s)}&\rightarrow&\flip{s}\compose\flip{r}\\
+	\flip{(r\dagger s)}&\rightarrow&\flip{s}\dagger\flip{r}\\
+	\flip{\cmpl{r}}&\rightarrow&\cmpl{\flip{r}}
+  \end{array}\]
+\item	Alle $\compose$ operatoren zoveel als mogelijk naar binnen schuiven:
+  \[\begin{array}{rcll}
+	q\compose(r\cup s)&\rightarrow&q\compose r\ \cup\ q\compose s\\
+	(q\cup r)\compose s&\rightarrow&q\compose s\ \cup\ r\compose s\\
+	q\compose(r\cap s)&\rightarrow&q\compose r\ \cap\ q\compose s&\text{als $q$ is een functie}\\
+	(q\cap r)\compose s&\rightarrow&q\compose s\ \cap\ r\compose s&\text{als $\flip{s}$ is een functie}
+  \end{array}\]
+\item	Distribueer $\cup$ over $\cap$:
+  \[\begin{array}{rcl}
+	(q\cap r)\cup s&\rightarrow&(q\cup s)\ \cap\ (r\cup s)
+  \end{array}\]
+\item	Alle complement operator naar binnen over de $\cap$ en $\cup$ heen verplaatsen:
+  \[\begin{array}{rcl}
+	\cmpl{r\cup s}&\rightarrow&\cmpl{r}\ \cap\ \cmpl{s}\\
+	\cmpl{r\cap s}&\rightarrow&\cmpl{r}\ \cup\ \cmpl{s}
+  \end{array}\]
+\item	Identieke subexpressies verwijderen:
+  \[\begin{array}{rcl}
+	r\cup r&\rightarrow&r\\
+	r\cap r&\rightarrow&r
+  \end{array}\]
+\item	Tegengestelde subexpressies verwijderen:
+  \[\begin{array}{rcl}
+	r\cup \cmpl{r}&\rightarrow&V\\
+	r\cap \cmpl{r}&\rightarrow&\cmpl{V}
+  \end{array}\]
+\item	Absorberen:
+  \[\begin{array}{rcl}
+	r\cap(\cmpl{r}\cup s)&\rightarrow&r\cap s\\
+	r\cup(\cmpl{r}\cap s)&\rightarrow&r\cup s\\
+	r\cap(r\cup s)&\rightarrow&r\\
+	r\cup(r\cap s)&\rightarrow&r
+  \end{array}\]
+\item	Redundante subexpressies verwijderen:
+  \[\begin{array}{rcl}
+	r\cup V&\rightarrow&V\\
+	r\cup \cmpl{V}&\rightarrow&r\\
+	r\cap V&\rightarrow&r\\
+	r\cap \cmpl{V}&\rightarrow&\cmpl{V}
+  \end{array}\]
+\item	Redundante haakjes verwijderen:
+  \[\begin{array}{rcl}
+	q\cap(r\cap s)&\rightarrow&q\cap r\cap s\\
+	(q\cap r)\cap s&\rightarrow&q\cap r\cap s\\
+	q\cup(r\cup s)&\rightarrow&q\cup r\cup s\\
+	(q\cup r)\cup s&\rightarrow&q\cup r\cup s\\
+	q\compose(r\compose s)&\rightarrow&q\compose r\compose s\\
+	(q\compose r)\compose s&\rightarrow&q\compose r\compose s\\
+	q\dagger(r\dagger s)&\rightarrow&q\dagger r\dagger s\\
+	(q\dagger r)\dagger s&\rightarrow&q\dagger r\dagger s
+  \end{array}\]
+\end{enumerate}
+
+\section{Syntax}
+	De vereenvoudigde (dwz prioriteitsloze, haakjesloze en commentaarloze) syntax luidt:
+\begin{verbatim}
+<regel> ::= <relatie>.
+<regel> ::= <relatie> \/ <relatie>.
+<regel> ::= <relatie> /\ <relatie>.
+<regel> ::= <relatie> ! <relatie>.
+<regel> ::= <relatie> ; <relatie>.
+<regel> ::= <relatie> * .
+<regel> ::= <relatie> + .
+<regel> ::= <relatie> - .
+<regel> ::= <relatie> ~ .
+
+<relatie> ::= I .
+<relatie> ::= V .
+<relatie> ::= <lowercaseidentifier> .
+\end{verbatim}
+	De relatie \verb#I# is de identiteitsrelatie.
+	De relatie \verb#V# is de volledige relatie.
+	De prioriteitsvolgorde is als volgt:
+	
+\begin{tabular}{rcl}
+	\verb#\/#& 0 (bindt het zwakst)\\
+	\verb#/\#& 1\\
+	\verb#!#& 2\\
+	\verb#;#& 3\\
+	\verb#*#& 4\\
+	\verb#+#& 4\\
+	\verb#-#& 4\\
+	\verb#~#& 4\\
+\end{tabular}
+
+\section{Semantiek}
+	De notatie \(\vDash a\ r\ b\) betekent dat $a\ r\ b$ waar is.
+
+\[\begin{array}{l@{\ \text{iff}\ }l}
+\vDash a\ (\verb#r;s#)\ b&\text{there exists $c$ such that}\ \vDash a\ r\ c\ \wedge\ \vDash c\ s\ b\\
+\vDash a\ (\verb#r!s#)\ b&\text{for all $c$ such that}\ \vDash a\ r\ c\ \vee\ \vDash c\ s\ b\\
+\vDash a\ (\verb#r/\s#)\ b&\vDash a\ \verb#r#\ b\ \wedge\ \vDash a\ \verb#s#\ b\\
+\vDash a\ (\verb#r\/s#)\ b&\vDash a\ \verb#r#\ b\ \vee\ \vDash a\ \verb#s#\ b\\
+\vDash a\ (\verb#r~#)\ b&\vDash b\ \verb#r#\ a\\
+\vDash a\ (\verb#r-#)\ b&\not\vDash b\ \verb#r#\ a\\
+\vDash a\ \verb#I#\ b&\vDash a=b\\
+\vDash a\ \verb#V#\ b\\
+\end{array}\]
+
+\end{document}
