@@ -29,16 +29,14 @@
 	The Ampersand project has provided the theory and tools to generate semantic information systems from an algebraic specification.
 	However, information systems in practice may change repeatedly after their maiden deployment.
 	Changes that affect the data model typically result in a data migration.
-	In such cases, simply regenerating the system is not enough.
+	In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
+	Migration aims at preserving the data as much as possible.
+	Typically, migration involves transferring the old data to the new system while preserving the semantics as much as possible.
 
-	In this contribution we develop a theory for data migration that aims at automating the migration,
+	In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
 	to enable more frequent migrations.
-	A theory is needed to do this reliably, without mistakes.
-	This paper proposes such a theory.
-
-	The ultimate target is to generate the entire migration from two specifications: the as-is specification and the to-be specification.
-	The theory for doing that is the topic of this paper.
-	The software generator that embodies this theory is subject of future research.
+	The ultimate target is to generate a migration from two specifications: the as-is specification and the to-be specification.
+	A software generator that embodies this theory is subject of future research.
 \end{abstract}
 
 \begin{keyword}
