@@ -178,7 +178,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Information systems process information from many different users,
 	all with their own tasks and responsibilities,
 	and all working from different locations and on different moments.
-	This collective use serves a purpose which we loosely call "the business".
+	This collective use serves a purpose which we loosely call ``the business''.
 	As a consequence, the data in an information system changes continually.
 	To preserve meaning, users are trying to maintain semantic constraints on the data.
 	So, let us first define the constituent notions role and constraint before defining information systems proper.
@@ -194,7 +194,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Each constraint $u$ also has a function $\id{viol}_u:\powerset{\atoms\times\rels\times\atoms}\ \rightarrow\ \powerset{\atoms\times\atoms}$.
 	We call the set $\viol{\triples}{u}$ the \define{violation set} of constraint $u$ in population $\triples$.
 	We call every element $\pair{a}{b}\in\viol{\triples}{u}$ a \define{violation} of constraint $u$ in $\triples$.
-	We say that a constraint \define{is satisfied} if its violation set is empty (i.e. if $\viol{\triples}{u}$ is the empty set).
+	We say that a constraint \define{is satisfied} if its violation set is empty.
 	The set of constraints is called $\rules$.
 
 	Note that the signature of $u$ does not depend on the population, whereas the violation set of $u$ may be different for every $\triples$.
@@ -207,7 +207,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	and let $\dataset$ be a dataset.
 \begin{definition}[information system]
 	\label{def:information system}
-	\item An information system is a tuple $\la\roles,\rules,\id{maintain},\dataset\ra$\\
+	\item An information system $\infsys$ is a tuple $\la\roles,\rules,\maintain,\dataset\ra$\\
 	with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
 	in which $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{\triples}{u}$ empty.
 \end{definition}
@@ -215,6 +215,73 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
 	Which means that all constraints are being kept satisfied in the collective effort of users, even if the data changes.
 	In another section we will give some options on how users can keep rules satisfied.
+
+\subsection{Migration}
+	To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
+	and add rules to describe the migration.
+	$\infsys$ is the existing system, which contains data to be preserved.
+	$\infsys'$ is the new system, which contains no or hardly any data.
+	It does, however, contain the concepts, relations, rules and roles of the new system.
+	
+	We use two datasets: $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ and $\dataset'=\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$.
+	Before doing so, let us first define the disjoint union of two information systems.
+\begin{definition}[disjoint union of datasets]
+	\begin{eqnarray}
+		\dataset\sqcup\dataset'&=&\la\atoms\sqcup\atoms',\ \concepts\sqcup\concepts',\ \inst\sqcup\inst',\ \isa\sqcup\isa',\ \rels\sqcup\rels',\ \triples\sqcup\triples'\ra\\
+		\atoms\sqcup\atoms'&=&\{(a,0)|\ a\in\atoms\}\ \cup\ \{(a',1)|\ a'\in\atoms'\}\\
+		\concepts\sqcup\concepts'&=&\{(c,0)|\ c\in\concepts\}\ \cup\ \{(c',1)|\ c'\in\concepts'\}\\
+		\inst\sqcup\inst'&=&\begin{array}[t]{@{}l}
+							  \{((a,0),(A,0))|\ (a,A)\in\inst\}\ \cup\\
+			                  \{((a',1),(A',1))|\ (a',A')\in\inst'\}
+							\end{array}\\
+		\isa\sqcup\isa'&=&\begin{array}[t]{@{}l}
+							  \{((A,0),(B,0))|\ A\isa B\}\ \cup\\
+			                  \{((A',1),(B',1))|\ A'\isa' B'\}
+							\end{array}\\
+		\rels\sqcup\rels'&=&\{(r,0)|\ r\in\rels\}\ \cup\ \{(r',1)|\ r'\in\rels'\}\\
+		\triples\sqcup\triples'&=&\begin{array}[t]{@{}l}
+			                        \{\triple{(a,0)}{(r,0)}{(b,0)}|\ \triple{a}{r}{b}\in\triples\}\ \cup\\
+			                        \{\triple{(a',1)}{(r',1)}{(b',1)}|\ \triple{a'}{r'}{b'}\in\triples'\}
+								   \end{array}
+	\end{eqnarray}
+\end{definition}
+\begin{definition}[$\doteq$]
+	\begin{eqnarray}
+		\declare{nm}{A}{B}\doteq\declare{nm'}{A'}{B'}&\Leftrightarrow&\id{nm}=\id{nm'}\wedge A=A'\wedge B=B'
+	\end{eqnarray}
+\end{definition}
+\begin{definition}[migration dataset]
+	\begin{eqnarray}
+		&&\{ {\tt ENFORCE\ }r'{\tt := }r| r\in\rels, r'\in\rels', r\doteq r'\}\\
+		&\cup&\begin{array}[t]{@{}l}
+				\{ {\tt ENFORCE\ }\declare{nm'}{A'}{B'}{\tt := }\declare{nm}{A}{C};\ident{B}\\
+				|\ \begin{array}[t]{@{}l}
+					\declare{nm}{A}{C}\in\rels\wedge B\isa C\ \wedge\\
+					\declare{nm'}{A'}{B'}\in\rels'\wedge B'\not\isa C\ \wedge\\
+					\declare{nm}{A}{B}\doteq\declare{nm'}{A'}{B'}\}
+				   \end{array}
+			  \end{array}\\
+		&\cup&\begin{array}[t]{@{}l}
+				\{ {\tt ENFORCE\ }\declare{nm'}{A'}{C'}{\tt := }\ident{A};\declare{nm}{B}{C}\\
+				|\ \begin{array}[t]{@{}l}
+					\declare{nm}{B}{C}\in\rels\wedge A\isa B\ \wedge\\
+					\declare{nm'}{A'}{C'}\in\rels'\wedge A'\not\isa B\ \wedge\\
+					\declare{nm}{A}{C}\doteq\declare{nm'}{A'}{C'}\}
+				   \end{array}
+			  \end{array}
+	\end{eqnarray}
+\end{definition}
+\begin{definition}[disjoint union of information systems]
+	\begin{eqnarray}
+		\infsys\sqcup\infsys'&=&\la\roles\sqcup\roles',\rules\sqcup\rules',\maintain\sqcup\maintain',\dataset\sqcup\dataset'\ra\\
+		\roles\sqcup\roles'&=&\{(r,0)|\ r\in\roles\}\ \cup\ \{(r',1)|\ r'\in\roles'\}\\
+		\rules\sqcup\rules'&=&\{(r,0)|\ r\in\rules\}\ \cup\ \{(r',1)|\ r'\in\rules'\}\\
+		\maintain\sqcup\maintain'&=&\begin{array}[t]{@{}l}
+							  \{((o,0),(u,0))|\ (o,u)\in\maintain\}\ \cup\\
+			                  \{((o',1),(u',1))|\ (o',u')\in\maintain'\}
+							\end{array}
+	\end{eqnarray}
+\end{definition}
 
 \subsection{Changes}
 % The purpose of this section is to explain why a dataset is structured the way it is.
