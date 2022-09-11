@@ -259,22 +259,15 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \end{definition}
 \begin{definition}[migration dataset]
 	\begin{eqnarray}
-		&&\{ {\tt ENFORCE\ }r'{\tt := }r| r\in\rels, r'\in\rels', r\doteq r'\}\\
-		&\cup&\begin{array}[t]{@{}l}
-				\{ {\tt ENFORCE\ }\declare{nm'}{A'}{B'}{\tt := }\declare{nm}{A}{C};\ident{B}\\
+		&&\begin{array}[t]{@{}l}
+			\{ {\tt ENFORCE\ }\declare{nm'}{A'}{B'}{\tt := }\ident{A'};\declare{nm}{A}{B};\ident{B'}\\
 				|\ \begin{array}[t]{@{}l}
-					\declare{nm}{A}{C}\in\rels\wedge B\isa C\ \wedge\\
-					\declare{nm'}{A'}{B'}\in\rels'\wedge B'\not\isa C\ \wedge\\
-					\declare{nm}{A}{B}\doteq\declare{nm'}{A'}{B'}\}
+					\declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
+					\{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
 				   \end{array}
 			  \end{array}\\
-		&\cup&\begin{array}[t]{@{}l}
-				\{ {\tt ENFORCE\ }\declare{nm'}{A'}{C'}{\tt := }\ident{A};\declare{nm}{B}{C}\\
-				|\ \begin{array}[t]{@{}l}
-					\declare{nm}{B}{C}\in\rels\wedge A\isa B\ \wedge\\
-					\declare{nm'}{A'}{C'}\in\rels'\wedge A'\not\isa B\ \wedge\\
-					\declare{nm}{A}{C}\doteq\declare{nm'}{A'}{C'}\}
-				   \end{array}
+			  &\cup&\begin{array}[t]{@{}l}
+				\{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)|\ C\in\concepts,C'\in\concepts',C=C'\}\\
 			  \end{array}
 	\end{eqnarray}
 \end{definition}
