@@ -222,7 +222,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	$\infsys$ is the existing system, which contains data to be preserved.
 	$\infsys'$ is the new system, which contains no or hardly any data.
 	It does, however, contain the concepts, relations, rules and roles of the new system.
-	
+\begin{figure}[bht]
+	\begin{center}
+	  \includegraphics[scale=.45]{Migration.drawio.png}
+	\end{center}
+\caption{migration}
+\label{fig:event flow}
+\end{figure}
+		
 	We use two datasets: $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ and $\dataset'=\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$.
 	Before doing so, let us first define the disjoint union of two information systems.
 \begin{definition}[disjoint union of datasets]
