@@ -15,7 +15,7 @@
 \begin{document}
 \include{preambleMigrations}
 
-\title{A Theory for Migration of Information Systems}
+\title{A Theory for Data Migration of Information Systems}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
 \ead{stef.joosten@ou.nl}
 \author[umn]{Sebastiaan Joosten\fnref{fn2}}
@@ -30,7 +30,7 @@
 	However, information systems in practice may change repeatedly after their maiden deployment.
 	Changes that affect the data model typically result in a data migration.
 	In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
-	Migration aims at preserving the data as much as possible.
+	Data migration aims at preserving the data as much as possible.
 	Typically, migration involves transferring the old data to the new system while preserving the semantics as much as possible.
 
 	In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
@@ -46,32 +46,67 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-	The challenge of migration is to preserve meaning rather than just copy the data from one place to another.
+	Data migration occurs when one stateful information system, $\infsys$, is replaced by another, $\infsys'$,
+	while the data from $\infsys$ must be preserved.
+	Agile teams today need to automate their data migrations, 
+	as they do for all other activities in their software process.
+	By continually automating their own work,
+	teams keep improving their DevOps metrics such as deployment frequency, reliability of deployments, and change failure rate~\cite{DevOps2021}.
+
+	Data migrations can produce headaches, however.
+	The challenge of data migration is to preserve the meaning of data
+	rather than just copy the data from one place to another.
+	Accumulated data pollution can pose extra complications.
+	This makes data migrations far from trivial and a potential impediment for rapid and reliable deployment.
+
+	The benefits of automating data migrations work in two directions.
+	The automation itself saves effort and errors,
+	contributing to more frequent and smaller releases.
+	Smaller and faster releases also mean smaller migrations
+	and therefore a smaller difference between $\infsys$ and $\infsys'$.
+	The smaller that difference, the simpler the migration and the more of it can be automated.
+
+	A formal understanding of data migration will help to automate data migrations correctly and reliably.
+	That is why this paper proposes a theory of migration that is based on the
+	following premises:
+\begin{itemize}
+	\item the as-is data set may be polluted;
+	\item the data migration may require human interaction, which may take time;
+	\item the part of the data that does not change should be migrated automatically;
+	\item the meaning of data must be preserved;
+	\item the business must continu during the migration without interruption;
+	\item the part of the migration that can be automated is usually not sufficient;
+	      it takes additional human creativity to complete the migration specification.
+\end{itemize}
+
+	There have been other attempts to formalize data migration~\cite{Thalheim2013}.
+	(At this point: Elaborate on earlier work)
 
 \section{Migration steps}
 	A smooth migration from an old system to a new system would go as follows:
 	Launch the new system in parallel to the old, copy data from the old to the new system, and have everyone use the new system.
-	We identify the following possible issues in this approach:
-
-	\begin{enumerate}
-	\item Data required in the new system is missing in the old system.
+	However, numerous issues might impede that plan.
+	The following examples illustrate the practical issues that may occur:
+\begin{enumerate}
+\item Data required in the new system is missing in the old system.
 	There may be no way in the old system to enter that data.
 	An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
 	The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
-	\item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
+\item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
 	An example is if the old system only allows approvals to be entered as the current user, and the CEO insists that her administrative staff enters his approvals into the system for her.
 	This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
-	\item Data in the old system does not satisfy invariants of the new system.
+\item Data in the old system does not satisfy invariants of the new system.
 	There may be no way in the old system of making the data satisfy those invariants. We can use the same example as in the previous bullet point, but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
-	\item A way of entering data into the old system is missing in the new system.
+\item A way of entering data into the old system is missing in the new system.
 	People or automated processes might rely on these ways of entering data.
 	An example could be that when employees turned their computers on or off, an ad-hoc script would automatically clock them in- and out to determine the number of hours they worked.
 	A handful of employees still relies on this.
-	\item Data present in the old system cannot be stored in the new system.
+\item Data present in the old system cannot be stored in the new system.
 	An example could be that references to physical locations where original receipts are kept are stored in the old system, but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
 	Until the original receipts are scanned, the old data should be kept.
-	\end{enumerate}
-	
+\end{enumerate}
+
+(@Bas, het volgende zit al in de oplossingen sfeer. Willen we dat hier al doen?)
 	To mitigate these issues, we:
 	
 	\begin{enumerate}
@@ -84,17 +119,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Terminology}
 \label{sct:Terminology}
-	Migration is sometimes called data migration, because most people understand that data from "the old system" is fed into "the new system".
-	The idea is that the new system lets the business continu without interruption, after its software has been upgraded.
-	Since data is so central to migration, we start by introducing the notion of dataset.
-	To abstract away from a particular database implementation,
-	we represent data elements as triples.
-	This makes our theory valid for any kind of database that triples can represent,
-	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
-
-	Migration is not just about porting data.
-	It is about preserving the meaning of that data.
-	For that purpose, section~\ref{sct:Information Systems} introduces the notion of information system.
+	To migrate data from one information system to another,
+	we must define ``information system''.
+	In that definition we will single out the dataset as the focal point of a data migration.
+	For this reason, we define datasets first.
 
 \subsection{Datasets}
 	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
@@ -109,12 +137,13 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	The set of atoms is called $\atoms$.
 	
 
-	Concepts are names we use in a conceptual model during the design of a dataset.
-	They are also used to assign signatures to relations, to enable type checking on the dataset.
+	Concepts are names we use during the design of a dataset
+	to name a group of atoms of the same type,
+	to assign signatures to relations, and thus
+	to enable type checking of the dataset.
 	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
 	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
-	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
 	The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
 	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
@@ -122,20 +151,23 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	The set of concepts is called $\concepts$.
 	
 	Triples are used to represent data.
+	This makes our theory valid for any kind of database that triples can represent,
+	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
 	Each triple relates two atoms to a relation.
 	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
 	has \atom{074238991} as a telephone number.
 	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
-	This ``meaning from practice'' has no consequences in the formal world.
+	As a consequence, this ``meaning from practice'' may have no consequences in the formal world.
 	The set of triples is called $\triples$.
 
 	Relations in datasets are used to store data.
 	In this paper relations are represented by variables $r$, $s$, and $d$.
-
 	Every relation $r$ contains a set of pairs, which we call the population of $r$:
 \begin{equation}
 	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
+	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
+
 	Every relation has a name, a source concept, and a target concept.
 	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
 	% To disassemble a relation in its name, source and target, there exist three functions:
@@ -150,14 +182,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	% \(\tgt{\declare{nm}{A}{B}}=B\).
 
 	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
-	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concept symbols $A$ and $B$.
+	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
 	It contains all pairs that can be made of elements of $A$ and $B$:
 \[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
 	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
 	The set of relations is called $\rels$.
 	
 	We can now define the notion of dataset.
-	Let	$\concepts$ be a set of concept symbols,
+	Let	$\concepts$ be a set of concepts,
 	let $\isa$ be a partial order on $\concepts$,
 	let $\rels$ be a set of relations,
 	let $\atoms$ be a set of atoms,
@@ -175,12 +207,18 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
-	Information systems process information from many different users,
-	all with their own tasks and responsibilities,
-	and all working from different locations and on different moments.
+	The purpose of an information system is to make data meaningful to users.
+	Data migration is all about preserving that meaning.
+	So this section introduces the notion of information system
+	as a system that consist of a dataset and a set constraints that users must keep satisfied.
+	These constraints reflect the meaning that is shared by all users.
+
+	Users have their own tasks and responsibilities
+	and may work from different locations and on different moments.
 	This collective use serves a purpose which we loosely call ``the business''.
 	As a consequence, the data in an information system changes continually.
-	To preserve meaning, users are trying to maintain semantic constraints on the data.
+	To preserve meaning, users are trying to maintain semantic constraints on the data,
+	amidst of all changes that are going on around them.
 	So, let us first define the constituent notions role and constraint before defining information systems proper.
 
 	A \define{role} is a name that identifies a group of users.
@@ -216,7 +254,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Which means that all constraints are being kept satisfied in the collective effort of users, even if the data changes.
 	In another section we will give some options on how users can keep rules satisfied.
 
-\subsection{Migration}
+\subsection{Data migration}
 	To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
 	and add rules to describe the migration.
 	$\infsys$ is the existing system, which contains data to be preserved.
@@ -226,7 +264,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	\begin{center}
 	  \includegraphics[scale=.45]{Migration.drawio.png}
 	\end{center}
-\caption{migration}
+\caption{Data migration}
 \label{fig:event flow}
 \end{figure}
 		
