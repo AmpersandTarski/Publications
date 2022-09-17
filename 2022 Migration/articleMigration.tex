@@ -199,9 +199,9 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	\item A dataset is a tuple $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ with
 	\begin{eqnarray}
 		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
-		\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
-		\forall r\in\rels&:&\src{r}\in\concepts\ \wedge\ \tgt{r}\in\concepts\\
-		\forall\triple{a}{r}{b}\in\triples&:&r\in\rels\ \wedge\ a\ \inst\ \src{r}\ \wedge\ b\ \inst\ \tgt{r}
+		%\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
+		\forall \declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
+		\forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\\ a\ (\inst \compose \kleenestar{\flip{\isa}})\ A\ \wedge\\ b\ (\inst \compose \kleenestar{\flip{\isa}})\ B\end{array}
 	\end{eqnarray}
 \end{definition}
 
@@ -262,7 +262,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	It does, however, contain the concepts, relations, rules and roles of the new system.
 \begin{figure}[bht]
 	\begin{center}
-	  \includegraphics[scale=.45]{Migration.drawio.png}
+	  \includegraphics[scale=.45]{Migration.png}
 	\end{center}
 \caption{Data migration}
 \label{fig:event flow}
@@ -272,34 +272,20 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Before doing so, let us first define the disjoint union of two information systems.
 \begin{definition}[disjoint union of datasets]
 	\begin{eqnarray}
-		\dataset\sqcup\dataset'&=&\la\atoms\sqcup\atoms',\ \concepts\sqcup\concepts',\ \inst\sqcup\inst',\ \isa\sqcup\isa',\ \rels\sqcup\rels',\ \triples\sqcup\triples'\ra\\
-		\atoms\sqcup\atoms'&=&\{(a,0)|\ a\in\atoms\}\ \cup\ \{(a',1)|\ a'\in\atoms'\}\\
-		\concepts\sqcup\concepts'&=&\{(c,0)|\ c\in\concepts\}\ \cup\ \{(c',1)|\ c'\in\concepts'\}\\
-		\inst\sqcup\inst'&=&\begin{array}[t]{@{}l}
-							  \{((a,0),(A,0))|\ (a,A)\in\inst\}\ \cup\\
-			                  \{((a',1),(A',1))|\ (a',A')\in\inst'\}
-							\end{array}\\
-		\isa\sqcup\isa'&=&\begin{array}[t]{@{}l}
-							  \{((A,0),(B,0))|\ A\isa B\}\ \cup\\
-			                  \{((A',1),(B',1))|\ A'\isa' B'\}
-							\end{array}\\
-		\rels\sqcup\rels'&=&\{(r,0)|\ r\in\rels\}\ \cup\ \{(r',1)|\ r'\in\rels'\}\\
-		\triples\sqcup\triples'&=&\begin{array}[t]{@{}l}
-			                        \{\triple{(a,0)}{(r,0)}{(b,0)}|\ \triple{a}{r}{b}\in\triples\}\ \cup\\
-			                        \{\triple{(a',1)}{(r',1)}{(b',1)}|\ \triple{a'}{r'}{b'}\in\triples'\}
-								   \end{array}
+		\dataset\sqcup\dataset'&=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \triples\uplus^5\triples'\ra\\
+		X\uplus Y&=&\{(x,0)|\ x\in X\}\ \cup\ \{(y,1)|\ y\in Y\}\\
+		X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))|\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))|\ (y_1,y_2)\in Y\}\end{array}\\
+		X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
+		X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}
 	\end{eqnarray}
 \end{definition}
-\begin{definition}[$\doteq$]
-	\begin{eqnarray}
-		\declare{nm}{A}{B}\doteq\declare{nm'}{A'}{B'}&\Leftrightarrow&\id{nm}=\id{nm'}\wedge A=A'\wedge B=B'
-	\end{eqnarray}
-\end{definition}
+
+
 \begin{definition}[migration dataset]
 	\begin{eqnarray}
 		&&\begin{array}[t]{@{}l}
-			\{ {\tt ENFORCE\ }\declare{nm'}{A'}{B'}{\tt := }\ident{A'};\declare{nm}{A}{B};\ident{B'}\\
-				|\ \begin{array}[t]{@{}l}
+			\{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt := }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
+				\mid\ \begin{array}[t]{@{}l}
 					\declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
 					\{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
 				   \end{array}
@@ -311,13 +297,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \end{definition}
 \begin{definition}[disjoint union of information systems]
 	\begin{eqnarray}
-		\infsys\sqcup\infsys'&=&\la\roles\sqcup\roles',\rules\sqcup\rules',\maintain\sqcup\maintain',\dataset\sqcup\dataset'\ra\\
-		\roles\sqcup\roles'&=&\{(r,0)|\ r\in\roles\}\ \cup\ \{(r',1)|\ r'\in\roles'\}\\
-		\rules\sqcup\rules'&=&\{(r,0)|\ r\in\rules\}\ \cup\ \{(r',1)|\ r'\in\rules'\}\\
-		\maintain\sqcup\maintain'&=&\begin{array}[t]{@{}l}
-							  \{((o,0),(u,0))|\ (o,u)\in\maintain\}\ \cup\\
-			                  \{((o',1),(u',1))|\ (o',u')\in\maintain'\}
-							\end{array}
+		\infsys\sqcup\infsys'&=&\la\roles\uplus\roles',\rules\uplus^?\rules',\maintain\uplus^2\maintain',\dataset\sqcup\dataset'\ra
 	\end{eqnarray}
 \end{definition}
 
