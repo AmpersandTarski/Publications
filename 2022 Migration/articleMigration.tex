@@ -257,6 +257,76 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	Which means that all constraints are being kept satisfied in the collective effort of users, even if the data changes.
 	In another section we will give some options on how users can keep rules satisfied.
 
+\subsection{Example}
+	Having defined an information system in mathematical terms, let us give an example.
+	For this purpose we use a subset of the language Ampersand~\cite{Joosten-JLAMP2018}
+	because it makes the examples more appealing to read.
+	Let us first define a dataset of eight triples and three relations.
+\begin{verbatim}
+RELATION takes[Student*Course] =
+[ ("Peter", "Management")
+; ("Susan", "Business IT")
+; ("John", "Business IT")
+]
+\end{verbatim}
+	This code snippet introduces a relation with name \verb#takes#,
+	source concept \verb#Student#, and
+	target concept \verb#Course#.
+	It also introduces three triples:
+\[\begin{array}{l}
+	\triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
+	\triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+	\triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+\end{array}\]
+	The informal meaning of this relation is that it states which students are taking which courses.
+	So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
+	As stated before, this informal meaning is interesting only for the sake of illustration.
+
+	The example system also has a second relation that states which modules are part of which course:
+
+\begin{verbatim}
+RELATION isPartOf[Module*Course] =
+[ ("Finance", "Management")
+; ("Business Rules", "Business IT")
+; ("Business Analytics", "Business IT")
+; ("IT-Governance", "Business IT")
+; ("IT-Governance", "Management")
+]
+\end{verbatim}
+	The third and last relation states which students are enrolled for which module.
+	We leave it empty for now.
+\begin{verbatim}
+RELATION isEnrolledFor [Student*Module]
+\end{verbatim}
+	Summarizing, here we have a set of atoms, which contains \verb-"Peter"-, \verb-"Finance"-, etc.,
+	a set of concepts $\{$\verb-Student-, \verb-Module-, \verb-Course-$\}$,
+	an instance relation that states which atoms belong to which concept,
+	a specialization relation, which is empty,
+	a set of three relations, and
+	a set of eight triples.
+	The example in Ampersand defines precisely that dataset.
+	
+	Now let us define an information system.
+	To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
+	We define a constraint that states that a student can enroll for any module that is part of a course that student takes.
+	In logic, this constraint is written as:
+\[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
+s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
+\end{array}\]
+	In Ampersand, which is a syntactically sugared form of relation algebra,
+	we give that constraint a name and state a role to maintains it:
+\begin{verbatim}
+RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+ROLE Administrator MAINTAINS EnrollRule
+\end{verbatim}
+	The signature of this rule is $\pair{\text{\tt Student}}{\text{\tt Module}}$, which is derived by the Ampersand compiler.
+	Ampersand also derives the violation set as:
+\[\begin{array}{l}
+	\viol{\triples}{\text{\tt EnrollRule}}\\
+	\hspace{1cm}=\{\pair{s}{m}|s\ \text{\tt isEnrolledFor}\ m\ \wedge\not\exists c: s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
+\end{array}\]
+	So, next to a dataset we have one rule, one role, a relation $\maintain$ that contains one pair.
+	So we have now defined an example information system.
 \subsection{Data migration}
 	To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
 	and add rules to describe the migration.
