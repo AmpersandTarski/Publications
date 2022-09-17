@@ -325,8 +325,11 @@ ROLE Administrator MAINTAINS EnrollRule
 	\viol{\triples}{\text{\tt EnrollRule}}\\
 	\hspace{1cm}=\{\pair{s}{m}|s\ \text{\tt isEnrolledFor}\ m\ \wedge\not\exists c: s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
 \end{array}\]
-	So, next to a dataset we have one rule, one role, a relation $\maintain$ that contains one pair.
-	So we have now defined an example information system.
+	Notice that the current population yields an empty set of violations,
+	so the rule is satisfied.
+	Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
+	we have now defined a complete information system (albeit small).
+	
 \subsection{Data migration}
 	To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
 	and add rules to describe the migration.
