@@ -279,12 +279,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
 		X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}
 	\end{eqnarray}
 \end{definition}
-
+Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
 
 \begin{definition}[migration dataset]
 	\begin{eqnarray}
 		&&\begin{array}[t]{@{}l}
-			\{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt := }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
+			\{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
 				\mid\ \begin{array}[t]{@{}l}
 					\declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
 					\{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
@@ -295,6 +295,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 			  \end{array}
 	\end{eqnarray}
 \end{definition}
+
+The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statements add $((C',1),(C,0))$ and  $((C,0),(C',1))$ to the $\isa$ relation. Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
+The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
+The expressions $e$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
+
 \begin{definition}[disjoint union of information systems]
 	\begin{eqnarray}
 		\infsys\sqcup\infsys'&=&\la\roles\uplus\roles',\rules\uplus^?\rules',\maintain\uplus^2\maintain',\dataset\sqcup\dataset'\ra
