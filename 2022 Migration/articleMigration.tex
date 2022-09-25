@@ -212,7 +212,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \subsection{Rules}
 \label{sct:Rules}
-	A \define{rule} is used to restrict the populations of a dataset.
+	Rules are used to restrict the populations of a dataset.
 \begin{definition}[rule]
 	\label{def:rule}
 	\item A rule $u$ is a tuple $\la p_u,A,B,\id{viol}_u\ra$
@@ -233,8 +233,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 	The set of triples changes due to events observed by the dataset.
 	These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
-	Every rule is assigned to a role, so that role must ensure that the rule returns to a satisfied state after some event has caused the set of triples to change.
-	In other words: If anyone edits in the dataset and breaks a rule, someone has to ensure that the data is changed so that satisfies the rule.
+	Every rule is assigned to a role.
+	That role must ensure to satisfy that rule after some event has caused violations by changing the set of triples.
+	In other words: If anyone edits in the dataset and breaks a rule, someone or something has to fix the dataset to satisfy that rule again.
+	Example: if a rule says that every request must be acknowledged, the receipt of a request will break this rule.
+	Sending an acknowledgement message will cause the rule to be satisfied again.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -264,22 +267,21 @@ relation algebra\sep software development\sep data migration\sep software migrat
 	let $\maintain$ be a surjective relation $\roles\times\rules$,
 	and let $\dataset$ be a dataset.
 \begin{definition}[information system]
-	\label{def:information system}
-	\item An information system $\infsys$ is a tuple $\la\roles,\rules,\maintain,\dataset\ra$\\
+\label{def:information system}
+\item An information system $\infsys$ is a tuple $\la\roles,\rules,\maintain,\dataset\ra$\\
 	with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
-	in which $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\triples}$ empty.
 \end{definition}
+	The relation $\maintain$ links rules to roles.
+	$o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\triples}$ empty.
 	If a rule $u$ has violations, i.e. $\viol{u}{\triples}$ is not empty, there is a role whose job it is to remove those violations.
 	The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
-	Which means that all constraints are being kept satisfied in the collective effort of users, even if the data changes.
-	In another section we will give some options on how users can keep rules satisfied.
 
 \subsection{Example}
 \label{As-is IS}
 	Having defined an information system in mathematical terms, let us give an example.
 	For this purpose we use a subset of the language Ampersand~\cite{Joosten-JLAMP2018}
 	because it makes the examples more appealing to read.
-	Let us first define a dataset of eight triples and three relations.
+	Let us first define a dataset of seven triples and three relations.
 \begin{verbatim}
 RELATION takes[Student*Course] =
 [ ("Peter", "Management")
@@ -287,7 +289,7 @@ RELATION takes[Student*Course] =
 ; ("John", "Business IT")
 ]
 \end{verbatim}
-	This code snippet introduces a relation with name \verb#takes#,
+	This introduces a relation with name \verb#takes#,
 	source concept \verb#Student#, and
 	target concept \verb#Course#.
 	It also introduces three triples:
@@ -300,14 +302,14 @@ RELATION takes[Student*Course] =
 	So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
 	As stated before, this informal meaning is interesting only for the sake of illustration.
 
-	The example system also has a second relation that states which modules are part of which course:
-
+	The example system also has a second relation that states which modules are part of which course.
+	It is constrained by \verb-[UNI]- to be univalent.
+	This means that every \verb-Module- is part of at most one \verb-Course-.
 \begin{verbatim}
-RELATION isPartOf[Module*Course] =
+RELATION isPartOf[Module*Course] [UNI] =
 [ ("Finance", "Management")
 ; ("Business Rules", "Business IT")
 ; ("Business Analytics", "Business IT")
-; ("IT-Governance", "Business IT")
 ; ("IT-Governance", "Management")
 ]
 \end{verbatim}
@@ -332,7 +334,7 @@ RELATION isEnrolledFor [Student*Module]
 s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
 \end{array}\]
 	In Ampersand, which is a syntactically sugared form of relation algebra,
-	we give rule a name and declare a role to maintains it:
+	we give each rule a name and declare a role to maintain it:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
@@ -378,33 +380,43 @@ ROLE Administrator MAINTAINS EnrollRule
 Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
 
 \subsection{Example}
-	Let us proceed to specify a to-be information system, by way of example.
-	We will use the example in section~\ref{As-is IS} as the as-is information system.
-	The new information system keeps all three relations, but it constrains one relation, \verb-isPartOf-, to be univalent.
-	This means that every \verb-Module- is part of at most one \verb-Course-.
-	It restricts the relation \verb-isPartOf-,
-	so the migration might yield violations in the to-be information system that were not in the as-is information system.
+	Let us proceed to specify a to-be information system, $\infsys'$, to illustrate a (toy) migration.
+	We will use the example in section~\ref{As-is IS} as the as-is information system
+	and call that $\infsys$ in this section.
+	Its population reflects the state of the information system just before the migration.
+
+	Information system $\infsys'$, the to-be information system, is specified by:
 \begin{verbatim}
 RELATION takes[Student*Course]
-RELATION isPartOf[Module*Course] [UNI]
+RELATION isPartOf[Module*Course] [UNI] =
+   [ ("IT-Governance", "Business IT") ]
 RELATION isEnrolledFor[Student*Module]
-RELATION course[ExamReg*Course] [UNI]
-RELATION student[ExamReg*Student] [UNI]
+RELATION course[ExamReg*Course] [UNI] =
+   [ ("ER1", "Management")
+   ; ("ER2", "Business IT")
+   ; ("ER3", "Business IT")
+   ]
+RELATION student[ExamReg*Student] [UNI] =
+   [ ("ER1", "Peter")
+   ; ("ER2", "Susan")
+   ]
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 RULE ExamRule1: student~;course |- takes
 RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-	Part of the change is that exam registrations (concept \verb-ExamReg-) will be involved.
+	This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
+	Some new population, two new relations, and two new rules have been added to $\infsys'$.
+	$\infsys'$ contains exam registrations (concept \verb-ExamReg-), which is new.
 	In an exam registration, a student registers for the examination of a course.
-	The to-be information information system contains two extra rules: ExamRule1 and ExamRule2.
+	$\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
 	The first one says that an exam registration requires that a student actually takes the course.
-	In logic, ExamRule1 is written as:
+	In logic, the constraint $p_{\tt ExamRule1}$ is written as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, c\in\text{\tt Course}:\\
 	e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
 \end{array}\]
-	Another requirement, ExamRule2, is that the student is enrolled for every module that is part of the course.
-	In logic its constraint, $p_{\tt ExamRule2}$ is written as:
+	Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
+	Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
 	e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
 \end{array}\]
@@ -415,6 +427,11 @@ ROLE Administrator MAINTAINS EnrollRule
 	\viol{\text{\tt ExamRule2}}{\triples}\\
 	\hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
 \end{array}\]
+
+	The intention of any migration is to preserve as much of the data from $\infsys$ as possible into $\infsys'$,
+	while adding the new triples to $\infsys'$.
+	Any data migration must anticipate any population in the as-is information system.
+	The only thing we know for sure about the ``old'' population is that it satisfies the rules in $\infsys$.
 
 \begin{definition}[migration dataset]
 	\begin{eqnarray}
