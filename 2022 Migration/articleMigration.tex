@@ -363,15 +363,12 @@ ROLE Administrator MAINTAINS EnrollRule
 \label{fig:event flow}
 \end{figure}
 		
-	We use two datasets: $\dataset=$ and $\dataset'=$.
+	We use two datasets: $\dataset$ and $\dataset'$.
 	Before doing so, let us first define the disjoint union of two information systems.
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
-	\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra
-\end{eqnarray}
-\begin{eqnarray}
-	\omit\rlap{Some text that I want to appear here...}\\
-	&=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \triples\uplus^5\triples'\ra\\
+	\omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$}\notag\\
+	&=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \triples\uplus^5\triples'\ra\notag\\
 		X\uplus Y&=&\{(x,0)|\ x\in X\}\ \cup\ \{(y,1)|\ y\in Y\}\\
 		X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))|\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))|\ (y_1,y_2)\in Y\}\end{array}\\
 		X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
