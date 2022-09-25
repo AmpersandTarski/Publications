@@ -387,23 +387,28 @@ Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup
 
    Information system $\infsys'$, the to-be information system, is specified by:
 \begin{verbatim}
-RELATION takes[Student*Course]
-RELATION isPartOf[Module*Course] [UNI] =
-   [ ("IT-Governance", "Business IT") ]
-RELATION isEnrolledFor[Student*Module]
-RELATION course[ExamReg*Course] [UNI] =
-   [ ("ER1", "Management")
-   ; ("ER2", "Business IT")
-   ; ("ER3", "Business IT")
-   ]
-RELATION student[ExamReg*Student] [UNI] =
-   [ ("ER1", "Peter")
-   ; ("ER2", "Susan")
-   ]
-RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-RULE ExamRule1: student~;course |- takes
-RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
-ROLE Administrator MAINTAINS EnrollRule
+   RELATION takes[Student*Course]
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("IT-Governance", "Business IT") ]
+   RELATION isEnrolledFor [Student*Module] =
+      [ ("Susan", "Business Analytics")
+      ; ("Susan", "IT-Governance")
+      ; ("Susan", "Business Rules")
+      ]
+   RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+   ROLE Administrator MAINTAINS EnrollRule
+   
+   RELATION course[ExamReg*Course] [UNI] =
+      [ ("ER1", "Management")
+      ; ("ER2", "Business IT")
+      ; ("ER3", "Business IT")
+      ]
+   RELATION student[ExamReg*Student] [UNI] =
+      [ ("ER1", "Peter")
+      ; ("ER2", "Susan")
+      ]
+   RULE ExamRule1: student~;course |- takes
+   RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 \end{verbatim}
    This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
    Some new population, two new relations, and two new rules have been added to $\infsys'$.
