@@ -11,7 +11,7 @@ begin
 section \<open>Code Fragments\<close>
 text {*
 	Which code can preserve invariance and can we produce that code for arbitrary rules?
-  That is one of the issues addressed in a paper entitled ``Ampersand uses Relation Algebra as Programming Language''~\cite{Joosten-JLAMP2017}, which uses the proofs documented in this paper.
+  That is one of the issues addressed in a paper entitled ``Ampersand uses Relation Algebra as Programming Language''~\cite{Joosten-JLAMP2018}, which uses the proofs documented in this paper.
 	The question how to preserve invariance of rules in relation algebra is key for deriving code from invariants.
 	The means to preserve invariance is to insert or delete a set of pairs into and from relations.
 
@@ -29,7 +29,7 @@ text {*
 	which consists of changes in rules with boolean operators $\cup$, $\cap$, and complement.
 	We use a number of properties, which we have formulated such that the changes (inserts and deletes)
 	are made explicit in the formulas.
-  Each lemma is given a number, which corresponds to the numbers in the accompanied paper~\cite{Joosten-JLAMP2017}.
+  Each lemma is given a number, which corresponds to the numbers in the accompanied paper~\cite{Joosten-JLAMP2018}.
 *}
 lemma "34":
   shows "r=-s \<Longrightarrow> r\<union>\<Delta>=-(s-\<Delta>)" by auto
