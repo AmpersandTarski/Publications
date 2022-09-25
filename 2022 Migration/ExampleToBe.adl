@@ -1,23 +1,13 @@
 CONTEXT ExampleToBe
 
-RELATION takes[Student*Course] =
-[ ("Peter", "Management")
-; ("Susan", "Business IT")
-; ("John", "Business IT")
-]
-
+RELATION takes[Student*Course]
 RELATION isPartOf[Module*Course] [UNI]=
-[ ("Finance", "Management")
-; ("Business Rules", "Business IT")
-; ("Business Analytics", "Business IT")
-; ("IT-Governance", "Management")
-; ("IT-Governance", "Business IT")
-]
-
+[ ("IT-Governance", "Business IT") ]
 RELATION isEnrolledFor [Student*Module] =
-[ 
-]
-
+   [ ("Susan", "Business Analytics")
+   ; ("Susan", "IT-Governance")
+   ; ("Susan", "Business Rules")
+   ]
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 

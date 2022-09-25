@@ -26,17 +26,17 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-	The Ampersand project has provided the theory and tools to generate semantic information systems from an algebraic specification.
-	However, information systems in practice may change repeatedly after their maiden deployment.
-	Changes that affect the data model typically result in a data migration.
-	In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
-	Data migration aims at preserving the data as much as possible.
-	Typically, migration involves transferring the old data to the new system while preserving the semantics as much as possible.
+   The Ampersand project has provided the theory and tools to generate semantic information systems from an algebraic specification.
+   However, information systems in practice may change repeatedly after their maiden deployment.
+   Changes that affect the data model typically result in a data migration.
+   In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
+   Data migration aims at preserving the data as much as possible.
+   Typically, migration involves transferring the old data to the new system while preserving the semantics as much as possible.
 
-	In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
-	to enable more frequent migrations.
-	The ultimate target is to generate a migration from two specifications: the as-is specification and the to-be specification.
-	A software generator that embodies this theory is subject of future research.
+   In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
+   to enable more frequent migrations.
+   The ultimate target is to generate a migration from two specifications: the as-is specification and the to-be specification.
+   A software generator that embodies this theory is subject of future research.
 \end{abstract}
 
 \begin{keyword}
@@ -46,242 +46,242 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-	Data migration occurs when one stateful information system, $\infsys$, is replaced by another, $\infsys'$,
-	while the data from $\infsys$ must be preserved.
-	Agile teams today need to automate their data migrations, 
-	as they do for all other activities in their software process.
-	Teams continually automate to keep improving their performance without working any harder.
-	They measure the effects in terms of DevOps metrics such as
-	deployment frequency,
-	reliability of deployments, and
-	change failure rate~\cite{DevOps2021}.
+   Data migration occurs when one stateful information system, $\infsys$, is replaced by another, $\infsys'$,
+   while the data from $\infsys$ must be preserved.
+   Agile teams today need to automate their data migrations, 
+   as they do for all other activities in their software process.
+   Teams continually automate to keep improving their performance without working any harder.
+   They measure the effects in terms of DevOps metrics such as
+   deployment frequency,
+   reliability of deployments, and
+   change failure rate~\cite{DevOps2021}.
 
-	Data migrations can produce headaches, however.
-	The challenge of data migration is to preserve the meaning of data
-	rather than just copy the data from one place to another.
-	Accumulated data pollution can pose extra complications.
-	This makes data migrations far from trivial and a potential impediment for rapid and reliable deployment.
+   Data migrations can produce headaches, however.
+   The challenge of data migration is to preserve the meaning of data
+   rather than just copy the data from one place to another.
+   Accumulated data pollution can pose extra complications.
+   This makes data migrations far from trivial and a potential impediment for rapid and reliable deployment.
 
-	The benefits of automating data migrations work in two directions.
-	The automation itself saves effort and errors,
-	contributing to more frequent and smaller releases.
-	Smaller and faster releases also mean smaller migrations
-	and therefore a smaller difference between $\infsys$ and $\infsys'$.
-	The smaller that difference, the simpler the migration and the more of it can be automated.
+   The benefits of automating data migrations work in two directions.
+   The automation itself saves effort and errors,
+   contributing to more frequent and smaller releases.
+   Smaller and faster releases also mean smaller migrations
+   and therefore a smaller difference between $\infsys$ and $\infsys'$.
+   The smaller that difference, the simpler the migration and the more of it can be automated.
 
-	A formal understanding of data migration will help to automate data migrations correctly and reliably.
-	That is why this paper proposes a theory of migration that is based on the
-	following premises:
+   A formal understanding of data migration will help to automate data migrations correctly and reliably.
+   That is why this paper proposes a theory of migration that is based on the
+   following premises:
 \begin{itemize}
-	\item the as-is data set may be polluted;
-	\item the data migration may require human interaction, which may take time;
-	\item the part of the data that does not change should be migrated automatically;
-	\item the meaning of data must be preserved;
-	\item the business must continu during the migration without interruption;
-	\item the part of the migration that can be automated is usually not sufficient;
-	      it takes additional human creativity to complete the migration specification.
+   \item the as-is data set may be polluted;
+   \item the data migration may require human interaction, which may take time;
+   \item the part of the data that does not change should be migrated automatically;
+   \item the meaning of data must be preserved;
+   \item the business must continu during the migration without interruption;
+   \item the part of the migration that can be automated is usually not sufficient;
+         it takes additional human creativity to complete the migration specification.
 \end{itemize}
 
-	There have been other attempts to formalize data migration~\cite{Thalheim2013}.
-	(At this point: Elaborate on earlier work)
+   There have been other attempts to formalize data migration~\cite{Thalheim2013}.
+   (At this point: Elaborate on earlier work)
 
 \section{Migration steps}
-	A smooth migration from an old system to a new system would go as follows:
-	Launch the new system in parallel to the old, copy data from the old to the new system, and have everyone use the new system.
-	However, numerous issues might impede that plan.
-	The following examples illustrate the practical issues that may occur:
+   A smooth migration from an old system to a new system would go as follows:
+   Launch the new system in parallel to the old, copy data from the old to the new system, and have everyone use the new system.
+   However, numerous issues might impede that plan.
+   The following examples illustrate the practical issues that may occur:
 \begin{enumerate}
 \item Data required in the new system is missing in the old system.
-	There may be no way in the old system to enter that data.
-	An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
-	The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
+   There may be no way in the old system to enter that data.
+   An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
+   The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
 \item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
-	An example is if the old system only allows approvals to be entered as the current user, and the CEO insists that her administrative staff enters his approvals into the system for her.
-	This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
+   An example is if the old system only allows approvals to be entered as the current user, and the CEO insists that her administrative staff enters his approvals into the system for her.
+   This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
 \item Data in the old system does not satisfy invariants of the new system.
-	There may be no way in the old system of making the data satisfy those invariants. We can use the same example as in the previous bullet point, but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+   There may be no way in the old system of making the data satisfy those invariants. We can use the same example as in the previous bullet point, but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
 \item A way of entering data into the old system is missing in the new system.
-	People or automated processes might rely on these ways of entering data.
-	An example could be that when employees turned their computers on or off, an ad-hoc script would automatically clock them in- and out to determine the number of hours they worked.
-	A handful of employees still relies on this.
+   People or automated processes might rely on these ways of entering data.
+   An example could be that when employees turned their computers on or off, an ad-hoc script would automatically clock them in- and out to determine the number of hours they worked.
+   A handful of employees still relies on this.
 \item Data present in the old system cannot be stored in the new system.
-	An example could be that references to physical locations where original receipts are kept are stored in the old system, but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
-	Until the original receipts are scanned, the old data should be kept.
+   An example could be that references to physical locations where original receipts are kept are stored in the old system, but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
+   Until the original receipts are scanned, the old data should be kept.
 \end{enumerate}
 
 (@Bas, het volgende zit al in de oplossingen sfeer. Willen we dat hier al doen?)
-	To mitigate these issues, we:
-	
-	\begin{enumerate}
-	\item Allow `missing' triples requirements to be ignored during migration.
-	\item Allow triples to be migrated while being marked as needing correction.
-	\item Allow invariants in the new system to be ignored for certain triples during migration.
-	\item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
-	\item Retain data in the old system until it can be marked as ready to be phased out.
-	\end{enumerate}	
+   To mitigate these issues, we:
+   
+   \begin{enumerate}
+   \item Allow `missing' triples requirements to be ignored during migration.
+   \item Allow triples to be migrated while being marked as needing correction.
+   \item Allow invariants in the new system to be ignored for certain triples during migration.
+   \item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
+   \item Retain data in the old system until it can be marked as ready to be phased out.
+   \end{enumerate}   
 
 \section{Terminology}
 \label{sct:Terminology}
-	To migrate data from one information system to another,
-	we must define ``information system''.
-	In that definition we will single out the dataset as the focal point of a data migration.
-	For this reason, we define datasets first.
-	We need rules to capture the semantics, so we need to define rules as well.
-	After that, we define information systems.
+   To migrate data from one information system to another,
+   we must define ``information system''.
+   In that definition we will single out the dataset as the focal point of a data migration.
+   For this reason, we define datasets first.
+   We need rules to capture the semantics, so we need to define rules as well.
+   After that, we define information systems.
 
 \subsection{Datasets}
 \label{sct:Datasets}
-	A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
+   A dataset describes a set of structured data, which is typically stored persistently in a database of some kind.
 
-	Before defining datasets, we must first define the constituent notions of atom, concept, triple, and relation.
-	
-	Atoms serve as data elements.
-	They are values without internal structure of interest, meant to represent data elements in a database.
-	From a business perspective, atoms are used to represent concrete items of the world,
-	such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
-	By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
-	The set of atoms is called $\atoms$.
-	
-	Concepts are names we use during the design of a dataset
-	to name a group of atoms of the same type,
-	to assign signatures to relations, and thus
-	to enable type checking of the dataset.
-	For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
-	In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
+   Before defining datasets, we must first define the constituent notions of atom, concept, triple, and relation.
+   
+   Atoms serve as data elements.
+   They are values without internal structure of interest, meant to represent data elements in a database.
+   From a business perspective, atoms are used to represent concrete items of the world,
+   such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
+   By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
+   The set of atoms is called $\atoms$.
+   
+   Concepts are names we use during the design of a dataset
+   to name a group of atoms of the same type,
+   to assign signatures to relations, and thus
+   to enable type checking of the dataset.
+   For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
+   In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
-	The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
-	The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-	We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-	Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
-	The set of concepts is called $\concepts$.
-	
-	Triples are used to represent data.
-	This makes our theory valid for any kind of database that triples can represent,
-	such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
-	Each triple relates two atoms to a relation.
-	A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
-	has \atom{074238991} as a telephone number.
-	In the formal world, we leave it entirely up to a user to attach meaning to a triple.
-	As a consequence, this ``meaning from practice'' may have no consequences in the formal world.
-	The set of triples is called $\triples$.
+   The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
+   The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
+   We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
+   Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
+   The set of concepts is called $\concepts$.
+   
+   Triples are used to represent data.
+   This makes our theory valid for any kind of database that triples can represent,
+   such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
+   Each triple relates two atoms to a relation.
+   A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
+   has \atom{074238991} as a telephone number.
+   In the formal world, we leave it entirely up to a user to attach meaning to a triple.
+   As a consequence, this ``meaning from practice'' may have no consequences in the formal world.
+   The set of triples is called $\triples$.
 
-	Relations in datasets are used to store data.
-	In this paper relations are represented by variables $r$, $s$, and $d$.
-	Every relation $r$ contains a set of pairs, which we call the population of $r$:
+   Relations in datasets are used to store data.
+   In this paper relations are represented by variables $r$, $s$, and $d$.
+   Every relation $r$ contains a set of pairs, which we call the population of $r$:
 \begin{equation}
-	\pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
+   \pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
-	The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
+   The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
 
-	Every relation has a name, a source concept, and a target concept.
-	We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
-	% To disassemble a relation in its name, source and target, there exist three functions:
+   Every relation has a name, a source concept, and a target concept.
+   We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
+   % To disassemble a relation in its name, source and target, there exist three functions:
 % \[\begin{array}[3]{rcl}
-	% \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
-	% \id{src}&:&\rels\rightarrow\concepts\\
-	% \id{tgt}&:&\rels\rightarrow\concepts
+   % \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
+   % \id{src}&:&\rels\rightarrow\concepts\\
+   % \id{tgt}&:&\rels\rightarrow\concepts
 % \end{array}\]
-	% Or, stated otherwise, the denotation $\declare{nm}{A}{B}$ stands for a relation with
-	% \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
-	% \(\src{\declare{nm}{A}{B}}=A\), and
-	% \(\tgt{\declare{nm}{A}{B}}=B\).
+   % Or, stated otherwise, the denotation $\declare{nm}{A}{B}$ stands for a relation with
+   % \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
+   % \(\src{\declare{nm}{A}{B}}=A\), and
+   % \(\tgt{\declare{nm}{A}{B}}=B\).
 
-	The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
-	The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
-	It contains all pairs that can be made of elements of $A$ and $B$:
+   The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
+   The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
+   It contains all pairs that can be made of elements of $A$ and $B$:
 \[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
-	The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
-	The set of relations is called $\rels$.
-	
-	We can now define the notion of dataset.
-	Let	$\concepts$ be a set of concepts,
-	let $\isa$ be a partial order on $\concepts$,
-	let $\rels$ be a set of relations,
-	let $\atoms$ be a set of atoms,
-	and let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
+   The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
+   The set of relations is called $\rels$.
+   
+   We can now define the notion of dataset.
+   Let   $\concepts$ be a set of concepts,
+   let $\isa$ be a partial order on $\concepts$,
+   let $\rels$ be a set of relations,
+   let $\atoms$ be a set of atoms,
+   and let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
 \begin{definition}[dataset]
-	\label{def:dataset}
-	\item A dataset is a tuple $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ with
-	\begin{eqnarray}
-		\forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
-		%\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
-		\forall \declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
-		\forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\\ a\ (\inst \compose \kleenestar{\flip{\isa}})\ A\ \wedge\\ b\ (\inst \compose \kleenestar{\flip{\isa}})\ B\end{array}
-	\end{eqnarray}
+   \label{def:dataset}
+   \item A dataset is a tuple $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ with
+   \begin{eqnarray}
+      \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
+      %\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
+      \forall \declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
+      \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\\ a\ (\inst \compose \kleenestar{\flip{\isa}})\ A\ \wedge\\ b\ (\inst \compose \kleenestar{\flip{\isa}})\ B\end{array}
+   \end{eqnarray}
 \end{definition}
 
 \subsection{Rules}
 \label{sct:Rules}
-	Rules are used to restrict the populations of a dataset.
+   Rules are used to restrict the populations of a dataset.
 \begin{definition}[rule]
-	\label{def:rule}
-	\item A rule $u$ is a tuple $\la p_u,A,B,\id{viol}_u\ra$
-	in which $p_u$ is a constraint (i.e. a condition that constrains the triples of a dataset),
-	$\pair{A}{B}$ is the signature of $u$, and
-	$\id{viol}_u:\powerset{\triples}\rightarrow\powerset{\atoms\times\atoms}$ is a function that gives the violations (which are pairs) of this rule,
-	in which
+   \label{def:rule}
+   \item A rule $u$ is a tuple $\la p_u,A,B,\id{viol}_u\ra$
+   in which $p_u$ is a constraint (i.e. a condition that constrains the triples of a dataset),
+   $\pair{A}{B}$ is the signature of $u$, and
+   $\id{viol}_u:\powerset{\triples}\rightarrow\powerset{\atoms\times\atoms}$ is a function that gives the violations (which are pairs) of this rule,
+   in which
 \begin{eqnarray}
-	\pair{a}{b}\in\viol{u}{\triples}&\Rightarrow&a\in A\wedge b\in B\\
-	p_u&\Leftrightarrow&\viol{u}{\triples}=\emptyset
+   \pair{a}{b}\in\viol{u}{\triples}&\Rightarrow&a\in A\wedge b\in B\\
+   p_u&\Leftrightarrow&\viol{u}{\triples}=\emptyset
 \end{eqnarray}
 \end{definition}
-	The function $\id{viol}_u$ computes the violations of $u$ for any set of triples $\triples$ in the dataset,
-	which allows us to check at any moment in time whether the current population is free of violations.
-	We say that a rule $u$ is \define{satisfied} in a dataset $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ iff $\viol{u}{\triples}=\emptyset$.
-	Since $\triples$ changes continually in an information system, the violations are changing along.
-	As a result, rules that are violated at one moment may be satisfied at another moment.
+   The function $\id{viol}_u$ computes the violations of $u$ for any set of triples $\triples$ in the dataset,
+   which allows us to check at any moment in time whether the current population is free of violations.
+   We say that a rule $u$ is \define{satisfied} in a dataset $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ iff $\viol{u}{\triples}=\emptyset$.
+   Since $\triples$ changes continually in an information system, the violations are changing along.
+   As a result, rules that are violated at one moment may be satisfied at another moment.
 
-	The set of triples changes due to events observed by the dataset.
-	These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
-	Every rule is assigned to a role.
-	That role must ensure to satisfy that rule after some event has caused violations by changing the set of triples.
-	In other words: If anyone edits in the dataset and breaks a rule, someone or something has to fix the dataset to satisfy that rule again.
-	Example: if a rule says that every request must be acknowledged, the receipt of a request will break this rule.
-	Sending an acknowledgement message will cause the rule to be satisfied again.
+   The set of triples changes due to events observed by the dataset.
+   These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
+   Every rule is assigned to a role.
+   That role must ensure to satisfy that rule after some event has caused violations by changing the set of triples.
+   In other words: If anyone edits in the dataset and breaks a rule, someone or something has to fix the dataset to satisfy that rule again.
+   Example: if a rule says that every request must be acknowledged, the receipt of a request will break this rule.
+   Sending an acknowledgement message will cause the rule to be satisfied again.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
-	The purpose of an information system is to make data meaningful to users.
-	Data migration is all about preserving that meaning.
-	This section introduces the notion of information system
-	as a system that consist of a dataset and a set of rules that constrain that data,
-	together with a set of roles that must keep all rules satisfied.
-	These rules reflect the meaning (semantics) that is shared among users.
+   The purpose of an information system is to make data meaningful to users.
+   Data migration is all about preserving that meaning.
+   This section introduces the notion of information system
+   as a system that consist of a dataset and a set of rules that constrain that data,
+   together with a set of roles that must keep all rules satisfied.
+   These rules reflect the meaning (semantics) that is shared among users.
 
-	Users have their own tasks and responsibilities
-	and may work from different locations and on different moments.
-	This collective use serves a purpose which we loosely call ``the business''.
-	As a consequence, the data in an information system changes continually.
-	To preserve meaning, users are trying to maintain semantic constraints on the data,
-	amidst of all changes that are going on around them.
-	So, let us first define the constituent notions role and rule before defining information systems proper.
+   Users have their own tasks and responsibilities
+   and may work from different locations and on different moments.
+   This collective use serves a purpose which we loosely call ``the business''.
+   As a consequence, the data in an information system changes continually.
+   To preserve meaning, users are trying to maintain semantic constraints on the data,
+   amidst of all changes that are going on around them.
+   So, let us first define the constituent notions role and rule before defining information systems proper.
 
-	A \define{role} is a name that identifies a group of users.
-	The purpose of a role is to mention an individual user without knowing who that user is.
-	In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the information system.
-	The set of roles is called $\roles$.
+   A \define{role} is a name that identifies a group of users.
+   The purpose of a role is to mention an individual user without knowing who that user is.
+   In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the information system.
+   The set of roles is called $\roles$.
 
-	We can now define the notion of information system.
-	Let $\roles$ be a set of roles,
-	let $\rules$ be a set of rules, 
-	let $\maintain$ be a surjective relation $\roles\times\rules$,
-	and let $\dataset$ be a dataset.
+   We can now define the notion of information system.
+   Let $\roles$ be a set of roles,
+   let $\rules$ be a set of rules, 
+   let $\maintain$ be a surjective relation $\roles\times\rules$,
+   and let $\dataset$ be a dataset.
 \begin{definition}[information system]
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\la\roles,\rules,\maintain,\dataset\ra$\\
-	with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
+   with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
 \end{definition}
-	The relation $\maintain$ links rules to roles.
-	$o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\triples}$ empty.
-	If a rule $u$ has violations, i.e. $\viol{u}{\triples}$ is not empty, there is a role whose job it is to remove those violations.
-	The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
+   The relation $\maintain$ links rules to roles.
+   $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\triples}$ empty.
+   If a rule $u$ has violations, i.e. $\viol{u}{\triples}$ is not empty, there is a role whose job it is to remove those violations.
+   The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
 
 \subsection{Example}
 \label{As-is IS}
-	Having defined an information system in mathematical terms, let us give an example.
-	For this purpose we use a subset of the language Ampersand~\cite{Joosten-JLAMP2018}
-	because it makes the examples more appealing to read.
-	Let us first define a dataset of seven triples and three relations.
+   Having defined an information system in mathematical terms, let us give an example.
+   For this purpose we use a subset of the language Ampersand~\cite{Joosten-JLAMP2018}
+   because it makes the examples more appealing to read.
+   Let us first define a dataset of seven triples and three relations.
 \begin{verbatim}
 RELATION takes[Student*Course] =
 [ ("Peter", "Management")
@@ -289,22 +289,22 @@ RELATION takes[Student*Course] =
 ; ("John", "Business IT")
 ]
 \end{verbatim}
-	This introduces a relation with name \verb#takes#,
-	source concept \verb#Student#, and
-	target concept \verb#Course#.
-	It also introduces three triples:
+   This introduces a relation with name \verb#takes#,
+   source concept \verb#Student#, and
+   target concept \verb#Course#.
+   It also introduces three triples:
 \[\begin{array}{l}
-	\triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-	\triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-	\triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
+   \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
 \end{array}\]
-	The informal meaning of this relation is that it states which students are taking which courses.
-	So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
-	As stated before, this informal meaning is interesting only for the sake of illustration.
+   The informal meaning of this relation is that it states which students are taking which courses.
+   So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
+   As stated before, this informal meaning is interesting only for the sake of illustration.
 
-	The example system also has a second relation that states which modules are part of which course.
-	It is constrained by \verb-[UNI]- to be univalent.
-	This means that every \verb-Module- is part of at most one \verb-Course-.
+   The example system also has a second relation that states which modules are part of which course.
+   It is constrained by \verb-[UNI]- to be univalent.
+   This means that every \verb-Module- is part of at most one \verb-Course-.
 \begin{verbatim}
 RELATION isPartOf[Module*Course] [UNI] =
 [ ("Finance", "Management")
@@ -313,79 +313,79 @@ RELATION isPartOf[Module*Course] [UNI] =
 ; ("IT-Governance", "Management")
 ]
 \end{verbatim}
-	The third and last relation states which students are enrolled for which module.
-	We leave it empty for now.
+   The third and last relation states which students are enrolled for which module.
+   We leave it empty for now.
 \begin{verbatim}
 RELATION isEnrolledFor [Student*Module]
 \end{verbatim}
-	Summarizing, here we have a set of atoms, which contains \verb-"Peter"-, \verb-"Finance"-, etc.,
-	a set of concepts $\{$\verb-Student-, \verb-Module-, \verb-Course-$\}$,
-	an instance relation that states which atoms belong to which concept,
-	a specialization relation, which is empty,
-	a set of three relations, and
-	a set of eight triples.
-	The example in Ampersand defines precisely that dataset.
-	
-	Now let us define an information system.
-	To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
-	We define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
-	Its constraint, $p_{\tt Enroll}$ is written in logic as:
+   Summarizing, here we have a set of atoms, which contains \verb-"Peter"-, \verb-"Finance"-, etc.,
+   a set of concepts $\{$\verb-Student-, \verb-Module-, \verb-Course-$\}$,
+   an instance relation that states which atoms belong to which concept,
+   a specialization relation, which is empty,
+   a set of three relations, and
+   a set of eight triples.
+   The example in Ampersand defines precisely that dataset.
+   
+   Now let us define an information system.
+   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
+   We define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
+   Its constraint, $p_{\tt Enroll}$ is written in logic as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
 s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
 \end{array}\]
-	In Ampersand, which is a syntactically sugared form of relation algebra,
-	we give each rule a name and declare a role to maintain it:
+   In Ampersand, which is a syntactically sugared form of relation algebra,
+   we give each rule a name and declare a role to maintain it:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-	The Ampersand compiler derives the signature of every rule.
-	This rule has signature $\pair{\text{\tt Student}}{\text{\tt Module}}$.
-	The Ampersand compiler also derives the violation set as:
+   The Ampersand compiler derives the signature of every rule.
+   This rule has signature $\pair{\text{\tt Student}}{\text{\tt Module}}$.
+   The Ampersand compiler also derives the violation set as:
 \[\begin{array}{l}
-	\viol{\text{\tt EnrollRule}}{\triples}\\
-	\hspace{1cm}=\{\pair{s}{m}|s\ \text{\tt isEnrolledFor}\ m\ \wedge\not\exists c: s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
+   \viol{\text{\tt EnrollRule}}{\triples}\\
+   \hspace{1cm}=\{\pair{s}{m}|s\ \text{\tt isEnrolledFor}\ m\ \wedge\not\exists c: s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
 \end{array}\]
-	Notice that the current population yields an empty set of violations,
-	so the rule is satisfied.
-	Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
-	we have now defined a small information system.
+   Notice that the current population yields an empty set of violations,
+   so the rule is satisfied.
+   Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
+   we have now defined a small information system.
 
 \subsection{Data migration}
-	To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
-	and add rules to describe the migration.
-	$\infsys$ is the existing system, which contains data to be preserved.
-	$\infsys'$ is the new system, which contains no or hardly any data.
-	It does, however, contain the concepts, relations, rules and roles of the new system.
+   To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
+   and add rules to describe the migration.
+   $\infsys$ is the existing system, which contains data to be preserved.
+   $\infsys'$ is the new system, which contains no or hardly any data.
+   It does, however, contain the concepts, relations, rules and roles of the new system.
 \begin{figure}[bht]
-	\begin{center}
-	  \includegraphics[scale=.45]{Migration.png}
-	\end{center}
+   \begin{center}
+     \includegraphics[scale=.45]{Migration.png}
+   \end{center}
 \caption{Data migration}
 \label{fig:event flow}
 \end{figure}
-		
-	We use two datasets: $\dataset$ and $\dataset'$.
-	Before doing so, let us first define the disjoint union of two information systems.
+      
+   We use two datasets: $\dataset$ and $\dataset'$.
+   Before doing so, let us first define the disjoint union of two information systems.
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
-	\omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$}\notag\\
-	&=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \triples\uplus^5\triples'\ra\notag\\
-		X\uplus Y&=&\{(x,0)|\ x\in X\}\ \cup\ \{(y,1)|\ y\in Y\}\\
-		X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))|\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))|\ (y_1,y_2)\in Y\}\end{array}\\
-		X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
-		X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
+   \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$}\notag\\
+   &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \triples\uplus^5\triples'\ra\notag\\
+      X\uplus Y&=&\{(x,0)|\ x\in X\}\ \cup\ \{(y,1)|\ y\in Y\}\\
+      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))|\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))|\ (y_1,y_2)\in Y\}\end{array}\\
+      X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
+      X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
 \end{eqnarray}
 \end{definition}
 Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
 
 \subsection{Example}
-	Let us proceed to specify a to-be information system, $\infsys'$, to illustrate a (toy) migration.
-	We will use the example in section~\ref{As-is IS} as the as-is information system
-	and call that $\infsys$ in this section.
-	Its population reflects the state of the information system just before the migration.
+   Let us proceed to specify a to-be information system, $\infsys'$, to illustrate a (toy) migration.
+   We will use the example in section~\ref{As-is IS} as the as-is information system
+   and call that $\infsys$ in this section.
+   Its population reflects the state of the information system just before the migration.
 
-	Information system $\infsys'$, the to-be information system, is specified by:
+   Information system $\infsys'$, the to-be information system, is specified by:
 \begin{verbatim}
 RELATION takes[Student*Course]
 RELATION isPartOf[Module*Course] [UNI] =
@@ -405,47 +405,95 @@ RULE ExamRule1: student~;course |- takes
 RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-	This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
-	Some new population, two new relations, and two new rules have been added to $\infsys'$.
-	$\infsys'$ contains exam registrations (concept \verb-ExamReg-), which is new.
-	In an exam registration, a student registers for the examination of a course.
-	$\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
-	The first one says that an exam registration requires that a student actually takes the course.
-	In logic, the constraint $p_{\tt ExamRule1}$ is written as:
+   This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
+   Some new population, two new relations, and two new rules have been added to $\infsys'$.
+   $\infsys'$ contains exam registrations (concept \verb-ExamReg-), which is new.
+   In an exam registration, a student registers for the examination of a course.
+   $\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
+   The first one says that an exam registration requires that a student actually takes the course.
+   In logic, the constraint $p_{\tt ExamRule1}$ is written as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, c\in\text{\tt Course}:\\
-	e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
+   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
 \end{array}\]
-	Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
-	Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
+   Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
+   Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
-	e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
+   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
 \end{array}\]
-	Ampersand also derives the following violation sets:
+   Ampersand also derives the following violation sets:
 \[\begin{array}{l}
-	\viol{\text{\tt ExamRule1}}{\triples}\\
-	\hspace{1cm}=\{\pair{s}{c}\mid\exists e:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\neg(s\ \text{\tt takes}\ c)\}\\
-	\viol{\text{\tt ExamRule2}}{\triples}\\
-	\hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
+   \viol{\text{\tt ExamRule1}}{\triples}\\
+   \hspace{1cm}=\{\pair{s}{c}\mid\exists e:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\neg(s\ \text{\tt takes}\ c)\}\\
+   \viol{\text{\tt ExamRule2}}{\triples}\\
+   \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
 \end{array}\]
 
-	The intention of any migration is to preserve as much of the data from $\infsys$ as possible into $\infsys'$,
-	while adding the new triples to $\infsys'$.
-	Any data migration must anticipate any population in the as-is information system.
-	The only thing we know for sure about the ``old'' population is that it satisfies the rules in $\infsys$.
+   So let us now turn to the migration.
+   The intention of any migration is to preserve as much of the data from $\infsys$ as possible into $\infsys'$,
+   while adding the new triples to $\infsys'$.
+   So the first thing to do is to take the disjoint union of both information systems.
+   This yields:
+\begin{verbatim}
+   RELATION takes[Student*Course] =
+      [ ("Peter", "Management")
+      ; ("Susan", "Business IT")
+      ; ("John", "Business IT")
+      ]
+   
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("Finance", "Management")
+      ; ("Business Rules", "Business IT")
+      ; ("Business Analytics", "Business IT")
+      ; ("IT-Governance", "Management")
+      ; ("IT-Governance", "Business IT")
+      ]
+   
+   RELATION isEnrolledFor [Student*Module] =
+      [ ("Susan", "Business Analytics")
+      ; ("Susan", "IT-Governance")
+      ; ("Susan", "Business Rules")
+      ]
+   
+   RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+   ROLE Administrator MAINTAINS EnrollRule
+   
+   RELATION course[ExamReg*Course] [UNI] =
+      [ ("ER1", "Management")
+      ; ("ER2", "Business IT")
+      ; ("ER3", "Business IT")
+      ]
+   RELATION student[ExamReg*Student] [UNI] =
+      [ ("ER1", "Peter")
+      ; ("ER2", "Susan")
+      ]
+   RULE ExamRule1: student~;course |- takes
+   RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
+\end{verbatim}
+   If we check this for violations, we get the following results:
+\begin{verbatim}
+   There are 2 violations of RULE "ExamRule2":
+      ("Peter", "IT-Governance")
+      ("Peter", "Finance")
+   ==============================
+   There is one violation of RULE "UNI isPartOf[Module*Course]":
+      ("IT-Governance", "IT-Governance")
+\end{verbatim}
+   Any data migration must anticipate any population in the as-is information system.
+   The only thing we know for sure about the ``old'' population is that it satisfies the rules in $\infsys$.
 
 \begin{definition}[migration dataset]
-	\begin{eqnarray}
-		&&\begin{array}[t]{@{}l}
-			\{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
-				\mid\ \begin{array}[t]{@{}l}
-					\declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
-					\{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
-				   \end{array}
-			  \end{array}\\
-			  &\cup&\begin{array}[t]{@{}l}
-				\{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)|\ C\in\concepts,C'\in\concepts',C=C'\}\\
-			  \end{array}
-	\end{eqnarray}
+   \begin{eqnarray}
+      &&\begin{array}[t]{@{}l}
+         \{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
+            \mid\ \begin{array}[t]{@{}l}
+               \declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
+               \{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
+               \end{array}
+           \end{array}\\
+           &\cup&\begin{array}[t]{@{}l}
+            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)|\ C\in\concepts,C'\in\concepts',C=C'\}\\
+           \end{array}
+   \end{eqnarray}
 \end{definition}
 
 The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statements add $((C',1),(C,0))$ and  $((C,0),(C',1))$ to the $\isa$ relation. Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
@@ -453,23 +501,23 @@ The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,
 The expressions $e$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
 
 \begin{definition}[]
-	\begin{eqnarray}
-		\infsys\sqcup\infsys'&=&\la\roles',\rules',\maintain',\dataset\sqcup\dataset'\ra
-	\end{eqnarray}
+   \begin{eqnarray}
+      \infsys\sqcup\infsys'&=&\la\roles',\rules',\maintain',\dataset\sqcup\dataset'\ra
+   \end{eqnarray}
 \end{definition}
 
 \subsection{Changes}
 % The purpose of this section is to explain why a dataset is structured the way it is.
-	In the migration of a dataset we deal with changes to the elements that are not data:
-	$\isa$, $\inst$, $\concepts$, and $\rels$.
-	Such changes have further reaching consequences, however.
-	Changes to $\isa$, $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
-	We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ as a change in which one or more of $\isa$, $\inst$, $\concepts$, or $\rels$ change.
-	To satisfy definition~\ref{def:dataset}, $\triples$ and $\atoms$ must change too,
-	but the migration should try to preserve the maximal amount of data.
+   In the migration of a dataset we deal with changes to the elements that are not data:
+   $\isa$, $\inst$, $\concepts$, and $\rels$.
+   Such changes have further reaching consequences, however.
+   Changes to $\isa$, $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
+   We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ as a change in which one or more of $\isa$, $\inst$, $\concepts$, or $\rels$ change.
+   To satisfy definition~\ref{def:dataset}, $\triples$ and $\atoms$ must change too,
+   but the migration should try to preserve the maximal amount of data.
 
-	This paper studies those changes and seeks to preserve the rules in definition~\ref{def:dataset}
-	in such a way that large portions of migration can be automated.
+   This paper studies those changes and seeks to preserve the rules in definition~\ref{def:dataset}
+   in such a way that large portions of migration can be automated.
 
 
 \section{Bibliography}
