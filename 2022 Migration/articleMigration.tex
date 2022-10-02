@@ -16,7 +16,6 @@
 \include{preambleMigrations}
 
 % TODO Bas:
-% - 'isa' naar regels toe schrijven
 % - verhaal over incrementeel fouten oplossen (fouten staan al in artikel)
 
 % TODO Algemeen:
@@ -169,9 +168,6 @@ relation algebra\sep software development\sep data migration\sep software migrat
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
     We will use variables $A$, $B$, $C$, $D$ to represent concepts.
    The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
-   The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-   We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-   Specialization is needed to allow statements such as: ``A woman is a human'' or ``A human is a mammal''.
    The set of concepts is called $\concepts$.
    
    Triples are used to represent data.
@@ -188,7 +184,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    In this paper relations are represented by variables $r$, $s$, and $d$.
    Every relation $r$ contains a set of pairs, which we call the population of $r$:
 \begin{equation}
-   \pop{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
+   \pop{\triples}{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
    The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
 
@@ -208,7 +204,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
    The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
    It contains all pairs that can be made of elements of $A$ and $B$:
-\[\pop{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
+\[\pop{\triples}{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
    The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
    The set of relations is called $\rels$.
    
@@ -220,43 +216,61 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
 \begin{definition}[dataset]
    \label{def:dataset}
-   \item A dataset is a tuple $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ with
+   \item A dataset is a tuple $\la\atoms,\concepts,\inst,\rels,\triples\ra$ with
    \begin{eqnarray}
       \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\\
       %\forall A,B\in\concepts, a\in\atoms&:&A\isa B\wedge a\ \inst\ A\ \Rightarrow\ a\ \inst\ B\\
       \forall \declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
-      \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\\ a\ (\inst \compose \kleenestar{\flip{\isa}})\ A\ \wedge\\ b\ (\inst \compose \kleenestar{\flip{\isa}})\ B\end{array}
+      \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\ a\ \inst\ A\ \wedge\ b\ \inst\ B\end{array}
    \end{eqnarray}
 \end{definition}
 
 \subsection{Rules}
 \label{sct:Rules}
-   Rules are used to restrict the populations of a dataset.
+   Rules are used to describe whether certain (assumably desirable) properties hold in an information system.
+
 \begin{definition}[rule]
    \label{def:rule}
-   \item A rule $u$ is a tuple $\la p_u,A,B,\id{viol}_u\ra$
-   in which $p_u$ is a constraint (i.e. a condition that constrains the triples of a dataset),
-   $\pair{A}{B}$ is the signature of $u$, and
-   $\id{viol}_u:\powerset{\triples}\rightarrow\powerset{\atoms\times\atoms}$ is a function that gives the violations (which are pairs) of this rule,
+   \item A rule $u$ is a tuple $\la A,B,\id{viol}_u\ra$.
+   %in which $p_u$ is a constraint (i.e. a condition that constrains the triples of a dataset),
+   $\pair{A}{B}$ is the signature of $u$ and
+   $\id{viol}_u$ is a function that gives the violations (which are pairs) of this rule,
    in which
 \begin{eqnarray}
-   \pair{a}{b}\in\viol{u}{\triples}&\Rightarrow&a\in A\wedge b\in B\\
-   p_u&\Leftrightarrow&\viol{u}{\triples}=\emptyset
+   \pair{a}{b}\in\viol{u}{\triples,\inst}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
 \end{eqnarray}
 \end{definition}
-   The function $\id{viol}_u$ computes the violations of $u$ for any set of triples $\triples$ in the dataset,
+
+   The function $\id{viol}_u$ computes the violations of $u$,
    which allows us to check at any moment in time whether the current population is free of violations.
-   We say that a rule $u$ is \define{satisfied} in a dataset $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ iff $\viol{u}{\triples}=\emptyset$.
+   We say that a rule $u$ is \define{satisfied} in a dataset $\la\atoms,\concepts,\inst,\rels,\triples\ra$ iff $\viol{u}{\triples}=\emptyset$.
+   This allows us to define a predicate $p_u$ that indicates if a rule $u$ is satisfied:
+\begin{eqnarray}
+   p_u(\triples,\inst)&\Leftrightarrow&\viol{u}{\triples,\inst}=\emptyset
+\end{eqnarray}
+
    Since $\triples$ changes continually in an information system, the violations are changing along.
    As a result, rules that are violated at one moment may be satisfied at another moment.
-
-   The set of triples changes due to events observed by the dataset.
+   The set of triples changes due to events observed by the information system.
    These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
    Every rule is assigned to a role.
    That role must ensure to satisfy that rule after some event has caused violations by changing the set of triples.
    In other words: If anyone edits in the dataset and breaks a rule, someone or something has to fix the dataset to satisfy that rule again.
    Example: if a rule says that every request must be acknowledged, the receipt of a request will break this rule.
    Sending an acknowledgement message will cause the rule to be satisfied again.
+
+   Ampersand supports a special kind of rule that is used for specialization.
+   The rule $A\isa B = \la A, A, viol_{A\isa B} \ra$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
+   Instances of $A$ that are not an instance of $B$ are the violations of this rule: $viol_{A\isa B}(\triples,\inst) = \{(a,a) \mid a\ \inst\ A \wedge \lnot (a\ \inst\ B)\}$.
+   We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
+   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
+   
+      Specialization rules are special for two reasons:
+   first, $A\isa B$ is automatically maintained by the information system itself, by changing $\inst$ to include any violating pairs in $B$.
+   This means that an information system can never be brought into a state in which $p_{A\isa B}$ is False if $A\isa B$ is a specialization rule of the information system, allowing for certain run-time optimizations.
+   A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
+   For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
+   To ensure that this does not result in problems at run-time, users are required to write specialization rules that make these comparisons possible, and the type checker in the Ampersand compiler will spot these issues if they occur and refuse to generate the information system.
 
 
 \subsection{Information Systems}
@@ -266,7 +280,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    This section introduces the notion of information system
    as a system that consist of a dataset and a set of rules that constrain that data,
    together with a set of roles that must keep all rules satisfied.
-   These rules reflect the meaning (semantics) that is shared among users.
+   %These rules reflect the meaning (semantics) that is shared among users.
 
    Users have their own tasks and responsibilities
    and may work from different locations and on different moments.
@@ -279,17 +293,17 @@ relation algebra\sep software development\sep data migration\sep software migrat
    A \define{role} is a name that identifies a group of users.
    The purpose of a role is to mention an individual user without knowing who that user is.
    In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the information system.
-   The set of roles is called $\roles$.
+   
 
    We can now define the notion of information system.
-   Let $\roles$ be a set of roles,
-   let $\rules$ be a set of rules, 
-   let $\maintain$ be a surjective relation $\roles\times\rules$,
-   and let $\dataset$ be a dataset.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\la\roles,\rules,\maintain,\dataset\ra$\\
-   with dataset $\dataset=\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$
+\item An information system $\infsys$ is a tuple $\la\roles,\rules,\specrules,\maintain,\dataset\ra$.
+   Here $\roles$ is a set of roles,
+   $\rules$ a set of rules,
+   $\specrules$ a set of specialization rules,
+   $\maintain$ is a relation $\roles\times\rules$,
+   and $\dataset$ is a dataset.
 \end{definition}
    The relation $\maintain$ links rules to roles.
    $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\triples}$ empty.
