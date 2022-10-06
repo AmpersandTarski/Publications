@@ -20,7 +20,9 @@
 
 % TODO Algemeen:
 % - type van triple-set en atom-set definieren zodat viol_u ?->P(?x?)
+%   (Bas: ik heb foute types weggehaald, maar dit nog niet gedefinieerd)
 % - nieuwe populatie na de disjoint union zou de populatie met ENFORCE regels toegepast moeten zijn
+%  (en in het bijzonder de ISA regels)
 
 % TODO Stef:
 % - stukje literatuuronderzoek
@@ -520,6 +522,72 @@ Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup
    Any data migration must anticipate any population in the as-is information system.
    The only thing we know for sure about the ``old'' population is that it satisfies the rules in $\infsys$.
 
+\subsubsection{Strategies for dealing with violations}
+
+The violations of ExamRule2 don't pose a problem: they have a role (administrator) assigned to them.
+We allow these violations to occur in the transition to the new system, and expect people with the Administrator role to deal with them.
+
+However, the violations that arise when taking the (non-disjoint) union of the two scripts include violations of rules that the information system should maintain.
+This means that if we cannot generate software based on the disjoint union as it is.
+To resolve this, the simplest solution is to change the roles assigned to the rules that are violated in the disjoint union:
+\begin{verbatim}
+   RELATION isPartOf[Module*Course]
+   RULE isPartOfUNI: isPartOf;isPartOf~ |- I
+   ROLE migrationHelper MAINTAINS isPartOfUNI
+\end{verbatim}
+
+Naturally, this solution requires effort from people with the role migrationHelper.
+This in itself is not an issue: problems need to be solved one way or another.
+However, a problem that may occur is that regular users of the system, who are used to the old system, might be adding data to the system that causes violations faster than they can be solved.
+To mitigate this, we propose two solutions.
+
+One solution is to state that the only violations that may occur in \verb=isPartOfUNI= are those that were present when the migration started:
+\begin{verbatim}
+   RELATION isPartOf[Module*Course]
+   RULE isPartOfUNI: isPartOf;isPartOf~ |- I
+   ROLE migrationHelper MAINTAINS isPartOfUNI
+   
+   RELATION isPartOfUNI_violations[Module*Module]
+     = [("IT-Governance", "IT-Governance")]
+   RULE isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I |- isPartOfUNI_violations
+   SYSTEM MAINTAINS isPartOfUNI_progress
+   
+   ENFORCE isPartOfUNI_violations >: isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I  
+\end{verbatim}
+
+In this first solution, the first rule is the same as with the simple solution.
+The second rule prevents any new violation from occurring.
+Existing violations are recorded in the \verb=isPartOfUNI_violations= relation, and the rule \verb=isPartOfUNI_progress= prevents the set of violations to \verb=isPartOfUNI= from growing beyond this.
+The \verb=ENFORCE= statement at the end of this code snippet states that the relation recording existing violations should be shrunk whenever violations are solved.
+This way, we ensure that violations cannot re-occur.
+As a whole, this means that \verb=migrationHelper= has a finite task.
+
+As a second solution, we observe that the data in the designed system does not have any violations.
+Consequentially, the cause of the violations comes from the triples in the old system.
+Rather than taking the union of all triples, we can take the disjoint union instead;
+\begin{verbatim}
+   RELATION isPartOf_old[Module*Course] [UNI]=
+      [ ("Finance", "Management")
+      ; ("Business Rules", "Business IT")
+      ; ("Business Analytics", "Business IT")
+      ; ("IT-Governance", "Management")
+      ]
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("IT-Governance", "Business IT") ]
+   RELATION isPartOf_ignored[Module*Course]
+   
+   RULE isPartOf_isUnion:  isPartOf \/ isPartOf_ignored :- isPartOf_old
+   ROLE migrationHelper MAINTAINS isPartOf_isUnion
+   
+   ENFORCE isPartOf_ignored :< isPartOf
+\end{verbatim}
+
+In this second solution, we immediately move to a system in which the \verb=UNI= rule is maintained by the system.
+The work for the \verb=migrationHelper= is again finite: the tuples in \verb=isPartOf_old= need to be copied over or explicitly ignored.
+Once a tuple is in \verb=isPartOf=, the tuple is copied over to \verb=isPartOf_ignored= by the \verb=ENFORCE= statement, such that regular users can delete it without adding work to anyone with the \verb=migrationHelper= role.
+Of course, since this solution starts with fewer pairs in the \verb=isPartOf= relation, other rules could be violated as a result of choosing this solution.
+Indeed, ExamRule2 initially has more violations in this scenario.
+
 \begin{definition}[migration dataset]
    \begin{eqnarray}
       &&\begin{array}[t]{@{}l}
@@ -548,10 +616,10 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
 \subsection{Changes}
 % The purpose of this section is to explain why a dataset is structured the way it is.
    In the migration of a dataset we deal with changes to the elements that are not data:
-   $\isa$, $\inst$, $\concepts$, and $\rels$.
+   $\inst$, $\concepts$, and $\rels$.
    Such changes have further reaching consequences, however.
-   Changes to $\isa$, $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
-   We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra$ as a change in which one or more of $\isa$, $\inst$, $\concepts$, or $\rels$ change.
+   Changes to $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
+   We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\rels,\triples\ra$ as a change in which one or more of $\inst$, $\concepts$, or $\rels$ change.
    To satisfy definition~\ref{def:dataset}, $\triples$ and $\atoms$ must change too,
    but the migration should try to preserve the maximal amount of data.
 
