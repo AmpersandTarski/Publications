@@ -552,7 +552,7 @@ One solution is to state that the only violations that may occur in \verb=isPart
    RULE isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I |- isPartOfUNI_violations
    SYSTEM MAINTAINS isPartOfUNI_progress
    
-   ENFORCE isPartOfUNI_violations >: isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I  
+   ENFORCE isPartOfUNI_violations :< -(isPartOf;isPartOf~) /\ I  
 \end{verbatim}
 
 In this first solution, the first rule is the same as with the simple solution.
@@ -576,12 +576,26 @@ Rather than taking the union of all triples, we can take the disjoint union inst
       [ ("IT-Governance", "Business IT") ]
    RELATION isPartOf_ignored[Module*Course]
    
-   RULE isPartOf_isUnion:  isPartOf \/ isPartOf_ignored :- isPartOf_old
+   RULE isPartOf_isUnion:  isPartOf_old :- isPartOf \/ isPartOf_ignored
    ROLE migrationHelper MAINTAINS isPartOf_isUnion
    
-   ENFORCE isPartOf_ignored :< isPartOf
+   ENFORCE isPartOf_ignored :> isPartOf
 \end{verbatim}
 
+\begin{verbatim}
+   RELATION isPartOf_old[Module*Course] [UNI]=
+      [ ("Finance", "Management")
+      ; ("Business Rules", "Business IT")
+      ; ("Business Analytics", "Business IT")
+      ; ("IT-Governance", "Management")
+      ]
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("IT-Governance", "Business IT") ]
+   RELATION isPartOf_ignored[Module*Course]
+
+   ENFORCE isPartOf :> isPartOf_old - isPartOf_ignored
+   ENFORCE isPartOf_ignored :> isPartOf
+\end{verbatim}
 In this second solution, we immediately move to a system in which the \verb=UNI= rule is maintained by the system.
 The work for the \verb=migrationHelper= is again finite: the tuples in \verb=isPartOf_old= need to be copied over or explicitly ignored.
 Once a tuple is in \verb=isPartOf=, the tuple is copied over to \verb=isPartOf_ignored= by the \verb=ENFORCE= statement, such that regular users can delete it without adding work to anyone with the \verb=migrationHelper= role.
