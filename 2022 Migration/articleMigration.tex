@@ -66,14 +66,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-   The general aim of this work is to generate information systems incrementally, while in production.
-   Our research focuses on generating information system,
-   and specifically on the data migration aspect of it.
-   The reason that we believe in generating information systems is to prevent human errors as early as possible in the build-chain:
+   Our research focuses on generating information systems incrementally,
+   especially on the data migration aspect of it.
+   The reason that we believe in generating information systems is to prevent human errors as early as possible in the build chain:
    A mistake not made cannot propagate into production.
-
    Incremental generation of information systems poses specific requirements to data migration.
-   For instance, if data migration is not for incremental generation,
+   For instance, if a data migration is not for incremental generation,
    e.g.~\cite{Gholami2016,Bisbal1999},
    preserving the functionality can be useful to avoid introducing new errors in an otherwise error-prone process.
    For incremental generation, however, preserving the functionality is not an option.
@@ -82,31 +80,38 @@ relation algebra\sep software development\sep data migration\sep software migrat
    
    Data migration occurs when an as-is information system, $\infsys$, is replaced by a to-be information system, $\infsys'$,
    while preserving the meaning of the data from $\infsys$ as much as possible.
-   Just copying the set of data from $\infsys$ to $\infsys'$ is clearly wrong if the schemas of both information systems differ.
+   Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both information systems differ.
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
    The entire set of data, $\dataset$, in an information system represents the state of the system.
-   Every event that an actor causes may change the state $\dataset$.
-   We will write $\dataset_{\infsys}$ in case we need to be specific about which information the dataset belongs to.
+   Every event that an actor causes in information system $\infsys$ may change the state $\dataset$.
+   We will write $\dataset_{\infsys}$ in case we need to be specific about which information system the dataset belongs to,
+   but just $\dataset$ if it is obvious or irrelevant to which information system this dataset belongs.
 
-   In this work we will encode the semantics in a schema, $\schema$,
-   so we can be explicit about "preserving the meaning as much as possible".
-   The schema $\schema$ of an information system is basically a set of constraints on its dataset $\dataset$.
-   Let us assume that information systems $\infsys$ and $\infsys'$ have different schemas
-   because the task of migrating data is trivial if the schema doesn’t change.
-   We will denote the schema of an information system $\infsys$ by $\schema_{\infsys}$
-   if we need to be specific about the information system of which $\schema$ is the schema.
+   In this work we will encode the semantics in a schema,
+   so we can be explicit about ``preserving the meaning as much as possible''.
+   The schema of an information system is basically a set of constraints on its dataset $\dataset$.
+   We will denote the schema of an information system $\infsys$ by $\schema_{\infsys}$,
+   or just $\schema$ if it is obvious or irrelevant to which information system this schema belongs.
 
    We believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
-   \footnote{The effects can be measured in terms of DevOps metrics such as
+   \footnote{These effects can be measured in terms of DevOps metrics such as
    deployment frequency,
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
-   And, if we want to deploy software updates more frequently, this requires updates with zero down-time.
+   In practice, more frequent updates require that updates have zero down-time.
    Extra complications arise from accumulated data pollution in the as-is information system.
    So, the theory we develop in this paper must lead to tools that satisfy such practical requirements as
    zero down-time updates and ways to cope with data pollution.
    That will help agile teams today to automate their software processes further.
+
+   Automating data migrations, however, has its limits.
+   If the semantics encoded in the to-be schema $\schema'$ differs from the as-is schema $\schema$,
+   interaction with a migration engineer may be needed to determine how to interpret existing data in the new schema.
+   This may even involve adapting data of which the constraints in the schema have not changed.
+   This requires a third schema, $\schema_m$, which specifies the migration itself.
+   We generate $\schema_m$ in the form of source code, so the migration engineer can change everything she wants to suit the particulars of the data migration.
+   In the sequel, automation of data migration means to generate the schema $\schema_m$.
 
    The benefits of automating data migrations work in two directions.
    The automation itself saves effort and errors,
@@ -115,13 +120,13 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and therefore a smaller difference between $\infsys$ and $\infsys'$.
    The smaller that difference, the simpler the migration and the more of it can be automated.
 
+   The contribution of this paper is to propose a formalism in which $\schema_m$ is defined.
    A formal understanding of data migration will help to automate data migrations correctly and reliably.
-   That is why this paper proposes a theory of migration that is based on the
-   following premises:
+   Our theory is based on the following premises:
 \begin{itemize}
-   \item the as-is data set may be polluted;
+   \item the as-is data set may be polluted, but it satisfies its schema;
    \item the data migration may require human interaction, which may take time;
-   \item the part of the data that does not change should be migrated automatically;
+   \item the part of the data that does not change in $\schema'$ can be migrated automatically;
    \item the meaning of data must be preserved;
    \item the business must continu during the migration without interruption;
    \item the part of the migration that can be automated is usually not sufficient;
