@@ -82,16 +82,21 @@ relation algebra\sep software development\sep data migration\sep software migrat
    while preserving the meaning of the data from $\infsys$ as much as possible.
    Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both information systems differ.
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   The entire set of data, $\dataset$, in an information system represents the state of the system.
-   Every event that an actor causes in information system $\infsys$ may change the state $\dataset$.
-   We will write $\dataset_{\infsys}$ in case we need to be specific about which information system the dataset belongs to,
-   but just $\dataset$ if it is obvious or irrelevant to which information system this dataset belongs.
+   Information system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
+   (In the sequel we may just write $\dataset$ if the corresponding information system is either obvious or irrelevant.)
+   Every event that an actor causes in information system $\infsys$ may change its state $\dataset$.
 
-   In this work we will encode the semantics in a schema,
+   Our work assumes that the semantics of the as-is dataset is encoded in its schema,
    so we can be explicit about ``preserving the meaning as much as possible''.
-   The schema of an information system is basically a set of constraints on its dataset $\dataset$.
-   We will denote the schema of an information system $\infsys$ by $\schema_{\infsys}$,
-   or just $\schema$ if it is obvious or irrelevant to which information system this schema belongs.
+   The schema $\schema_{\infsys}$ of an information system $\infsys$ is basically a set of constraints on its dataset $\dataset$.
+   (We will denote the schema just as $\schema$ if the information system is obvious or irrelevant to know.)
+   In contrast with earlier work, e.g.~\cite{Thalheim2013}, we assume that the dataset satisfies all semantic constraints in the schema.
+   This is possible because we use a compiler, Ampersand~\cite{Joosten-JLAMP2018},
+   that generates an information system that keeps all semantic constraints satisfied at all times.
+   As a consequence, it contains only data pollution that is not already captured by any of the constraints mentioned in the schema.
+   Remaining data pollution must therefore be captured in constraints in the schema of the to-be information system $\infsys'$,
+   so it can guard those new constraints from the moment $\infsys'$ is in production.
+   In the meantime, the migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
 
    We believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
@@ -122,7 +127,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    The contribution of this paper is to propose a formalism in which $\schema_m$ is defined.
    A formal understanding of data migration will help to automate data migrations correctly and reliably.
-   Our theory is based on the following premises:
+   Our theory is based on the following assumptions:
 \begin{itemize}
    \item the as-is data set may be polluted, but it satisfies its schema;
    \item the data migration may require human interaction, which may take time;
@@ -130,7 +135,9 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \item the meaning of data must be preserved;
    \item the business must continu during the migration without interruption;
    \item the part of the migration that can be automated is usually not sufficient;
-         it takes additional human creativity to complete the migration specification.
+         it takes additional human creativity to complete the migration specification;
+   \item there is a compiler to generate an information system from a given schema.
+         In this work, we use the Ampersand compiler~\cite{Joosten-JLAMP2018} for that purpose.
 \end{itemize}
 
    There have been other attempts to formalize data migration~\cite{Thalheim2013}.
@@ -298,7 +305,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
    Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
    
-      Specialization rules are special for two reasons:
+   Specialization rules are special for two reasons:
    first, $A\isa B$ is automatically maintained by the information system itself, by changing $\inst$ to include any violating pairs in $B$.
    This means that an information system can never be brought into a state in which $p_{A\isa B}$ is False if $A\isa B$ is a specialization rule of the information system, allowing for certain run-time optimizations.
    A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
