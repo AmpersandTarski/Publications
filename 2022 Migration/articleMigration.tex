@@ -86,7 +86,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    (In the sequel we may just write $\dataset$ if the corresponding information system is either obvious or irrelevant.)
    Every event that an actor causes in information system $\infsys$ may change its state $\dataset$.
 
-   Our work assumes that the semantics of the as-is dataset is encoded in its schema,
+   Much like~\cite{Spivak2012}, our work assumes that the semantics of the as-is dataset is encoded in its schema,
    so we can be explicit about ``preserving the meaning as much as possible''.
    The schema $\schema_{\infsys}$ of an information system $\infsys$ is basically a set of constraints on its dataset $\dataset$.
    (We will denote the schema just as $\schema$ if the information system is obvious or irrelevant to know.)
@@ -112,8 +112,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Automating data migrations, however, has its limits.
    If the semantics encoded in the to-be schema $\schema'$ differs from the as-is schema $\schema$,
-   interaction with a migration engineer may be needed to determine how to interpret existing data in the new schema.
-   This may even involve adapting data of which the constraints in the schema have not changed.
+   a migration engineer must make choices on how to interpret existing data in the new schema.
+   She may even want to adapt data of which the constraints in the schema have not changed.
    This requires a third schema, $\schema_m$, which specifies the migration itself.
    We generate $\schema_m$ in the form of source code, so the migration engineer can change everything she wants to suit the particulars of the data migration.
    In the sequel, automation of data migration means to generate the schema $\schema_m$.
@@ -125,7 +125,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and therefore a smaller difference between $\infsys$ and $\infsys'$.
    The smaller that difference, the simpler the migration and the more of it can be automated.
 
-   The contribution of this paper is to propose a formalism in which $\schema_m$ is defined.
+   The contribution of this paper is to derive a migration schema $\schema_m$ from an existing information system $\infsys$
+   (which has its own $\schema$ and $\dataset$) and a to-be schema $\schema'$.
    A formal understanding of data migration will help to automate data migrations correctly and reliably.
    Our theory is based on the following assumptions:
 \begin{itemize}
@@ -137,11 +138,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \item the part of the migration that can be automated is usually not sufficient;
          it takes additional human creativity to complete the migration specification;
    \item there is a compiler to generate an information system from a given schema.
-         In this work, we use the Ampersand compiler~\cite{Joosten-JLAMP2018} for that purpose.
+         In this work, we use the Ampersand compiler for that purpose.
 \end{itemize}
-
-   There have been other attempts to formalize data migration~\cite{Thalheim2013}.
-   (At this point: Elaborate on earlier work)
 
 \section{Migration steps}
    A smooth migration from an old system to a new system would go as follows:
@@ -195,9 +193,9 @@ relation algebra\sep software development\sep data migration\sep software migrat
    
    Atoms serve as data elements.
    They are values without internal structure of interest, meant to represent data elements in a database.
-   From a business perspective, atoms are used to represent concrete items of the world,
+   From a business perspective, atoms represent concrete items of the world,
    such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
-   By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ are used to represent \emph{atoms}.
+   By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ represent \emph{atoms}.
    The set of atoms is called $\atoms$.
    
    Concepts are names we use during the design of a dataset
@@ -206,30 +204,30 @@ relation algebra\sep software development\sep data migration\sep software migrat
    to enable type checking of the dataset.
    For example, you might choose to classify \atom{Peter} as a \concept{Person}, and \atom{074238991} as a \concept{TelephoneNumber}.
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
-    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
+   We will use variables $A$, $B$, $C$, $D$ to represent concepts.
    The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
    The set of concepts is called $\concepts$.
    
-   Triples are used to represent data.
+   We will use triples to represent data.
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
    Each triple relates two atoms to a relation.
-   A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean that the ``thing'' that \atom{Peter} refers to
-   has \atom{074238991} as a telephone number.
-   In the formal world, we leave it entirely up to a user to attach meaning to a triple.
-   As a consequence, this ``meaning from practice'' may have no consequences in the formal world.
+   A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean in practice that
+   the ``thing'' that \atom{Peter} refers to has \atom{074238991} as a telephone number.
+   This ``meaning from practice'' has no consequences in the formal world.
+   We leave it entirely up to a user to attach a practical meaning to a triple.
+   In this paper, the informal meaning is interesting only for the sake of illustration.
    The set of triples is called $\triples$.
+   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
 
    Relations in datasets are used to store data.
-   In this paper relations are represented by variables $r$, $s$, and $d$.
+   In this paper, variables $r$, $s$, and $d$ represent relations.
    Every relation $r$ contains a set of pairs, which we call the population of $r$:
 \begin{equation}
    \pop{\triples}{r}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
-   The term $\ident{A}$ represents the \emph{identity relation} of concept $A$.
-
    Every relation has a name, a source concept, and a target concept.
-   We write $\declare{nm}{A}{B}$ to denote a relation with name \id{nm}, source concept $A$, and target concept $B$.
+   We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
    % To disassemble a relation in its name, source and target, there exist three functions:
 % \[\begin{array}[3]{rcl}
    % \id{relname}&:&\rels\rightarrow\id{RelationIdentifier}\\
@@ -240,20 +238,23 @@ relation algebra\sep software development\sep data migration\sep software migrat
    % \(\relname{\declare{nm}{A}{B}} = \id{nm}\),
    % \(\src{\declare{nm}{A}{B}}=A\), and
    % \(\tgt{\declare{nm}{A}{B}}=B\).
-
-   The pair $\pair{A}{B}$ is called the \emph{signature} of the relation.
+   The pair $\pair{A}{B}$ is called the \define{signature} of the relation.
    The term $\fullt{A}{B}$ represents the \emph{universal relation} over concepts $A$ and $B$.
+% @Bas, de volgende twee definities zitten mij nog niet lekker.
+% Zou het niet $\pop{\dataset}{\fullt{A}{B}}$ en $\pop{\dataset}{\ident{A}}$ moeten zijn (omdat $A$ en $B$ niet uit $\triples$ maar uit $\concepts$ komen)?
+% Alleen,...    $\dataset$ is op deze plek nog niet gedefinieerd...
    It contains all pairs that can be made of elements of $A$ and $B$:
-\[\pop{\triples}{\fullt{A}{B}} = \{ \pair{a}{b}| a\ \inst\ A,\ b\ \inst\ B \}\]
-   The term $\ident{A}$ represents the \emph{identity relation} over concept $A$.
-   The set of relations is called $\rels$.
-   
+\[\pop{\triples}{\fullt{A}{B}}\ =\ \{ \pair{a}{b}|\ a\ \inst\ A,\ b\ \inst\ B \}\]
+   The term $\ident{A}$ represents the \emph{identity relation} of concept $A$:
+\[\pop{\triples}{\ident{A}}\ =\ \{ \pair{a}{a}|\ a\ \inst\ A \}\]
+   The set of relations is called $\rels$ and it contains $\full$, $\iden$, and all relations mentioned in $\triples$.
+
    We can now define the notion of dataset.
    Let $\concepts$ be a set of concepts,
    let $\isa$ be a partial order on $\concepts$,
    let $\rels$ be a set of relations,
    let $\atoms$ be a set of atoms,
-   and let $\inst$ be a relation $\atoms\times\concepts$ that represents the instance relation between concepts and atoms,
+   and let $\inst$ be a relation $\atoms\times\concepts$ that is not in $\rels$, which represents the instance relation between concepts and atoms,
 \begin{definition}[dataset]
    \label{def:dataset}
    \item A dataset is a tuple $\la\atoms,\concepts,\inst,\rels,\triples\ra$ with
@@ -288,11 +289,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \begin{eqnarray}
    p_u(\triples,\inst)&\Leftrightarrow&\viol{u}{\triples,\inst}=\emptyset
 \end{eqnarray}
-
    Since $\triples$ changes continually in an information system, the violations are changing along.
    As a result, rules that are violated at one moment may be satisfied at another moment.
    The set of triples changes due to events observed by the information system.
    These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
+   
    Every rule is assigned to a role.
    That role must ensure to satisfy that rule after some event has caused violations by changing the set of triples.
    In other words: If anyone edits in the dataset and breaks a rule, someone or something has to fix the dataset to satisfy that rule again.
@@ -307,11 +308,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
    
    Specialization rules are special for two reasons:
    first, $A\isa B$ is automatically maintained by the information system itself, by changing $\inst$ to include any violating pairs in $B$.
-   This means that an information system can never be brought into a state in which $p_{A\isa B}$ is False if $A\isa B$ is a specialization rule of the information system, allowing for certain run-time optimizations.
+   This means that an information system that contains rule $A\isa B$ can never be brought into a state in which $p_{A\isa B}$ is False.
+   This allows for certain run-time optimizations, which are beyond the scope of this paper.
    A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
    For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
-   To ensure that this does not result in problems at run-time, users are required to write specialization rules that make these comparisons possible, and the type checker in the Ampersand compiler will spot these issues if they occur and refuse to generate the information system.
-
+   To ensure that this does not result in problems at run-time, users are required to write specialization rules that make these comparisons possible.
+   The type checker in the Ampersand compiler will spot violations and refuse to generate an information system if they occur.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -353,7 +355,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \subsection{Example}
 \label{As-is IS}
    Having defined an information system in mathematical terms, let us give an example.
-   For this purpose we use a subset of the language Ampersand~\cite{Joosten-JLAMP2018}
+   For this purpose we use a subset of the language Ampersand
    because it makes the examples more appealing to read.
    Let us first define a dataset of seven triples and three relations.
 \begin{verbatim}
@@ -374,7 +376,6 @@ RELATION takes[Student*Course] =
 \end{array}\]
    The informal meaning of this relation is that it states which students are taking which courses.
    So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
-   As stated before, this informal meaning is interesting only for the sake of illustration.
 
    The example system also has a second relation that states which modules are part of which course.
    It is constrained by \verb-[UNI]- to be univalent.
@@ -401,7 +402,6 @@ RELATION isEnrolledFor [Student*Module]
    The example in Ampersand defines precisely that dataset.
    
    Now let us define an information system.
-   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
    We define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
    Its constraint, $p_{\tt Enroll}$ is written in logic as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
