@@ -70,10 +70,16 @@ relation algebra\sep software development\sep data migration\sep software migrat
    especially on the data migration aspect of it.
    The reason that we believe in generating information systems is to prevent human errors as early as possible in the build chain:
    A mistake not made cannot propagate into production.
+   For this purpose, we use an existing compiler, Ampersand~\cite{Joosten-JLAMP2018},
+   that generates an information system from an Ampersand script.
+   An Ampersand script contains just enough information to generate a complete information system,
+   which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
+   For the purpose of this paper we can equate an Ampersand script with the scheme of the generated information system.
+   
    Incremental generation of information systems poses specific requirements to data migration.
    For instance, if a data migration is not for incremental generation,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   preserving the functionality can be useful to avoid introducing new errors in an otherwise error-prone process.
+   migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
    For incremental generation, however, preserving the functionality is not an option.
    To change the functionality is the very purpose and the data migration must behave accordingly.
    So, we must make sure to use methods for data migration that are specifically meant for incrementally generating information systems.
@@ -82,21 +88,17 @@ relation algebra\sep software development\sep data migration\sep software migrat
    while preserving the meaning of the data from $\infsys$ as much as possible.
    Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both information systems differ.
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   Information system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
-   (In the sequel we may just write $\dataset$ if the corresponding information system is either obvious or irrelevant.)
+   An information system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
+   (In the sequel we may just write $\dataset$
+   if the corresponding information system is either obvious from the context or irrelevant for the argument.)
    Every event that an actor causes in information system $\infsys$ may change its state $\dataset$.
 
    Much like~\cite{Spivak2012}, our work assumes that the semantics of the as-is dataset is encoded in its schema,
    so we can be explicit about ``preserving the meaning as much as possible''.
    The schema $\schema_{\infsys}$ of an information system $\infsys$ is basically a set of constraints on its dataset $\dataset$.
    (We will denote the schema just as $\schema$ if the information system is obvious or irrelevant to know.)
-   In contrast with earlier work, e.g.~\cite{Thalheim2013}, we assume that the dataset satisfies all semantic constraints in the schema.
-   This is possible because we use a compiler, Ampersand~\cite{Joosten-JLAMP2018},
-   that generates an information system that keeps all semantic constraints satisfied at all times.
-   As a consequence, it contains only data pollution that is not already captured by any of the constraints mentioned in the schema.
-   Remaining data pollution must therefore be captured in constraints in the schema of the to-be information system $\infsys'$,
-   so it can guard those new constraints from the moment $\infsys'$ is in production.
-   In the meantime, the migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
+   In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
+   but with relations in a way that bears resemblance with~\cite{Zielinski2013}.
 
    We believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
@@ -110,7 +112,31 @@ relation algebra\sep software development\sep data migration\sep software migrat
    zero down-time updates and ways to cope with data pollution.
    That will help agile teams today to automate their software processes further.
 
-   Automating data migrations, however, has its limits.
+   The Ampersand compiler generates information systems that keep all semantic constraints satisfied at all times.
+   This allows us to categorize data pollution in the as-is information system in the following categories:
+   \begin{itemize}
+      \item data pollution that cannot be captured in constraints on the dataset,
+      such as a street address that has become obsolete because the person failed to send a change of address.
+      \item data pollution that is a violation of a constraint in the schema.
+      \item data pollution that is a violation of a constraint that is not in the schema.
+      \item data pollution that is a consequence of an erroneous constraint in the schema.
+   \end{itemize}
+   The first category of pollution must be dealt with by working procedures, to prevent such pollution as much as possible.
+   In some cases, constraints on data can be formulated,
+   so the information system can help the user and simplify (or eliminate) the corresponding working procedure.
+   Such constraints move this type of pollution to one of the other categories.
+   The second category, violations of constraints from the schema, does not occur in our work.
+   Since the as-is information system $\infsys$ was generated by Ampersand,
+   $\infsys$ keeps all constraints from the schema satisfied at all times.
+   This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
+   Data pollution that is not captured by any of the constraints mentioned in the schema
+   can be dealt with by adding constraints in the to-be information system $\infsys'$.
+   In that case, a migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
+   So some human intervention may be necessary.
+   The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in $\infsys'$.
+
+   This illustrates that automating data migrations also has its limits.
+   Some effort of a migration engineer may be required.
    If the semantics encoded in the to-be schema $\schema'$ differs from the as-is schema $\schema$,
    a migration engineer must make choices on how to interpret existing data in the new schema.
    She may even want to adapt data of which the constraints in the schema have not changed.
