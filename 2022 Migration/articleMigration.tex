@@ -50,8 +50,7 @@
    However, information systems in practice may change repeatedly after their maiden deployment.
    Changes that affect the data model typically result in a data migration.
    In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
-   Data migration aims at preserving the data as much as possible.
-   Typically, migration involves transferring the old data to the new system while preserving the semantics as much as possible.
+   A migration engineer must transfer the old data to the new system while preserving the semantics as much as possible.
 
    In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
    to enable more frequent migrations.
@@ -74,15 +73,15 @@ relation algebra\sep software development\sep data migration\sep software migrat
    that generates an information system from an Ampersand script.
    An Ampersand script contains just enough information to generate a complete information system,
    which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
-   For the purpose of this paper we can equate an Ampersand script with the scheme of the generated information system.
+   For the purpose of this paper we can equate an Ampersand script with the schema of the generated information system.
    
-   Incremental generation of information systems poses specific requirements to data migration.
-   For instance, if a data migration is not for incremental generation,
+   Incremental development of information systems poses specific requirements to data migration.
+   For instance, in data migrations for other purposes,
    e.g.~\cite{Gholami2016,Bisbal1999},
    migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
-   For incremental generation, however, preserving the functionality is not an option.
-   To change the functionality is the very purpose and the data migration must behave accordingly.
-   So, we must make sure to use methods for data migration that are specifically meant for incrementally generating information systems.
+   For incremental development, however, preserving the functionality is not an option.
+   To change the functionality is the very purpose of each increment, so the data migration must support just that.
+   So, we must make sure to use methods for data migration that are specifically suitable for incremental development of information systems.
    
    Data migration occurs when an as-is information system, $\infsys$, is replaced by a to-be information system, $\infsys'$,
    while preserving the meaning of the data from $\infsys$ as much as possible.
@@ -98,7 +97,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The schema $\schema_{\infsys}$ of an information system $\infsys$ is basically a set of constraints on its dataset $\dataset$.
    (We will denote the schema just as $\schema$ if the information system is obvious or irrelevant to know.)
    In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
-   but with relations in a way that bears resemblance with~\cite{Zielinski2013}.
+   but with relations in a way that bears resemblance with~\cite{Alloy2006} and~\cite{Zielinski2013}.
 
    We believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
