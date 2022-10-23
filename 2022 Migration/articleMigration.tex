@@ -15,9 +15,6 @@
 \begin{document}
 \include{preambleMigrations}
 
-% TODO Bas:
-% - verhaal over incrementeel fouten oplossen (fouten staan al in artikel)
-
 % TODO Algemeen:
 % - type van triple-set en atom-set definieren zodat viol_u ?->P(?x?)
 %   (Bas: ik heb foute types weggehaald, maar dit nog niet gedefinieerd)
@@ -33,9 +30,16 @@
 % https://www.researchgate.net/profile/Ranjana-Badre/publication/318665687_GUI_for_Data_Migration_and_Query_Conversion/links/5b45bbea0f7e9b1c722386e5/GUI-for-Data-Migration-and-Query-Conversion.pdf
 % https://journal3.uin-alauddin.ac.id/index.php/literatify/article/view/12567
 
+% Bewijsverplichtingen:
+% -> het migratie-systeem is typefout-vrij (opmerking: als we de type-checker buiten beschouwing willen laten, kunnen we dit niet beschrijven)
+% -> het migratie-systeem is vrij van overtredingen op regels die het migratie-systeem moet bewaken
+% -> het migratie-systeem bevat alle oude data, ihb nog steeds na het toepassen van de enforce regels
+% -> er is een pad naar ingebruikname van het nieuwe systeem (vanaf de initiële toestand van het migratie-systeem)
+% -> corollary: op het moment van ingebruikname van het nieuwe systeem, is het migratie-systeem vrij van overtredingen op regels die het nieuwe systeem moet bewaken
+% -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
+% -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreid) totdat het nieuwe systeem in gebruik genomen is?
 
-
-\title{A Theory for Data Migration of Information Systems}
+\title{A Theory for Data Migration of Generated Evolving Information Systems}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
 \ead{stef.joosten@ou.nl}
 \author[umn]{Sebastiaan Joosten\fnref{fn2}}
@@ -65,9 +69,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-   Our research focuses on generating information systems incrementally,
-   especially on the data migration aspect of it.
-   The reason that we believe in generating information systems is to prevent human errors as early as possible in the build chain:
+   We believe in generating evolving systems because it addresses human errors.
+   By generating information systems rather than programming them by hand, we avoid introducing errors in the translation from design to concrete system.
    A mistake not made cannot propagate into production.
    For this purpose, we use an existing compiler, Ampersand~\cite{Joosten-JLAMP2018},
    that generates an information system from an Ampersand script.
@@ -75,13 +78,19 @@ relation algebra\sep software development\sep data migration\sep software migrat
    which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
    For the purpose of this paper we can equate an Ampersand script with the schema of the generated information system.
    
-   Incremental development of information systems poses specific requirements to data migration.
-   For instance, in data migrations for other purposes,
+   We recognise that even designs can have errors in them:
+   either the error was made directly by a designer, the requirements the designer was taking into account were miscommunicated, or the reality changed in a way was not foreseen at the time the design was made.
+   Regardless of the reason, even a generated information system may need to be repaired.
+   For this reason, we focus on evolving systems.
+   
+   When a generated system evolves, we are left with the problem of migrating the data from the concrete old system to the newly designed system.
+   This situation poses specific requirements to data migration.
+   For instance, if a data migration is not for evolving systems,
    e.g.~\cite{Gholami2016,Bisbal1999},
    migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
-   For incremental development, however, preserving the functionality is not an option.
-   To change the functionality is the very purpose of each increment, so the data migration must support just that.
-   So, we must make sure to use methods for data migration that are specifically suitable for incremental development of information systems.
+   For evolving a system, however, preserving the functionality is not an option.
+   To change the functionality is the very purpose of the evolution, so the data migration must support just that.
+   So, we must make sure to use methods for data migration that are specifically meant for evolving information systems.
    
    Data migration occurs when an as-is information system, $\infsys$, is replaced by a to-be information system, $\infsys'$,
    while preserving the meaning of the data from $\infsys$ as much as possible.
@@ -159,7 +168,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \item the data migration may require human interaction, which may take time;
    \item the part of the data that does not change in $\schema'$ can be migrated automatically;
    \item the meaning of data must be preserved;
-   \item the business must continu during the migration without interruption;
+   \item the business must continue during the migration without interruption;
    \item the part of the migration that can be automated is usually not sufficient;
          it takes additional human creativity to complete the migration specification;
    \item there is a compiler to generate an information system from a given schema.
