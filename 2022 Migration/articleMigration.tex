@@ -11,7 +11,6 @@
 \selectlanguage{english}
 \hyphenation{ExecEngine}
 \newtheorem{lemma}{Lemma}
-\def\Events{{\mathit E}}
 \begin{document}
 \include{preambleMigrations}
 
@@ -50,15 +49,18 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-   The Ampersand project has provided the theory and tools to generate semantic information systems from an algebraic specification.
+   The Ampersand project has provided the theory and tools to generate information systems from an algebraic specification.
    However, information systems in practice may change repeatedly after their maiden deployment.
    Changes that affect the data model typically result in a data migration.
-   In such cases, simply regenerating the system is not enough because it would reset the database to its initial state (deleting all data gathered so far).
-   A migration engineer must transfer the old data to the new system while preserving the semantics as much as possible.
+   In such cases, simply regenerating the system is not enough.
+   That would reset the database to its initial state, losing all data gathered so far.
+   To prevent that, a migration engineer must transfer the old data to the new system by hand.
 
-   In this contribution we develop a theory for reliable data migration that aims at automating it as much as possible,
-   to enable more frequent migrations.
-   The ultimate target is to generate a migration from two specifications: the as-is specification and the to-be specification.
+   In this contribution we develop a theory for reliable data migration to help the migration engineer
+   to transfer the data and preserve the semantics as much as possible.
+   We aim to automate the data migration,
+   to prevent mistakes and enable more frequent migrations.
+   The target is to generate a migration script from two specifications: the old specification and the new specification.
    A software generator that embodies this theory is subject of future research.
 \end{abstract}
 
@@ -69,59 +71,69 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
-   We believe in generating evolving systems because it addresses human errors.
-   By generating information systems rather than programming them by hand, we avoid introducing errors in the translation from design to concrete system.
+   We believe in generating information systems%
+\footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }
+   to prevent human errors.
+   By generating rather than programming systems by hand,
+   we avoid introducing errors in the translation from design to a concrete system.
    A mistake not made cannot propagate into production.
    For this purpose, we use an existing compiler, Ampersand~\cite{Joosten-JLAMP2018},
-   that generates an information system from an Ampersand script.
-   An Ampersand script contains just enough information to generate a complete information system,
+   that generates a system from an Ampersand script.
+   An Ampersand script contains just enough information to generate a complete system,
    which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
-   For the purpose of this paper we can equate an Ampersand script with the schema of the generated information system.
-   
-   We recognise that even designs can have errors in them:
-   either the error was made directly by a designer, the requirements the designer was taking into account were miscommunicated, or the reality changed in a way was not foreseen at the time the design was made.
-   Regardless of the reason, even a generated information system may need to be repaired.
-   For this reason, we focus on evolving systems.
-   
-   When a generated system evolves, we are left with the problem of migrating the data from the concrete old system to the newly designed system.
-   This situation poses specific requirements to data migration.
-   For instance, if a data migration is not for evolving systems,
-   e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
-   For evolving a system, however, preserving the functionality is not an option.
-   To change the functionality is the very purpose of the evolution, so the data migration must support just that.
-   So, we must make sure to use methods for data migration that are specifically meant for evolving information systems.
-   
-   Data migration occurs when an as-is information system, $\infsys$, is replaced by a to-be information system, $\infsys'$,
-   while preserving the meaning of the data from $\infsys$ as much as possible.
-   Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both information systems differ.
-   Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   An information system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
-   (In the sequel we may just write $\dataset$
-   if the corresponding information system is either obvious from the context or irrelevant for the argument.)
-   Every event that an actor causes in information system $\infsys$ may change its state $\dataset$.
+   For the purpose of this paper we can equate an Ampersand script with the schema of the generated system.
 
-   Much like~\cite{Spivak2012}, our work assumes that the semantics of the as-is dataset is encoded in its schema,
-   so we can be explicit about ``preserving the meaning as much as possible''.
-   The schema $\schema_{\infsys}$ of an information system $\infsys$ is basically a set of constraints on its dataset $\dataset$.
-   (We will denote the schema just as $\schema$ if the information system is obvious or irrelevant to know.)
-   In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
-   but with relations in a way that bears resemblance with~\cite{Alloy2006} and~\cite{Zielinski2013}.
-
-   We believe that information systems should be released into production in small increments,
+   We also believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
    \footnote{These effects can be measured in terms of DevOps metrics such as
    deployment frequency,
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
-   In practice, more frequent updates require that updates have zero down-time.
-   Extra complications arise from accumulated data pollution in the as-is information system.
-   So, the theory we develop in this paper must lead to tools that satisfy such practical requirements as
-   zero down-time updates and ways to cope with data pollution.
-   That will help agile teams today to automate their software processes further.
+   By installing upgrades automatically, frequently and in small increments,
+   users experience an evolving system.
 
-   The Ampersand compiler generates information systems that keep all semantic constraints satisfied at all times.
-   This allows us to categorize data pollution in the as-is information system in the following categories:
+   We recognize that designs from which concrete systems are generated can have errors in them:
+   Either a designer was making a mistake directly,
+   or the requirements the designer was taking into account were miscommunicated,
+   or the environment changed in a way that was not foreseen.
+   Regardless of the reason, even a generated system may need to be repaired.
+   For this reason, we focus on evolving systems.
+   
+   This paper studies this evolution in increments, in which we distinguish an ``old system'' and a ``new system''.
+   In each increment we need to migrate the data from the old system to the newly designed system.
+   This situation poses specific requirements to data migration.
+   For instance, if a data migration has other purposes than just to evolve a system,
+   e.g.~\cite{Gholami2016,Bisbal1999},
+   migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
+   When one system evolves into another, however, preserving the functionality is not an option.
+   To change the functionality is the very purpose of the evolution.
+   So, we must make sure to use methods for data migration that are specifically meant for evolving systems.
+   
+   Information systems are typically used by distributed actors (both users and computers) who continually work with data.
+   A system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
+   (In the sequel we may just write $\dataset$
+   if the corresponding system is either obvious from the context or irrelevant for the argument.)
+   Every event that an actor causes in system $\infsys$ may change the state $\dataset$ of that system.
+   Data migration occurs when an old system, $\infsys$, is replaced by a new system, $\infsys'$,
+   while preserving the meaning of the data from $\infsys$ as much as possible.
+   Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both systems differ.
+   
+   The schema $\schema_{\infsys}$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.
+   (We will denote the schema just as $\schema$ if the system is obvious or irrelevant to know.)
+   The Ampersand compiler generates systems that keep all constraints satisfied at all times.
+   Much like~\cite{Spivak2012}, our work assumes that the semantics of the old dataset is encoded in its schema,
+   so we can be explicit about ``preserving the meaning as much as possible''.
+   In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
+   but with relations in a way that bears resemblance with Alloy~\cite{Alloy2006} and allegories%
+   \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
+
+   The theory we develop in this paper must lead to tools that satisfy such practical requirements as
+   zero down-time updates and ways to cope with data pollution.
+   In practice, more frequent updates require that updates have zero down-time.
+   For our theory, zero down-time means that the release of new functionality may not be delayed by anything a migration engineer must do.
+   
+   Extra complications arise from accumulated data pollution in the old system.
+   This allows us to categorize data pollution in the old system in the following categories:
    \begin{itemize}
       \item data pollution that cannot be captured in constraints on the dataset,
       such as a street address that has become obsolete because the person failed to send a change of address.
@@ -131,21 +143,21 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \end{itemize}
    The first category of pollution must be dealt with by working procedures, to prevent such pollution as much as possible.
    In some cases, constraints on data can be formulated,
-   so the information system can help the user and simplify (or eliminate) the corresponding working procedure.
+   so the system can help the user and simplify (or eliminate) the corresponding working procedure.
    Such constraints move this type of pollution to one of the other categories.
    The second category, violations of constraints from the schema, does not occur in our work.
-   Since the as-is information system $\infsys$ was generated by Ampersand,
+   Since the old system $\infsys$ was generated by Ampersand,
    $\infsys$ keeps all constraints from the schema satisfied at all times.
    This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
    Data pollution that is not captured by any of the constraints mentioned in the schema
-   can be dealt with by adding constraints in the to-be information system $\infsys'$.
+   can be dealt with by adding constraints in the new system $\infsys'$.
    In that case, a migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
    So some human intervention may be necessary.
    The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in $\infsys'$.
 
    This illustrates that automating data migrations also has its limits.
    Some effort of a migration engineer may be required.
-   If the semantics encoded in the to-be schema $\schema'$ differs from the as-is schema $\schema$,
+   If the semantics encoded in the new schema $\schema'$ differs from the old schema $\schema$,
    a migration engineer must make choices on how to interpret existing data in the new schema.
    She may even want to adapt data of which the constraints in the schema have not changed.
    This requires a third schema, $\schema_m$, which specifies the migration itself.
@@ -159,15 +171,15 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and therefore a smaller difference between $\infsys$ and $\infsys'$.
    The smaller that difference, the simpler the migration and the more of it can be automated.
 
-   The contribution of this paper is to derive a migration schema $\schema_m$ from an existing information system $\infsys$
-   (which has its own $\schema$ and $\dataset$) and a to-be schema $\schema'$.
+   The contribution of this paper is to derive a migration schema $\schema_m$ from an existing system $\infsys$
+   (which has its own schema and dataset) and a new schema $\schema'$.
    A formal understanding of data migration will help to automate data migrations correctly and reliably.
    Our theory is based on the following assumptions:
 \begin{itemize}
-   \item the as-is data set may be polluted, but it satisfies its schema;
+   \item the old data set may be polluted, but it satisfies its schema;
    \item the data migration may require human interaction, which may take time;
-   \item the part of the data that does not change in $\schema'$ can be migrated automatically;
-   \item the meaning of data must be preserved;
+   \item the part of the data that does not change can be migrated automatically;
+   \item the meaning of data must be preserved, at least for the data that does not change;
    \item the business must continue during the migration without interruption;
    \item the part of the migration that can be automated is usually not sufficient;
          it takes additional human creativity to complete the migration specification;
@@ -176,8 +188,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \end{itemize}
 
 \section{Migration steps}
-   A smooth migration from an old system to a new system would go as follows:
-   Launch the new system in parallel to the old, copy data from the old to the new system, and have everyone use the new system.
+   A smooth migration would ideally proceed as follows:
+   Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
    However, numerous issues might impede that plan.
    The following examples illustrate the practical issues that may occur:
 \begin{enumerate}
@@ -185,18 +197,31 @@ relation algebra\sep software development\sep data migration\sep software migrat
    There may be no way in the old system to enter that data.
    An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
    The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
+
+   This issue will require somebody to insert the missing addresses in the new system.
 \item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
-   An example is if the old system only allows approvals to be entered as the current user, and the CEO insists that her administrative staff enters his approvals into the system for her.
+   An example is if the old system only allows approvals to be entered as the current user, and the CEO has always insisted that her administrative staff enters the approvals into the system for her.
    This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
+
+   This issue will require that the incorrect registration of staff members is corrected in the new system.
 \item Data in the old system does not satisfy invariants of the new system.
-   There may be no way in the old system of making the data satisfy those invariants. We can use the same example as in the previous bullet point, but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+   There may be no way in the old system of making the data satisfy those invariants.
+   We can use the same example as in the previous bullet point,
+   but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+
+   This issue will require somebody to change the data to satisfy the broken invariants in the new system.
 \item A way of entering data into the old system is missing in the new system.
    People or automated processes might rely on these ways of entering data.
-   An example could be that when employees turned their computers on or off, an ad-hoc script would automatically clock them in- and out to determine the number of hours they worked.
+   An example could be that when employees turned their computers on or off,
+   an ad-hoc script would automatically check them in- and out to determine the number of hours they worked.
    A handful of employees still relies on this.
+
+   This issue will require that users of obsolete functionality are informed and given a way to cope with the missing functionality where appropriate.
 \item Data present in the old system cannot be stored in the new system.
-   An example could be that references to physical locations where original receipts are kept are stored in the old system, but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
-   Until the original receipts are scanned, the old data should be kept.
+   An example could be that references to physical locations where original receipts are kept are stored in the old system,
+   but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
+
+   This issue will require that the old data is kept until the original receipts have been scanned.
 \end{enumerate}
 
 (@Bas, het volgende zit al in de oplossingen sfeer. Willen we dat hier al doen?)
@@ -212,12 +237,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Terminology}
 \label{sct:Terminology}
-   To migrate data from one information system to another,
-   we must define ``information system''.
-   In that definition we will single out the dataset as the focal point of a data migration.
-   For this reason, we define datasets first.
-   We need rules to capture the semantics, so we need to define rules as well.
-   After that, we define information systems.
+   To migrate data from one system to another,
+   we define ``information system'' as a combination of dataset and schema.
+   So, let us first define datasets in section~\ref{sct:Datasets} as the focal point of a data migration.
+   Then we define schemas in section~\ref{sct:Schemas}, to capture the semantics of information systems.
 
 \subsection{Datasets}
 \label{sct:Datasets}
@@ -285,10 +308,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    We can now define the notion of dataset.
    Let $\concepts$ be a set of concepts,
-   let $\isa$ be a partial order on $\concepts$,
    let $\rels$ be a set of relations,
    let $\atoms$ be a set of atoms,
-   and let $\inst$ be a relation $\atoms\times\concepts$ that is not in $\rels$, which represents the instance relation between concepts and atoms,
+   and let $\inst$ be a relation $\atoms\times\concepts$ that is not in $\rels$,
+   which represents the instance relation between concepts and atoms:
 \begin{definition}[dataset]
    \label{def:dataset}
    \item A dataset is a tuple $\la\atoms,\concepts,\inst,\rels,\triples\ra$ with
@@ -298,34 +321,41 @@ relation algebra\sep software development\sep data migration\sep software migrat
       \forall \declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
       \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&\begin{array}[t]{@{}l}\declare{n}{A}{B}\in\rels\ \wedge\ a\ \inst\ A\ \wedge\ b\ \inst\ B\end{array}
    \end{eqnarray}
+   The set of all conceivable datasets is called $\Dataset$.
 \end{definition}
 
-\subsection{Rules}
-\label{sct:Rules}
+\subsection{Schemas}
+\label{sct:Schemas}
    Rules are used to describe whether certain (assumably desirable) properties hold in an information system.
+   let $\isa$ be a partial order on $\concepts$,
 
 \begin{definition}[rule]
    \label{def:rule}
-   \item A rule $u$ is a tuple $\la A,B,\id{viol}_u\ra$.
+   \item A rule $u$ is a tuple $\la \id{sign}_u:\Pair{\Concepts}{\Concepts},\id{viol}_u:\Dataset\rightarrow(\Pair{\Concepts}{\Concepts})\ra$.
    %in which $p_u$ is a constraint (i.e. a condition that constrains the triples of a dataset),
-   $\pair{A}{B}$ is the signature of $u$ and
+   $\id{sign}_u$ is the signature of $u$ and
    $\id{viol}_u$ is a function that gives the violations (which are pairs) of this rule,
    in which
 \begin{eqnarray}
-   \pair{a}{b}\in\viol{u}{\triples,\inst}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
+   \begin{array}[t]{rl}
+      &\dataset\ =\ \la\atoms,\concepts,\inst,\rels,\triples\ra\ \wedge\\
+      &\id{sign}_u=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}\\
+      \Rightarrow\\
+      &A\in\concepts\wedge B\in\concepts\wedge a\ \inst\ A\wedge b\ \inst\ B
+   \end{array}
 \end{eqnarray}
 \end{definition}
 
    The function $\id{viol}_u$ computes the violations of $u$,
    which allows us to check at any moment in time whether the current population is free of violations.
-   We say that a rule $u$ is \define{satisfied} in a dataset $\la\atoms,\concepts,\inst,\rels,\triples\ra$ iff $\viol{u}{\triples}=\emptyset$.
+   We say that a rule $u$ is \define{satisfied} in a dataset $\dataset$ iff $\viol{u}{\dataset}=\emptyset$.
    This allows us to define a predicate $p_u$ that indicates if a rule $u$ is satisfied:
 \begin{eqnarray}
-   p_u(\triples,\inst)&\Leftrightarrow&\viol{u}{\triples,\inst}=\emptyset
+   p_u(\dataset)&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
 \end{eqnarray}
-   Since $\triples$ changes continually in an information system, the violations are changing along.
+   Since $\triples$ changes continually in the dataset of an information system, the violations are changing along.
    As a result, rules that are violated at one moment may be satisfied at another moment.
-   The set of triples changes due to events observed by the information system.
+   The set of triples changes due to events observed by the system.
    These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
    
    Every rule is assigned to a role.
@@ -336,18 +366,18 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Ampersand supports a special kind of rule that is used for specialization.
    The rule $A\isa B = \la A, A, viol_{A\isa B} \ra$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-   Instances of $A$ that are not an instance of $B$ are the violations of this rule: $viol_{A\isa B}(\triples,\inst) = \{(a,a) \mid a\ \inst\ A \wedge \lnot (a\ \inst\ B)\}$.
+   Instances of $A$ that are not an instance of $B$ are the violations of this rule: $viol_{A\isa B}(\dataset) = \{(a,a) \mid a\ \inst\ A \wedge \lnot (a\ \inst\ B)\}$.
    We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
    Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
    
    Specialization rules are special for two reasons:
-   first, $A\isa B$ is automatically maintained by the information system itself, by changing $\inst$ to include any violating pairs in $B$.
-   This means that an information system that contains rule $A\isa B$ can never be brought into a state in which $p_{A\isa B}$ is False.
+   first, $A\isa B$ is automatically maintained by the system itself, by changing $\inst$ to include any violating pairs in $B$.
+   This means that a system that contains rule $A\isa B$ can never be brought into a state in which $p_{A\isa B}$ is False.
    This allows for certain run-time optimizations, which are beyond the scope of this paper.
    A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
    For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
    To ensure that this does not result in problems at run-time, users are required to write specialization rules that make these comparisons possible.
-   The type checker in the Ampersand compiler will spot violations and refuse to generate an information system if they occur.
+   The type checker in the Ampersand compiler will spot violations and refuse to generate a system if they occur.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -361,14 +391,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
    Users have their own tasks and responsibilities
    and may work from different locations and on different moments.
    This collective use serves a purpose which we loosely call ``the business''.
-   As a consequence, the data in an information system changes continually.
+   As a consequence, the data in a system changes continually.
    To preserve meaning, users are trying to maintain semantic constraints on the data,
    amidst of all changes that are going on around them.
    So, let us first define the constituent notions role and rule before defining information systems proper.
 
    A \define{role} is a name that identifies a group of users.
    The purpose of a role is to mention an individual user without knowing who that user is.
-   In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the information system.
+   In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the system.
    
 
    We can now define the notion of information system.
@@ -387,7 +417,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
 
 \subsection{Example}
-\label{As-is IS}
+\label{old IS}
    Having defined an information system in mathematical terms, let us give an example.
    For this purpose we use a subset of the language Ampersand
    because it makes the examples more appealing to read.
@@ -457,10 +487,10 @@ ROLE Administrator MAINTAINS EnrollRule
    Notice that the current population yields an empty set of violations,
    so the rule is satisfied.
    Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
-   we have now defined a small information system.
+   we have now defined a small system.
 
 \subsection{Data migration}
-   To migrate information system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both information systems
+   To migrate system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both systems
    and add rules to describe the migration.
    $\infsys$ is the existing system, which contains data to be preserved.
    $\infsys'$ is the new system, which contains no or hardly any data.
@@ -474,7 +504,7 @@ ROLE Administrator MAINTAINS EnrollRule
 \end{figure}
       
    We use two datasets: $\dataset$ and $\dataset'$.
-   Before doing so, let us first define the disjoint union of two information systems.
+   Before doing so, let us first define the disjoint union of two systems.
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\triples\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\triples'\ra$}\notag\\
@@ -488,12 +518,12 @@ ROLE Administrator MAINTAINS EnrollRule
 Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
 
 \subsection{Example}
-   Let us proceed to specify a to-be information system, $\infsys'$, to illustrate a (toy) migration.
-   We will use the example in section~\ref{As-is IS} as the as-is information system
+   Let us proceed to specify a new system, $\infsys'$, to illustrate a (toy) migration.
+   We will use the example in section~\ref{old IS} as the old system
    and call that $\infsys$ in this section.
-   Its population reflects the state of the information system just before the migration.
+   Its population reflects the state of the system just before the migration.
 
-   Information system $\infsys'$, the to-be information system, is specified by:
+   Information system $\infsys'$, the new system, is specified by:
 \begin{verbatim}
    RELATION takes[Student*Course]
    RELATION isPartOf[Module*Course] [UNI]=
@@ -544,7 +574,7 @@ Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup
    So let us now turn to the migration.
    The intention of any migration is to preserve as much of the data from $\infsys$ as possible into $\infsys'$,
    while adding the new triples to $\infsys'$.
-   So the first thing to do is to take the disjoint union of both information systems.
+   So the first thing to do is to take the disjoint union of both systems.
    This yields:
 \begin{verbatim}
    RELATION takes[Student*Course] =
@@ -591,7 +621,7 @@ Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup
    There is one violation of RULE "UNI isPartOf[Module*Course]":
       ("IT-Governance", "IT-Governance")
 \end{verbatim}
-   Any data migration must anticipate any population in the as-is information system.
+   Any data migration must anticipate any population in the old system.
    The only thing we know for sure about the ``old'' population is that it satisfies the rules in $\infsys$.
 
 \subsubsection{Strategies for dealing with violations}
@@ -599,7 +629,7 @@ Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup
 The violations of ExamRule2 don't pose a problem: they have a role (administrator) assigned to them.
 We allow these violations to occur in the transition to the new system, and expect people with the Administrator role to deal with them.
 
-However, the violations that arise when taking the (non-disjoint) union of the two scripts include violations of rules that the information system should maintain.
+However, the violations that arise when taking the (non-disjoint) union of the two scripts include violations of rules that the system should maintain.
 This means that if we cannot generate software based on the disjoint union as it is.
 To resolve this, the simplest solution is to change the roles assigned to the rules that are violated in the disjoint union:
 \begin{verbatim}
