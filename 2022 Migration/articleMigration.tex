@@ -285,7 +285,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    as defined by the funciton $\id{pop}_r:\Dataset\rightarrow\Pair{\Atoms}{\Atoms}$.
    It defines a set of pairs, which we call the population of $r$:
 \begin{equation}
-   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}|\ \triple{a}{r}{b}\in\dataset\}
+   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\dataset\}
 \end{equation}
 
    Over time, an information system ``observes'' events that change the dataset by inserting and deleting triples in $\dataset$.
@@ -304,9 +304,17 @@ relation algebra\sep software development\sep data migration\sep software migrat
    $\rels_{\schema}$ is a finite set of relations,
    and $\rules_{\schema}$ is a finite set of rules.
    We will simply write $\concepts$, $\rels$, or $\rules$ if the schema is clear from the context or irrelevant for the argument.
+
+   In a typed information system, atoms in a relation have a type as declared in a relation.
+   For this reason, every relation $r$ has not only a name, but also a source concept and a target concept.
+   We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
+   We require that the source and target concepts are in the set of concepts:
+\begin{eqnarray}
+   \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts
+\end{eqnarray}
    A rule in a schema serves to constrain the dataset,
    to ensure the semantic integrity of the dataset.
-   For every rule $u$ in the schema, the Ampersand compiler generates code for the predicate $\id{sat}_u\{\Dataset\}$
+   For every rule $u$ in the schema, the Ampersand compiler generates code for the predicate $\sat{u}{\Dataset}$
    to determine whether rule $u$ is satisfied in dataset $\dataset$.
    The Ampersand compiler also generates code for a function $\id{viol}_u : \Dataset\rightarrow\id{Text}$
    to produce meaningful error messages in case rule $u$ is not satisfied.
@@ -314,15 +322,23 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \subsection{Information Systems}
 \label{sct:Information Systems}
    The purpose of an information system is to make data meaningful to its users.
+   Users have their own tasks and responsibilities
+   and may work from different locations and on different moments.
+   This collective use serves a purpose which we loosely call ``the business''.
+   As a consequence, the data in a system changes continually.
+   To preserve meaning, users are trying to maintain semantic constraints on the data,
+   amidst of all changes that are going on around them.
+
    This section introduces the notion of information system as a quintuple $\la\dataset_{\infsys},\schema_{\infsys},\inst_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
    As before, we will omit the suffixes if $\infsys$ is obvious (i.e. clear from the context or irrelevant for the argument).
 \begin{definition}[information system]
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\la\dataset,\schema,\inst,\roles,\maintain\ra$, in which
 \begin{itemize}
-   \item dataset $\dataset$ and $\schema$ are defined as in sections~\ref{sct:Schemas} and~\ref{sct:Datasets};
-   \item $\roles$ is a set of roles;
+   \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
+   \item schema $\schema$ is defined as in sections~\ref{sct:Schemas};
    \item $\inst : \Atoms\times\Concepts$ is the instance relation between atoms from $\dataset$ and concepts from $\schema$;
+   \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$; and
    \item requirements~\ref{eqn:inst} thru~\ref{eqn:specialization} are satisfied.
 \end{itemize}
@@ -331,43 +347,25 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
    This means that every atom is an instance of a concept:
-\begin{eqnarray}
-   \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:inst}
-\end{eqnarray}
    To do type checking based on the schema only,
-   all relations in triples from the dataset must be ``known'' in the schema:
-\begin{equation}
-   \forall a,r,b:\ \triple{a}{r}{b}\in\dataset\ \Rightarrow\ r\in\rels
-\end{equation}
-
-   In a typed information system, atoms in a relation have a type as declared in a relation.
-   For this reason, every relation $r$ has not only a name, but also a source concept and a target concept.
-   We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
+   all concepts in the relation $\id{inst}$ and all relations in triples from the dataset must be ``known'' in the schema:
 \begin{eqnarray}
-   \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\\
-   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\dataset&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
+   a\ \inst\ C&\Rightarrow&C\in\concepts\label{eqn:inst}\\
+   \triple{a}{r}{b}\in\dataset&\Rightarrow&r\in\rels\label{eqn:define R}
 \end{eqnarray}
 
-   To compare atoms for equality,
-   the set $\rels$ must contain an identity relation $\ident{C}$ for every concept $C$ in which all atoms occur.
-   It must satisfy:
-\begin{equation}
-   \forall a,b:\ a\ \inst\ C\ \wedge\ b\ \inst\ C\ \Rightarrow\ (a\ \ident{C}\ b\ \Leftrightarrow\ a=b)
-\end{equation}
-   So, $\id{pop}_{\ident{C}}$ is defined by:
 \begin{eqnarray}
-   \forall C\in\concepts&:&\pop{\ident{C}}{\dataset}=\{\pair{a}{a}| a\ \inst\ C\}
+   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\dataset&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
 \end{eqnarray}
 
    Ampersand supports a special kind of rule that is used for specialization.
    The rule $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 \begin{equation}
    \label{eqn:specialization}
-   \id{sat}_{A\isa B}\{\dataset\}\ \Leftrightarrow\ \forall a: a\ \inst\ A\rightarrow a\ \inst\ B
+   \sat{A\isa B}{\dataset}\ \Leftrightarrow\ \forall a: a\ \inst\ A\rightarrow a\ \inst\ B
 \end{equation}
    We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
    Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
-   
    All specialization rules in a schema together form a partial order $\isa : \Pair{\concepts}{\concepts}$.
    Specialization rules are special for two reasons:
    Firstly, the system keeps $A\isa B$ satisfied automatically by changing $\inst$ whenever needed.
@@ -375,38 +373,30 @@ relation algebra\sep software development\sep data migration\sep software migrat
    This allows for certain run-time optimizations, which are beyond the scope of this paper.
    A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
    For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
-   To ensure that this does not result in problems at run-time, users are required to write specialization rules that make these comparisons possible.
-   The type checker in the Ampersand compiler will spot violations and refuse to generate a system if they occur.
+   To ensure that this does not result in problems at run-time, users are required to write all specialization rules explicitly.
 
    %These rules reflect the meaning (semantics) that is shared among users.
 
-   Every rule is assigned to a role.
-   That role must ensure to satisfy that rule, after some event has violated the rule by changing the set of triples.
+   A \define{role} is a name that identifies a group of users.
+   It serves as a placeholder for a person or a machine (i.e. an actor) who can change the dataset.
+   The purpose of a role is to mention an individual user or an automated actor without knowing who that user is.
+   In the sequel, when we talk about a role we actually mean an actor who fulfills that role in the system.
+
+   Every rule is assigned to at least one role by means of the relation $\maintain$.
+   $o\ \maintain\ u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
+   After some event has violated a rule $u$ (by making changes in the dataset),
+   role $o$ maintains this rule by making other changes to satisfy rule $u$ again.
+   We call this ``to restore the invariance'' of rule $u$.
    In other words: If anyone edits in the dataset and violates a rule, someone or something has to fix the dataset to satisfy that rule again.
    Example: if a rule says that every request must be acknowledged, the receipt of a request will violate this rule.
-   Sending an acknowledgement message will cause the rule to be satisfied again.
+   Sending a message that acknowledges this receipt will cause the rule to be satisfied again.
 
-   Users have their own tasks and responsibilities
-   and may work from different locations and on different moments.
-   This collective use serves a purpose which we loosely call ``the business''.
-   As a consequence, the data in a system changes continually.
-   To preserve meaning, users are trying to maintain semantic constraints on the data,
-   amidst of all changes that are going on around them.
-   So, let us first define the constituent notions role and rule before defining information systems proper.
-
-   A \define{role} is a name that identifies a group of users.
-   The purpose of a role is to mention an individual user without knowing who that user is.
-   In the sequel, when we talk about a role we actually mean a user (an arbitrary one) who fulfills that role in the system.
-   
-   The relation $\maintain$ links rules to roles.
-   $o\ \maintain\ u$ means that role $o$ must keep the set $\viol{u}{\dataset}$ empty.
-   If a rule $u$ has violations, i.e. $\viol{u}{\dataset}$ is not empty, there is a role whose job it is to remove those violations.
-   The relation $\maintain$ being surjective means that all users together are keeping the violation set empty.
+   The fact that every rule has at least one role in the relation $\maintain$, means that all roles together are keeping all rules satisfied.
 
 \subsection{Example}
 \label{old IS}
    Having defined an information system in mathematical terms, let us give an example.
-   For this purpose we use a subset of the language Ampersand
+   For this purpose we use the language Ampersand
    because it makes the examples more appealing to read.
    Let us first define a dataset of seven triples and three relations.
 \begin{verbatim}
@@ -442,18 +432,9 @@ RELATION isPartOf[Module*Course] [UNI] =
    The third and last relation states which students are enrolled for which module.
    We leave it empty for now.
 \begin{verbatim}
-RELATION isEnrolledFor [Student*Module]
+RELATION isEnrolledFor[Student*Module]
 \end{verbatim}
-   Summarizing, here we have a set of atoms, which contains \verb-"Peter"-, \verb-"Finance"-, etc.,
-   a set of concepts $\{$\verb-Student-, \verb-Module-, \verb-Course-$\}$,
-   an instance relation that states which atoms belong to which concept,
-   a specialization relation, which is empty,
-   a set of three relations, and
-   a set of eight triples.
-   The example in Ampersand defines precisely that dataset.
-   
-   Now let us define an information system.
-   We define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
+   We also define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
    Its constraint, $p_{\tt Enroll}$ is written in logic as:
 \[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
 s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
@@ -464,17 +445,49 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-   The Ampersand compiler derives the signature of every rule.
-   This rule has signature $\pair{\text{\tt Student}}{\text{\tt Module}}$.
-   The Ampersand compiler also derives the violation set as:
-\[\begin{array}{l}
-   \viol{\text{\tt EnrollRule}}{\dataset}\\
-   \hspace{1cm}=\{\pair{s}{m}|s\ \text{\tt isEnrolledFor}\ m\ \wedge\not\exists c: s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
-\end{array}\]
-   Notice that the current population yields an empty set of violations,
-   so the rule is satisfied.
-   Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
-   we have now defined a small system.
+
+   Summarizing, this example contains a dataset with seven triples
+   and a schema with three concepts, three relations, and one rule.
+   Now let us define an information system.
+   Notice that the current population satisfies the rule.
+   Let us check requirements~\ref{eqn:inst} thru~\ref{eqn:specialization} to verify that this is an information system.
+   Requirement~\ref{eqn:concepts} defines the set $\concepts$.
+   Requirement~\ref{eqn:define R} defines the set $\rels$.
+   Requirement~\ref{eqn:type} defines the relation $\id{inst}$.
+
+%    The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
+%    This means that every atom is an instance of a concept:
+% \begin{eqnarray}
+%    \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:inst}
+% \end{eqnarray}
+%    To do type checking based on the schema only,
+%    all relations in triples from the dataset must be ``known'' in the schema:
+% \begin{equation}
+%    \forall a,r,b:\ \triple{a}{r}{b}\in\dataset\ \Rightarrow\ r\in\rels\label{eqn:define R}
+% \end{equation}
+
+%    In a typed information system, atoms in a relation have a type as declared in a relation.
+%    For this reason, every relation $r$ has not only a name, but also a source concept and a target concept.
+%    We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
+% \begin{eqnarray}
+%    \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\label{eqn:concepts}\\
+%    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\dataset&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
+% \end{eqnarray}
+%    The type checker in the Ampersand compiler will spot violations and refuse to generate a system if they occur.
+
+%    To compare atoms for equality,
+%    the set $\rels$ contains an identity relation $\ident{C}$ for every concept $C$ in which all atoms occur.
+%    It satisfies:
+% \begin{equation}
+%    \forall a,b:\ a\ \inst\ C\ \wedge\ b\ \inst\ C\ \Rightarrow\ (a\ \ident{C}\ b\ \Leftrightarrow\ a=b)
+% \end{equation}
+%    So, $\id{pop}_{\ident{C}}$ is defined by:
+% \begin{eqnarray}
+%    \forall C\in\concepts&:&\pop{\ident{C}}{\dataset}=\{\pair{a}{a}\mid a\ \inst\ C\}
+% \end{eqnarray}
+
+%    Having one rule, one role, a relation $\maintain$ that contains one pair, and a dataset,
+%    we have now defined a small system.
 
 \subsection{Data migration}
    To migrate system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both systems
@@ -496,8 +509,8 @@ ROLE Administrator MAINTAINS EnrollRule
 \begin{eqnarray}
    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
-      X\uplus Y&=&\{(x,0)|\ x\in X\}\ \cup\ \{(y,1)|\ y\in Y\}\\
-      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))|\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))|\ (y_1,y_2)\in Y\}\end{array}\\
+      X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
+      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
 \end{eqnarray}
@@ -701,7 +714,7 @@ Indeed, ExamRule2 initially has more violations in this scenario.
                \end{array}
            \end{array}\\
            &\cup&\begin{array}[t]{@{}l}
-            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)|\ C\in\concepts,C'\in\concepts',C=C'\}\\
+            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)\mid\ C\in\concepts,C'\in\concepts',C=C'\}\\
            \end{array}
    \end{eqnarray}
 \end{definition}
@@ -723,12 +736,8 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
    Such changes have further reaching consequences, however.
    Changes to $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
    We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\rels,\dataset\ra$ as a change in which one or more of $\inst$, $\concepts$, or $\rels$ change.
-   To satisfy definition~\ref{def:dataset}, $\dataset$ and $\atoms$ must change too,
+   To satisfy the definition of datasets, $\dataset$ and $\atoms$ must change too,
    but the migration should try to preserve the maximal amount of data.
-
-   This paper studies those changes and seeks to preserve the rules in definition~\ref{def:dataset}
-   in such a way that large portions of migration can be automated.
-
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
