@@ -259,7 +259,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and \atom{074238991} as a \concept{TelephoneNumber}.
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
-   The expression $a\ \inst\ A$ means that atom $a$ is an \emph{instance} of concept $A$.
+   The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
+   The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
    All concepts are taken from an infinite set $\Concepts$.
    $\Concepts$ and $\Atoms$ are disjoint sets.
    
@@ -269,7 +270,6 @@ relation algebra\sep software development\sep data migration\sep software migrat
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
 
    Triples serve to represent data.
-   A dataset $\dataset$ is a set of triples.
    A triple is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
@@ -281,11 +281,17 @@ relation algebra\sep software development\sep data migration\sep software migrat
    In this paper, the informal meaning is interesting only for the sake of illustration.
    To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\dataset$
    in those cases where $\dataset$ is either clear from the context or irrelevant for the argument.
+
+   A dataset $\dataset$ is a tuple $\pair{\triples_{\dataset}}{\inst_{\dataset}}$,
+   in which $\triples_{\dataset}$ is a finite set of triples
+   and $\inst_{\dataset}$ is the instance relation.
+   We will simply write $\triples$ or $\inst$ if the dataset is clear from the context or irrelevant for the argument.
+ 
    A relation $r$ can serve as a container of pairs,
-   as defined by the funciton $\id{pop}_r:\Dataset\rightarrow\Pair{\Atoms}{\Atoms}$.
+   as defined by the function $\id{pop}_r:\Dataset\rightarrow\Pair{\Atoms}{\Atoms}$.
    It defines a set of pairs, which we call the population of $r$:
 \begin{equation}
-   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\dataset\}
+   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples\}
 \end{equation}
 
    Over time, an information system ``observes'' events that change the dataset by inserting and deleting triples in $\dataset$.
@@ -329,15 +335,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
    To preserve meaning, users are trying to maintain semantic constraints on the data,
    amidst of all changes that are going on around them.
 
-   This section introduces the notion of information system as a quintuple $\la\dataset_{\infsys},\schema_{\infsys},\inst_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
+   This section introduces the notion of information system as a quadrtuple $\la\dataset_{\infsys},\schema_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
    As before, we will omit the suffixes if $\infsys$ is obvious (i.e. clear from the context or irrelevant for the argument).
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\inst,\roles,\maintain\ra$, in which
+\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\roles,\maintain\ra$, in which
 \begin{itemize}
    \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
    \item schema $\schema$ is defined as in sections~\ref{sct:Schemas};
-   \item $\inst : \Atoms\times\Concepts$ is the instance relation between atoms from $\dataset$ and concepts from $\schema$;
    \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$; and
    \item requirements~\ref{eqn:inst} thru~\ref{eqn:specialization} are satisfied.
