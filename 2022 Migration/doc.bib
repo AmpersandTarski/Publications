@@ -1,4 +1,39 @@
-﻿
+﻿@inproceedings{Ataei2021,
+author = {Ataei, Parisa and Khan, Fariba and Walkingshaw, Eric},
+title = {A Variational Database Management System},
+year = {2021},
+isbn = {9781450391122},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3486609.3487197},
+doi = {10.1145/3486609.3487197},
+abstract = {Many problems require working with data that varies in its structure and content. Current approaches, such as schema evolution or data integration tools, are highly tailored to specific kinds of variation in databases. While these approaches work well in their roles, they do not address all kinds of variation and do address the interaction of different kinds of variation in databases. In this paper, we define a framework for capturing variation as a generic and orthogonal con- cern in relational databases. We define variational schemas, variational databases, and variational queries for capturing variation in the structure, content, and information needs of relational databases, respectively. We define a type system that ensures variational queries are consistent with respect to a variational schema. Finally, we design and implement a variational database management system as an abstraction layer over a traditional relational database management system. Using previously developed use cases, we show the feasibility of our framework and demonstrate the performance of different approaches used in our system},
+booktitle = {Proceedings of the 20th ACM SIGPLAN International Conference on Generative Programming: Concepts and Experiences},
+pages = {29-42},
+numpages = {14},
+keywords = {choice calculus, variational data, software product lines, relational databases, type systems, variation},
+location = {Chicago, IL, USA},
+series = {GPCE 2021}
+}
+
+@inproceedings{Walkingshaw2014,
+author = {Walkingshaw, Eric and K\"{a}stner, Christian and Erwig, Martin and Apel, Sven and Bodden, Eric},
+title = {Variational Data Structures: Exploring Tradeoffs in Computing with Variability},
+year = {2014},
+isbn = {9781450332101},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2661136.2661143},
+doi = {10.1145/2661136.2661143},
+abstract = {Variation is everywhere, and in the construction and analysis of customizable software it is paramount. In this context, there arises a need for variational data structures for efficiently representing and computing with related variants of an underlying data type. So far, variational data structures have been explored and developed ad hoc. This paper is a first attempt and a call to action for systematic and foundational research in this area. Research on variational data structures will benefit not only customizable software, but many other application domains that must cope with variability. In this paper, we show how support for variation can be understood as a general and orthogonal property of data types, data structures, and algorithms. We begin a systematic exploration of basic variational data structures, exploring the tradeoffs among different implementations. Finally, we retrospectively analyze the design decisions in our own previous work where we have independently encountered problems requiring variational data structures.},
+booktitle = {Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming \& Software},
+pages = {213-226},
+numpages = {14},
+keywords = {data structures, software product lines, variation, configurable software, variability-aware analyses},
+location = {Portland, Oregon, USA},
+series = {Onward! 2014}
+}
+
 @inproceedings{Zielinski2013,
 	abstract = {Allegories are categories modeled upon the category of sets and binary relations (where sets are objects and binary relations are morphisms composed using joins). In this paper we present a new conceptual data modeling formalism based on the language of allegories. We show that allegories provide more convenient framework for modeling data than more traditional categorical approaches in which arrows are interpreted as functional dependencies and in which many to many or partial relationships have to be represented as spans. Finally, we demonstrate that by using allegories different than the allegory of sets and binary relations, for example the allegory of sets and lattice valued relations, one can model replicated data or data stored in a valid time temporal database.},
 	address = {Berlin, Heidelberg},
@@ -58,7 +93,7 @@ journal={Information and computation},
 volume={217},
 pages={31-51},
 abstract={In this paper we present a simple database definition language: that of categories and functors. A database schema is a small category and an instance is a set-valued functor on it. We show that morphisms of schemas induce three "data migration functors", which translate instances from one schema to the other in canonical ways. These functors parameterize projections, unions, and joins over all tables simultaneously and can be used in place of conjunctive and disjunctive, queries. We also show how to connect a database and a functional programming language by introducing a functorial connection between the schema and the category of types for that language. We begin the paper with a multitude of examples to motivate the definitions, and near the end we provide a dictionary whereby one can translate database concepts into category-theoretic concepts and vice versa. (C) 2012 Elsevier Inc. All rights reserved.;Byline: David I. Spivak Keywords: Category theory; Databases; Data migration; Adjoint functors; Queries In this paper we present a simple database definition language: that of categories and functors. A database schema is a small category and an instance is a set-valued functor on it. We show that morphisms of schemas induce three "data migration functors", which translate instances from one schema to the other in canonical ways. These functors parameterize projections, unions, and joins over all tables simultaneously and can be used in place of conjunctive and disjunctive queries. We also show how to connect a database and a functional programming language by introducing a functorial connection between the schema and the category of types for that language. We begin the paper with a multitude of examples to motivate the definitions, and near the end we provide a dictionary whereby one can translate database concepts into category-theoretic concepts and vice versa. Author Affiliation: Department of Mathematics, Massachusetts Institute of Technology, Cambridge, MA 02139, United States Article History: Received 14 January 2011; Revised 21 March 2012 Article Note: (footnote) [star] This project was supported by ONR grant N000141010841.;In this paper we present a simple database definition language: that of categories and functors. A database schema is a small category and an instance is a set-valued functor on it. We show that morphisms of schemas induce three “data migration functors”, which translate instances from one schema to the other in canonical ways. These functors parameterize projections, unions, and joins over all tables simultaneously and can be used in place of conjunctive and disjunctive queries. We also show how to connect a database and a functional programming language by introducing a functorial connection between the schema and the category of types for that language. We begin the paper with a multitude of examples to motivate the definitions, and near the end we provide a dictionary whereby one can translate database concepts into category-theoretic concepts and vice versa.;},
-keywords={Adjoint functors; Category theory; Computer Science; Computer Science, Theory & Methods; Data migration; Mathematics; Mathematics, Applied; Physical Sciences; Queries; Science & Technology; Technology},
+keywords={Adjoint functors; Category theory; Computer Science; Computer Science, Theory \& Methods; Data migration; Mathematics; Mathematics, Applied; Physical Sciences; Queries; Science \& Technology; Technology},
 isbn={0890-5401},
 language={English},
 }
@@ -187,7 +222,6 @@ series = {APSys '21}
   Year                     = {1998},
   ISBN                     = {ISBN-10: 0134587618},
   Comment                  = {NA PGL},
-  Key                      = {Hoare\&98}
 }
 
 @book{Milner1989,

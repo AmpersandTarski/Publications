@@ -92,22 +92,21 @@ relation algebra\sep software development\sep data migration\sep software migrat
    By installing upgrades automatically, frequently and in small increments,
    users experience an evolving system.
 
-   We recognize that designs from which concrete systems are generated can have errors in them:
-   Either an engineer was making a mistake directly,
-   or the requirements the engineer was taking into account were miscommunicated,
-   or the environment changed in a way that was not foreseen.
-   Regardless of the reason, even a generated system may need to be repaired.
-   For this reason, we focus on evolving systems.
-   
-   This paper studies this evolution in increments, in which we distinguish an ``old system'' and a ``new system''.
-   In each increment we need to migrate the data from the old system to the newly designed system.
-   This situation poses specific requirements to data migration.
-   For instance, if a data migration has other purposes than just to evolve a system,
+   In each increment, we distinguish an ``old system'' and a ``new system''.
+   The difference between the old system and the new system is not just a difference in two schemas.
+   When deploying the increment, the data from the old system needs to migrate to the new system as well.
+   Incremental evolution poses specific requirements to data migration,
+   which sets it apart from data migrations for other purposes.
+   For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
    migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
-   When one system evolves into another, however, preserving the functionality is not an option.
-   To change the functionality is the very purpose of the evolution.
-   So, we must make sure to use methods for data migration that are specifically meant for evolving systems.
+   In our work, however, changing the functionality is the very purpose of an increment.
+   We can also interpret an increment as a variation between two data structures,
+   which is a well studied subject by now, e.g.~\cite{Walkingshaw2014}.
+   For instance, Ataei et.al.~\cite{Ataei2021} show how to unify databases with slight variations.
+   They do this, however, by preserving all variations in one comprehensive database.
+   However, if we want to get rid of the old system, we need to look at other approaches.
+   Such examples have convinced us to define a method for data migration that is specifically meant for systems that evolve incrementally.
    
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
    A system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
@@ -121,6 +120,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The schema $\schema_{\infsys}$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.
    (We will denote the schema just as $\schema$ if the system is obvious or irrelevant to know.)
    The Ampersand compiler generates systems that keep all constraints satisfied at all times.
+   This is why we have done this research with Ampersand.
    Much like~\cite{Spivak2012}, our work assumes that the semantics of the old dataset is encoded in its schema,
    so we can be explicit about ``preserving the meaning as much as possible''.
    In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
@@ -255,14 +255,15 @@ relation algebra\sep software development\sep data migration\sep software migrat
    All atoms are taken from an infinite set called $\Atoms$.
    
    Concepts are names that group atoms of the same type.
+   All concepts are taken from an infinite set $\Concepts$.
+   $\Concepts$ and $\Atoms$ are disjoint sets.
    For example, an engineer might choose to classify \atom{Peter} and \atom{Melissa} as \concept{Person},
    and \atom{074238991} as a \concept{TelephoneNumber}.
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
    The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
-   All concepts are taken from an infinite set $\Concepts$.
-   $\Concepts$ and $\Atoms$ are disjoint sets.
+   This relation is used in the type system.
    
    Relations serve to organize and store data, to allow an engineer to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations.
@@ -271,32 +272,32 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Triples serve to represent data.
    A triple is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
-   This makes our theory valid for any kind of database that triples can represent,
-   such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases
-   Each triple relates two atoms to a relation.
    A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean in practice that
    the ``thing'' that \atom{Peter} refers to has \atom{074238991} as a telephone number.
    This ``meaning from practice'' has no consequences in the formal world.
    We leave it entirely up to a user to attach a practical meaning to a triple.
    In this paper, the informal meaning is interesting only for the sake of illustration.
-   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\dataset$
-   in those cases where $\dataset$ is either clear from the context or irrelevant for the argument.
-
+   This makes our theory valid for any kind of database that triples can represent,
+   such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
+   
    A dataset $\dataset$ is a tuple $\pair{\triples_{\dataset}}{\inst_{\dataset}}$,
    in which $\triples_{\dataset}$ is a finite set of triples
    and $\inst_{\dataset}$ is the instance relation.
    We will simply write $\triples$ or $\inst$ if the dataset is clear from the context or irrelevant for the argument.
- 
+   Every dataset is an element of an infinite set called $\Dataset$.
+   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
+
    A relation $r$ can serve as a container of pairs,
    as defined by the function $\id{pop}_r:\Dataset\rightarrow\Pair{\Atoms}{\Atoms}$.
    It defines a set of pairs, which we call the population of $r$:
 \begin{equation}
-   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples\}
+   \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
+   \label{eqn:pop}
 \end{equation}
 
-   Over time, an information system ``observes'' events that change the dataset by inserting and deleting triples in $\dataset$.
-   By the same account, the population of relations change over time.
-   These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples.
+   Over time, an information system ``observes'' events that change the dataset by inserting and deleting triples.
+   By the same account, the population of relations changes over time.
+   These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples in a dataset.
 
 \subsection{Schemas}
 \label{sct:Schemas}
@@ -311,19 +312,31 @@ relation algebra\sep software development\sep data migration\sep software migrat
    and $\rules_{\schema}$ is a finite set of rules.
    We will simply write $\concepts$, $\rels$, or $\rules$ if the schema is clear from the context or irrelevant for the argument.
 
-   In a typed information system, atoms in a relation have a type as declared in a relation.
-   For this reason, every relation $r$ has not only a name, but also a source concept and a target concept.
+   In order to attach types to atoms, relations must be declared in the schema.
+   Every relation $r$ has not only a name, but also a source concept and a target concept.
    We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
    We require that the source and target concepts are in the set of concepts:
 \begin{eqnarray}
    \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:relationsIntroduceConcepts}
 \end{eqnarray}
    A rule in a schema serves to constrain the dataset,
    to ensure the semantic integrity of the dataset.
-   For every rule $u$ in the schema, the Ampersand compiler generates code for the predicate $\sat{u}{\Dataset}$
-   to determine whether rule $u$ is satisfied in dataset $\dataset$.
-   The Ampersand compiler also generates code for a function $\id{viol}_u : \Dataset\rightarrow\id{Text}$
-   to produce meaningful error messages in case rule $u$ is not satisfied.
+   For every rule $u$ in the schema, the Ampersand compiler generates code
+   for the function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
+   For any given dataset $\dataset$, $\viol{u}{\dataset}$ represents the set of violations of rule $u$.
+   The type of the atoms in a violation set is defined by the function $\Sign{u} : \Dataset\rightarrow\Pair{\Concepts}{\Concepts}$:
+\begin{eqnarray}
+   \sign{u}{\dataset}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
+   \label{eqn:typed violations}
+\end{eqnarray}
+To determine whether rule $u$ is satisfied in dataset $\dataset$,
+the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
+\begin{eqnarray}
+   \sat{u}{\dataset}&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
+   \label{eqn:sat}
+\end{eqnarray}
+   Violations are used to produce meaningful error messages and to trigger changes in the dataset to satisfy rule $u$ again.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -335,32 +348,39 @@ relation algebra\sep software development\sep data migration\sep software migrat
    To preserve meaning, users are trying to maintain semantic constraints on the data,
    amidst of all changes that are going on around them.
 
-   This section introduces the notion of information system as a quadrtuple $\la\dataset_{\infsys},\schema_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
-   As before, we will omit the suffixes if $\infsys$ is obvious (i.e. clear from the context or irrelevant for the argument).
+   This section introduces the notion of information system as a quadruple $\la\dataset_{\infsys},\schema_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
+   As before, we will omit the suffixes if $\infsys$ is self-evident.
 \begin{definition}[information system]
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\la\dataset,\schema,\roles,\maintain\ra$, in which
 \begin{itemize}
    \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
-   \item schema $\schema$ is defined as in sections~\ref{sct:Schemas};
+   \item schema $\schema$ is defined as in section~\ref{sct:Schemas};
    \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$; and
-   \item requirements~\ref{eqn:inst} thru~\ref{eqn:specialization} are satisfied.
+   \item requirements~\ref{eqn:pop} thru~\ref{eqn:specialization} are satisfied.
 \end{itemize}
 \end{definition}
    Let us discuss these items one by one.
 
    The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
-   This means that every atom is an instance of a concept:
-   To do type checking based on the schema only,
-   all concepts in the relation $\id{inst}$ and all relations in triples from the dataset must be ``known'' in the schema:
+   Type checking is based on the schema only.
+   So, all concepts in the relation $\id{inst}$ and all relations in triples from the dataset must be ``known'' in the schema:
 \begin{eqnarray}
-   a\ \inst\ C&\Rightarrow&C\in\concepts\label{eqn:inst}\\
-   \triple{a}{r}{b}\in\dataset&\Rightarrow&r\in\rels\label{eqn:define R}
+   a\ \inst\ C&\Rightarrow&C\in\concepts
+   \label{eqn:concepts}\\
+   \triple{a}{r}{b}\in\triples&\Rightarrow&r\in\rels
+   \label{eqn:define R}
 \end{eqnarray}
-
+   Every atom is an instance of a concept:
 \begin{eqnarray}
-   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\dataset&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
+   a\ \inst\ A&\Leftrightarrow&(\exists n,b,B:\ \triple{a}{\declare{n}{A}{B}}{b}\in\triples\ \vee\ \triple{b}{\declare{n}{B}{A}}{a}\in\triples)
+   \label{eqn:instance}
+\end{eqnarray}
+   Every atom has the type of the relation in which it resides:
+\begin{eqnarray}
+   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
+   \label{eqn:type}
 \end{eqnarray}
 
    Ampersand supports a special kind of rule that is used for specialization.
@@ -400,7 +420,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \subsection{Example}
 \label{old IS}
-   Having defined an information system in mathematical terms, let us give an example.
+   Having defined an information system in mathematical terms, let us discuss a small example.
    For this purpose we use the language Ampersand
    because it makes the examples more appealing to read.
    Let us first define a dataset of seven triples and three relations.
@@ -411,14 +431,14 @@ RELATION takes[Student*Course] =
 ; ("John", "Business IT")
 ]
 \end{verbatim}
-   This introduces a relation with name \verb#takes#,
+   This declaration introduces a relation with name \verb#takes#,
    source concept \verb#Student#, and
    target concept \verb#Course#.
    It also introduces three triples:
 \[\begin{array}{l}
    \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
    \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}
 \end{array}\]
    The informal meaning of this relation is that it states which students are taking which courses.
    So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
@@ -440,35 +460,63 @@ RELATION isPartOf[Module*Course] [UNI] =
 RELATION isEnrolledFor[Student*Module]
 \end{verbatim}
    We also define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
-   Its constraint, $p_{\tt Enroll}$ is written in logic as:
-\[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
-s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
-\end{array}\]
    In Ampersand, which is a syntactically sugared form of relation algebra,
-   we give each rule a name and declare a role to maintain it:
+   we give each rule a name and declare a role to preserve its invariance:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
+   The actual constraint, \verb#isEnrolledFor |- takes;isPartOf~#, is written in logic as:
+\[\begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
+s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
+\end{array}\]
 
    Summarizing, this example contains a dataset with seven triples
    and a schema with three concepts, three relations, and one rule.
-   Now let us define an information system.
-   Notice that the current population satisfies the rule.
-   Let us check requirements~\ref{eqn:inst} thru~\ref{eqn:specialization} to verify that this is an information system.
-   Requirement~\ref{eqn:concepts} defines the set $\concepts$.
-   Requirement~\ref{eqn:define R} defines the set $\rels$.
-   Requirement~\ref{eqn:type} defines the relation $\id{inst}$.
+
+   Now let us check the requirements to verify that this example defines an information system.
+   Requirement~\ref{eqn:pop} results in a set $\triples$ that contains seven triples.
+   Requirements~\ref{eqn:instance} and~\ref{eqn:type} define the relation $\id{inst}$ to contains the pairs:
+   \[\begin{array}{l}
+      \pair{\tt "Finance"}{\tt Module}\\
+      \pair{\tt "Business Rules"}{\tt Module}\\
+      \pair{\tt "Business Analytics"}{\tt Module}\\
+      \pair{\tt "IT-Governance"}{\tt Module}\\
+      \pair{\tt "Management"}{\tt Course}\\
+      \pair{\tt "Business IT"}{\tt Course}\\
+      \pair{\tt "Peter"}{\tt Student}\\
+      \pair{\tt "Susan"}{\tt Student}\\
+      \pair{\tt "John"}{\tt Student}
+   \end{array}\]
+   Requirements~\ref{eqn:concepts} and~\ref{eqn:relationsIntroduceConcepts} both say that 
+   \[\concepts=\{ {\tt Module}, {\tt Course}, {\tt Student}\}\]
+   Requirement~\ref{eqn:define R} says that 
+   \[\begin{array}{rcl}
+      \rels&=&\{\begin{array}[t]{l}
+                  \declare{\tt takes}{\tt Student}{\tt Course},\\
+                  \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
+                  \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\ \}
+                \end{array}
+     \end{array}
+   \]
+   The set of rules $\rules$ contains just one rule: \verb-EnrollRule-.
+   So $\concepts$, $\relations$, and $\rules$ complete the schema $\schema$ of this example.
+   The dataset $\dataset$ contains the set $\triples$ and the relation $\inst$.
+   The set of roles, $\roles$, contains one role: ${\tt Administrator}$
+   and the relation $\maintain$ relates ${\tt Administrator}$ to rule\verb-EnrollRule-.
+   Requirement~\ref{eqn:typed violations} and~\ref{eqn:sat} are satisfied because $\viol{\tt EnrollRule}{\dataset}$ is empty.
+   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
+   So we can conclude that this example satisfies definition~\ref{def:information system}.
 
 %    The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
 %    This means that every atom is an instance of a concept:
 % \begin{eqnarray}
-%    \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:inst}
+%    \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:concepts}
 % \end{eqnarray}
 %    To do type checking based on the schema only,
 %    all relations in triples from the dataset must be ``known'' in the schema:
 % \begin{equation}
-%    \forall a,r,b:\ \triple{a}{r}{b}\in\dataset\ \Rightarrow\ r\in\rels\label{eqn:define R}
+%    \forall a,r,b:\ \triple{a}{r}{b}\in\triples\ \Rightarrow\ r\in\rels\label{eqn:define R}
 % \end{equation}
 
 %    In a typed information system, atoms in a relation have a type as declared in a relation.
@@ -476,7 +524,7 @@ ROLE Administrator MAINTAINS EnrollRule
 %    We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
 % \begin{eqnarray}
 %    \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\label{eqn:concepts}\\
-%    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\dataset&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
+%    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
 % \end{eqnarray}
 %    The type checker in the Ampersand compiler will spot violations and refuse to generate a system if they occur.
 
