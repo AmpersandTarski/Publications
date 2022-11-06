@@ -73,5 +73,6 @@ qed
 lemma augmentTypes_preserves_typedness:
   assumes "typedGraph gt lg"
   shows "typedGraph explicitTyping (augmentTypes gt lg)"
-  using assms apply auto
+  using assms apply auto sorry
+
 end
