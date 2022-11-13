@@ -9,14 +9,14 @@ theory Migration
 begin
 
 datatype ('l,'v,'c) graphTyping
- = GT (lblTyping : "'l \<Rightarrow> 'c \<times> 'c")
-      (vertTyping : "('v \<times> 'c) set")
+ = GT (decl : "'l \<Rightarrow> 'c \<times> 'c")
+      (inst : "('v \<times> 'c) set")
 
-fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> _ \<Rightarrow> _" where
+fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
   = (case lt l of
       (xt,yt) \<Rightarrow> (x,xt) \<in> vt \<and> (y,yt) \<in> vt)"
-fun typedVertex :: "('l,'v,'c) graphTyping \<Rightarrow> _ \<Rightarrow> _" where
+fun typedVertex :: "('l,'v,'c) graphTyping \<Rightarrow> 'v \<Rightarrow> bool" where
 "typedVertex (GT lt vt) x
   = (x \<in> Domain vt)"
 
@@ -34,12 +34,16 @@ lemma trivialTyping :
   using assms unfolding trivialTyping_def by auto
 
 fun augmentTypeToVertex where
-  "augmentTypeToVertex gt v = (v, vertTyping gt `` {v})"
+  "augmentTypeToVertex gt v = (v, inst gt `` {v})"
 fun augmentTypeToEdge where
-  "augmentTypeToEdge gt (l,x,y) = ((l,lblTyping gt l), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
+  "augmentTypeToEdge gt (l,x,y) = ((l,decl gt l), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
 
 fun pairToRel where
   "pairToRel (v,ts) = (\<lambda> t. ((v,ts),t)) ` ts"
+
+lemma pairToRelUNIV[simp]:
+  "(a, b) \<in> Domain (\<Union> (range pairToRel)) \<longleftrightarrow> b\<noteq>{}"
+  by fastforce
 
 definition explicitTyping where
   "explicitTyping = GT snd (Union (pairToRel ` UNIV))"
@@ -53,26 +57,29 @@ lemma augmentTypes_is_graph[intro]:
   shows "graph (augmentTypes gt lg)"
   using assms unfolding augmentTypes_def by fastforce
 
-lemma elm_in_augmentTypes[simp]:
-  "((a, aa, b), (ab, ba), (ac, bb)) \<in> edges (augmentTypes gt lg)
-  \<longleftrightarrow> ((a,ab,ac) \<in> edges lg \<and>
-      (aa,b) = lblTyping gt a \<and>
-      (\<forall> b. (b\<in> ba \<longleftrightarrow> (ab,b) \<in> vertTyping gt)) \<and>
-      (\<forall> b. (b\<in> bb \<longleftrightarrow> (ac,b) \<in> vertTyping gt)) )" (is "?lhs = ?rhs")
-proof
-  show "?lhs \<Longrightarrow> ?rhs" unfolding augmentTypes_def by auto
-  assume rhs:?rhs
-  hence at:"augmentTypeToEdge gt (a,ab,ac) \<in> augmentTypeToEdge gt ` edges lg"
-    by blast
-  from rhs have "augmentTypeToEdge gt (a, ab, ac) = ((a, aa, b), (ab, ba), (ac, bb))"
-    by auto
-  with at show ?lhs unfolding augmentTypes_def by auto
-qed
+lemma pairABHelper[simp]:
+  shows "(x, aa) \<in> Pair c ` b \<longleftrightarrow> aa \<in> b \<and> x=c"
+  by auto
 
+lemma augmentTypes_preserves_typed_vertex[intro]:
+  assumes
+        "a\<in>vertices lg \<longrightarrow> typedVertex gt a"
+        "(a, b) \<in> vertices (augmentTypes gt lg)"
+  shows "typedVertex explicitTyping (a, b)"
+  using assms unfolding explicitTyping_def
+  by (cases "gt";auto simp: augmentTypes_def)
+
+lemma augmentTypes_preserves_typed_edge[intro]:
+  assumes
+        "(e',fst l,fst r)\<in>edges lg \<longrightarrow> wellTypedEdge gt (e',fst l,fst r)"
+        "((e', etl,etr),l,r) \<in> edges (augmentTypes gt lg)"
+  shows "wellTypedEdge explicitTyping ((e', etl,etr),l,r)"
+  using assms unfolding explicitTyping_def
+  by (cases "gt";auto simp: augmentTypes_def)
 
 lemma augmentTypes_preserves_typedness:
   assumes "typedGraph gt lg"
   shows "typedGraph explicitTyping (augmentTypes gt lg)"
-  using assms apply auto sorry
+  using assms by auto
 
 end
