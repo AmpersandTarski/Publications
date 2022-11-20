@@ -73,7 +73,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \label{sct:Introduction}
    We believe in generating information systems%
 \footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }
-   to prevent human errors.
+   to prevent human programming errors.
    By generating rather than programming systems by hand,
    we avoid introducing errors in the translation from design to a concrete system.
    A mistake not made cannot propagate into production.
@@ -99,96 +99,99 @@ relation algebra\sep software development\sep data migration\sep software migrat
    which sets it apart from data migrations for other purposes.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers may want to preserve the functionality to avoid introducing new errors in an otherwise error-prone process.
-   In our work, however, changing the functionality is the very purpose of an increment.
-   We can also interpret an increment as a variation between two data structures,
-   which is a well studied subject by now, e.g.~\cite{Walkingshaw2014}.
-   For instance, Ataei et.al.~\cite{Ataei2021} show how to unify databases with slight variations.
-   They do this, however, by preserving all variations in one comprehensive database.
-   However, if we want to get rid of the old system, we need to look at other approaches.
-   Such examples have convinced us to define a method for data migration that is specifically meant for systems that evolve incrementally.
+   migration engineers may exclude new functionality to avoid introducing new errors in an otherwise error-prone migration process.
+   In our work, however, introducing new functionality and removing obsolete functionality is the very purpose of an increment.
+   Data migration literature sometimes uses a different notion of increment.
+   For example, Walkingshaw et.al.~\cite{Walkingshaw2014} and Ataei~\cite{Ataei2021} define an increment as a variation between two data structures.
+   Ataei et.al. show how to unify databases with slight variations by preserving all variations in one comprehensive database.
+   In our work, however, we want to get rid of the old system and not retain it.
+   So, we need to look at a different approach.
+   Examples like these have convinced us to define a new method for data migration that is specifically meant for systems under incremental development.
    
+   The contribution of this paper is to derive a migration schema from two artifacts: an existing system
+   (which has its own schema and dataset) and a new schema (which specifies the new system),
+   which allows us to facilitate the migration.
+   The purpose of our theory is to develop tools.
+   These tools must satisfy such practical requirements as
+   zero down-time updates and ways to cope with data pollution.
+   In practice, more frequent updates require that updates come with zero down-time.
+   For our theory, zero down-time means that the release of new functionality may not be delayed by anything a migration engineer must do.
+   
+   This theory has enhanced our formal understanding of data migration and it will help to automate data migrations correctly and reliably.
+   The benefits work in two directions.
+   Automation data migrations saves effort and errors,
+   contributing to more frequent and smaller releases.
+   Smaller and faster releases also mean smaller migrations
+   and therefore a smaller difference between the old system and the new system.
+   The smaller that difference, the simpler the migration and the more of it can be automated.
+
+   Our theory is based on the following assumptions and requirements:
+\begin{itemize}
+   \item the data migration is solely meant to deploy a software increment in production;
+   \item the old data set may be polluted, but it satisfies its schema;
+   \item the data migration may require human interaction, which may take time;
+   \item the meaning of data must be preserved;
+   \item the business continues during the migration without interruption;
+   \item there is a compiler to generate an information system from a given schema.
+         In this work, we use the Ampersand compiler for that purpose.
+\end{itemize}
+
+
+\section{Analysis}
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   A system $\infsys$ contains a dataset $\dataset_{\infsys}$, which represents the state of the system.
-   (In the sequel we may just write $\dataset$
-   if the corresponding system is either clear from the context or irrelevant for the argument.)
+   A system $\infsys$ contains a dataset $\dataset$, which represents the state of the system.%
+\footnote{Where ambiguity lures, we write $\dataset_{\infsys}$ instead of $\dataset$, to indicate that we specifically mean the dataset of $\infsys$.}
    Every event that an actor causes in system $\infsys$ may change the state $\dataset$ of that system.
+   To keep our theory technology independent, we will assume that a dataset contains triples.
    Data migration occurs when an old system, $\infsys$, is replaced by a new system, $\infsys'$,
    while preserving the meaning of the data from $\infsys$ as much as possible.
    Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both systems differ.
-   
-   The schema $\schema_{\infsys}$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.
-   (We will denote the schema just as $\schema$ if the system is obvious or irrelevant to know.)
-   The Ampersand compiler generates systems that keep all constraints satisfied at all times.
+
+   The schema $\schema$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.%
+\footnote{Where ambiguity lures, we write $\schema_{\infsys}$ instead of $\schema$ to indicate that we specifically mean the schema of $\infsys$.}
+   The Ampersand compiler generates systems, which keep all constraints satisfied at all times.
    This is why we have done this research with Ampersand.
-   Much like~\cite{Spivak2012}, our work assumes that the semantics of the old dataset is encoded in its schema,
-   so we can be explicit about ``preserving the meaning as much as possible''.
+   Much like~\cite{Spivak2012}, in our work the schema encodes the semantics of a system.
+   This will allow us to be explicit about ``preserving the meaning as much as possible''.
    In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
    but with relations in a way that bears resemblance with Alloy~\cite{Alloy2006} and allegories%
-   \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
+\footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
 
-   The theory we develop in this paper must lead to tools that satisfy such practical requirements as
-   zero down-time updates and ways to cope with data pollution.
-   In practice, more frequent updates require that updates have zero down-time.
-   For our theory, zero down-time means that the release of new functionality may not be delayed by anything a migration engineer must do.
-   
    Extra complications arise from accumulated data pollution in the old system.
-   This allows us to categorize data pollution in the old system in the following categories:
-   \begin{itemize}
-      \item data pollution that cannot be captured in constraints on the dataset,
-      such as a street address that has become obsolete because the person failed to send a change of address.
-      \item data pollution that violates a constraint in the schema.
-      \item data pollution that violates a constraint that is not in the schema.
-      \item data pollution that is a consequence of an erroneous constraint in the schema.
-   \end{itemize}
+   We distinguish data pollution in the following categories:
+\begin{itemize}
+   \item data pollution that cannot be captured in constraints on the dataset,
+   such as a street address that has become obsolete because the system never registered the change of address.
+   \item data pollution that violates a constraint in the schema.
+   \item data pollution that violates a constraint that is not in the schema.
+   \item data pollution that is a consequence of an erroneous constraint in the schema.
+\end{itemize}
    The first category of pollution must be dealt with by working procedures, to prevent such pollution as much as possible.
    In some cases, constraints on data can be formulated,
    so the system can help the user and simplify (or eliminate) the corresponding working procedure.
    Such constraints move this type of pollution to one of the other categories.
-   The second category, violations of constraints from the schema, does not occur in our work.
-   Since the old system $\infsys$ was generated by Ampersand,
+   The second category is about violations of constraints from the schema.
+   Such violations do not occur in our theory because the old system $\infsys$ was generated by Ampersand,
    $\infsys$ keeps all constraints from the schema satisfied at all times.
    This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
-   Data pollution that is not captured by any of the constraints mentioned in the schema
+   The third category, data pollution that is not captured by any of the constraints mentioned in the schema,
    can be dealt with by adding constraints in the new system $\infsys'$.
    In that case, a migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
    So some human intervention may be necessary.
    The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in $\infsys'$.
 
-   This illustrates that automating data migrations also has its limits.
+   This illustrates that automating data migrations has its limits.
    Some effort of a migration engineer may be required.
    If the semantics encoded in the new schema $\schema'$ differs from the old schema $\schema$,
    a migration engineer must make choices on how to interpret existing data in the new schema.
-   She may even want to adapt data of which the constraints in the schema have not changed.
-   This requires a third schema, $\schema_m$, which specifies the migration itself.
-   We generate $\schema_m$ in the form of source code, so the migration engineer can change everything she wants to suit the particulars of the data migration.
-   In the sequel, automation of data migration means to generate the schema $\schema_m$.
+   She may even want to adapt existing data of which the constraints in the schema have not changed.
+   This requires a third schema, $\schema_{\migrsys}$, which specifies the migration itself.
+   It preserves all data from the old system, which may be needed for the migration.
+   It also contains the new schema and possibly some new data, which is specified by the migration engineer.
+   Hence, the migration is based on the disjoint union of $\schema$ and $\schema'$.
+   We generate $\schema_{\migrsys}$ in the form of source code, so the migration engineer can change everything she wants to suit the particulars of the data migration.
 
-   The benefits of automating data migrations work in two directions.
-   The automation itself saves effort and errors,
-   contributing to more frequent and smaller releases.
-   Smaller and faster releases also mean smaller migrations
-   and therefore a smaller difference between $\infsys$ and $\infsys'$.
-   The smaller that difference, the simpler the migration and the more of it can be automated.
-
-   The contribution of this paper is to derive a migration schema $\schema_m$ from an existing system $\infsys$
-   (which has its own schema and dataset) and a new schema $\schema'$.
-   A formal understanding of data migration will help to automate data migrations correctly and reliably.
-   Our theory is based on the following assumptions:
-\begin{itemize}
-   \item the old data set may be polluted, but it satisfies its schema;
-   \item the data migration may require human interaction, which may take time;
-   \item the part of the data that does not change can be migrated automatically;
-   \item the meaning of data must be preserved, at least for the data that does not change;
-   \item the business must continue during the migration without interruption;
-   \item the part of the migration that can be automated is usually not sufficient;
-         it takes additional human creativity to complete the migration specification;
-   \item there is a compiler to generate an information system from a given schema.
-         In this work, we use the Ampersand compiler for that purpose.
-\end{itemize}
-
-\section{Migration steps}
-   A smooth migration would ideally proceed as follows:
+   A naive migration might proceed as follows:
    Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
    However, numerous issues might impede that plan.
    The following examples illustrate the practical issues that may occur:
@@ -235,16 +238,19 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \item Retain data in the old system until it can be marked as ready to be phased out.
    \end{enumerate}   
 
+   In the following section we introduce the definitions required to migrate data from one system to another.
+
 \section{Terminology}
 \label{sct:Terminology}
-   To migrate data from one system to another,
-   we define ``information system'' as a combination of dataset and schema.
-   So, let us first define datasets in section~\ref{sct:Datasets} as the focal point of a data migration.
-   Then we define schemas in section~\ref{sct:Schemas}, to capture the semantics of information systems.
+   First,
+   we define ``information system'' as a combination of dataset, schema, and functionality.
+   We start with datasets in section~\ref{sct:Datasets}, then we define schemas in section~\ref{sct:Schemas},
+   and then we can define information systems.
 
 \subsection{Datasets}
 \label{sct:Datasets}
    A dataset $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
+   The purpose of a dataset is to describe the data of a system at one point in time, so that data changes are representable. 
    Before defining datasets, we must first define the constituent notions of atom, concept, relation, and triple.
    
    Atoms serve as data elements.
@@ -280,10 +286,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
    
-   A dataset $\dataset$ is a tuple $\pair{\triples_{\dataset}}{\inst_{\dataset}}$,
-   in which $\triples_{\dataset}$ is a finite set of triples
-   and $\inst_{\dataset}$ is the instance relation.
-   We will simply write $\triples$ or $\inst$ if the dataset is clear from the context or irrelevant for the argument.
+   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$,
+   in which $\triples$ is a finite set of triples
+   and $\inst$ is the instance relation.
+   Where ambiguity lures, we write $\triples_{\dataset}$ and $\inst_{\dataset}$ to indicate that we specifically mean the dataset $\dataset$.
    Every dataset is an element of an infinite set called $\Dataset$.
    To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
 
@@ -302,15 +308,17 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \subsection{Schemas}
 \label{sct:Schemas}
    To design an information system, an engineer defines a schema in which she defines concepts, relations, and rules.
+   The purpose of a schema is to capture the semantics of an information system.
    Rules serve the purpose of invariants,
    i.e.\ properties that the data in the database must satisfy at all times.
    In this paper, variables $u$ and $v$ represent rules.
 
-   A schema $\schema$ is a triple $\triple{\concepts_{\schema}}{\rels_{\schema}}{\rules_{\schema}}$,
-   in which $\concepts_{\schema}$ is a finite set of concepts,
-   $\rels_{\schema}$ is a finite set of relations,
-   and $\rules_{\schema}$ is a finite set of rules.
-   We will simply write $\concepts$, $\rels$, or $\rules$ if the schema is clear from the context or irrelevant for the argument.
+   A schema $\schema$ is a triple $\triple{\concepts}{\rels}{\rules}$,
+   in which $\concepts$ is a finite set of concepts,
+   $\rels$ is a finite set of relations,
+   and $\rules$ is a finite set of rules.
+   Where ambiguity lures, we write $\concepts_{\schema}$, $rels_{\schema}$, and $\rules_{\schema}$ to indicate that we specifically mean the schema $\schema$.
+%  Every schema is an element of an infinite set called $\Schema$.
 
    In order to attach types to atoms, relations must be declared in the schema.
    Every relation $r$ has not only a name, but also a source concept and a target concept.
@@ -338,6 +346,11 @@ the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
 \end{eqnarray}
    Violations are used to produce meaningful error messages and to trigger changes in the dataset to satisfy rule $u$ again.
 
+\subsection{Functionality}
+   The functionality of an information system is an integral part of it.
+   It consists of software.
+   In this paper, we are not interested in the precise nature of the functionality.
+
 \subsection{Information Systems}
 \label{sct:Information Systems}
    The purpose of an information system is to make data meaningful to its users.
@@ -348,14 +361,15 @@ the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
    To preserve meaning, users are trying to maintain semantic constraints on the data,
    amidst of all changes that are going on around them.
 
-   This section introduces the notion of information system as a quadruple $\la\dataset_{\infsys},\schema_{\infsys},\roles_{\infsys},\maintain_{\infsys}\ra$.
-   As before, we will omit the suffixes if $\infsys$ is self-evident.
+   This section introduces the notion of information system.
+   As before, we will suffix the elements of this definition if the situation requires it.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\roles,\maintain\ra$, in which
+\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\functionality,\roles,\maintain\ra$, in which
 \begin{itemize}
    \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
    \item schema $\schema$ is defined as in section~\ref{sct:Schemas};
+   \item $\functionality$ represents the functionality of the system, which is typically software;
    \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$; and
    \item requirements~\ref{eqn:pop} thru~\ref{eqn:specialization} are satisfied.
@@ -543,11 +557,6 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 %    we have now defined a small system.
 
 \subsection{Data migration}
-   To migrate system $\infsys$ to $\infsys'$, we take the disjoint union $\infsys\sqcup\infsys'$ of both systems
-   and add rules to describe the migration.
-   $\infsys$ is the existing system, which contains data to be preserved.
-   $\infsys'$ is the new system, which contains no or hardly any data.
-   It does, however, contain the concepts, relations, rules and roles of the new system.
 \begin{figure}[bht]
    \begin{center}
      \includegraphics[scale=.45]{Migration.png}
@@ -555,19 +564,49 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 \caption{Data migration}
 \label{fig:event flow}
 \end{figure}
-      
-   We use two datasets: $\dataset$ and $\dataset'$.
-   Before doing so, let us first define the disjoint union of two systems.
+   To migrate system $\infsys$ to $\infsys'$, we take the following steps:
+\begin{enumerate}
+   \item Let the old system $\infsys$ have state $\dataset$ and schema $\schema$.
+         A developer defines a schema $\schema'$ of the new system as a first step in the deployment of the increment.
+   \item The generator generates a migration system $\migrsys$ based on $\schema$ and $\schema'$,
+         which gives the user the full functionality of the old system and the new system,
+         i.e.\ $\schema_{\migrsys}=\schema\sqcup\schema'$.
+   \item A migration engineer changes $\migrsys$ to accommodate the non-standard requirements of the migration,
+         yielding migration system .
+   \item The production environment switches instantly from $\infsys$ to $\migrsys'$,
+         while $\dataset_{\infsys}\subseteq\dataset_{\migrsys'}$.
+         This means that the data of the old system remains intact.
+   \item After a finite span of time, $\dataset_{\migrsys'}$ satisfies all its enforce rules.
+         This implies that the generated rules plus the changes made by the migration engineer ensure the preservation of the meaning of the old data.
+   \item The system removes the data, the schema, and the functionality of $\migrsys'$ that are not supported by $\schema'$.
+         i.e\ $\schema_{\migrsys''}=\schema'$ and $\dataset_{\migrsys''}=\select{\schema'}{\dataset_{\migrsys''}}$.
+\end{enumerate}
+
+   Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
-   \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
-   &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
+   \omit\rlap{$\pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}$}\notag\\
+   &=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\notag\\
       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
-      X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
-      X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
 \end{eqnarray}
 \end{definition}
+
+\begin{definition}[disjoint union of schemas]
+\begin{eqnarray}
+   \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
+\end{eqnarray}
+\end{definition}
+% \begin{definition}[disjoint union of datasets]
+% \begin{eqnarray}
+%    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
+%    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
+%       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
+%       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
+%       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
+%       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
+% \end{eqnarray}
+% \end{definition}
 Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
 
 \subsection{Example}
@@ -792,6 +831,33 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
    To satisfy the definition of datasets, $\dataset$ and $\atoms$ must change too,
    but the migration should try to preserve the maximal amount of data.
 
+\section{Validation}
+   To validate the theory, we have to prove that:
+\begin{itemize}
+   % -> het migratie-systeem is typefout-vrij (opmerking: als we de type-checker buiten beschouwing willen laten, kunnen we dit niet beschrijven)
+   \item the migration system $\migrsys$ is free of type errors.
+   % -> het migratie-systeem is vrij van overtredingen op regels die het migratie-systeem moet bewaken
+   \item the migration system $\migrsys$ is an information system (definition~\ref{def:information system}),
+         which implies that its population yields no violations.
+   % -> het migratie-systeem bevat alle oude data, ihb nog steeds na het toepassen van de enforce regels
+   \item $\migrsys$ contains the old data, insofar its enforce rules have not deleted it.
+   % -> er is een pad naar ingebruikname van het nieuwe systeem (vanaf de initiële toestand van het migratie-systeem)
+   \item there is a path to releasing the new system, starting with the initial state of the $\migrsys$.
+   % -> corollary: op het moment van ingebruikname van het nieuwe systeem, is het migratie-systeem vrij van overtredingen op regels die het nieuwe systeem moet bewaken
+   \item As a result, the new system $\infsys'$ is void of violations at the start of its production life.
+   % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
+   \item Optionally, the new system can be used in production after a limited number of steps.
+   % -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreidt) totdat het nieuwe systeem in gebruik genomen is?
+   \item Optionally, there is a migration systen that preserves the functionality of the old system until the new system has been put in production.
+\end{itemize}
+% Bewijsverplichtingen:
+
+\section{Conclusions}
+\begin{itemize}
+   \item the part of the data that does not change can be migrated automatically;
+   \item the part of the migration that can be automated is usually not sufficient;
+         it takes additional human creativity to complete the migration specification;
+\end{itemize}
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
 \bibliography{doc}
