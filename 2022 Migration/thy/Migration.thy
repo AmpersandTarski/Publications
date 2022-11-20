@@ -45,9 +45,9 @@ definition typedGraph where
             \<and> Ball (vertices lg) (typedVertex gt))"
 
 lemma typedGraphI[intro]:
-  assumes "graph lg"
-    "\<And> e. e \<in> edges lg \<Longrightarrow> wellTypedEdge gt e"
-    "\<And> v. v \<in> vertices lg \<Longrightarrow> typedVertex gt v"
+  assumes isGraph:      "graph lg"
+   and wellTypedEdges:  "\<And> e. e \<in> edges lg \<Longrightarrow> wellTypedEdge gt e"
+   and typedVertices:   "\<And> v. v \<in> vertices lg \<Longrightarrow> typedVertex gt v"
   shows "typedGraph gt lg"
   using assms unfolding typedGraph_def by auto
 
@@ -153,19 +153,21 @@ lemma map_types_in_graphtype_decl[simp]:
 lemma map_types_in_graphtype_preserves_typing:
   assumes "typedGraph t G"
   shows "typedGraph (map_types_in_graphtype t f) G"
-proof
+proof(intro typedGraphI,goal_cases)
+  case 1
+  then show "graph G" using assms by auto
+next
+  case (2 e)
   have [intro!]: "\<And> a b s. (a,b) \<in> s \<Longrightarrow> (a, f b) \<in> apsnd f ` s" by force
-  show "graph G" using assms by auto
-  fix e assume edg:"e \<in> edges G"
   obtain l x y where e[simp]: "e = (l,x,y)" by (cases e;blast)
-  with assms edg have "wellTypedEdge t (l,x,y)" by auto
+  with assms 2 have "wellTypedEdge t (l,x,y)" by auto
   from wellTypedEdgeE[OF this]
   show "wellTypedEdge (map_types_in_graphtype t f) e"
     by auto
 next
+  case (3 v)
   have [simp]:"\<And> x. Domain (apsnd f ` x) = Domain x" by force
-  fix v assume vert:"v \<in> vertices G"
-  with assms have "typedVertex t v" by auto
+  from 3 assms have "typedVertex t v" by auto
   thus "typedVertex (map_types_in_graphtype t f) v"
     by (intro typedVertexI,cases t,auto)
 qed

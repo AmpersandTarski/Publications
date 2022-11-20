@@ -289,7 +289,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$,
    in which $\triples$ is a finite set of triples
    and $\inst$ is the instance relation.
-   Where ambiguity lures, we write $\triples_{\dataset}$ and $\inst_{\dataset}$ to indicate that we specifically mean the dataset $\dataset$.
+   We write $\triples_{\dataset}$ and $\inst_{\dataset}$ to refer to $\triples$ and $\inst$ respectively.
    Every dataset is an element of an infinite set called $\Dataset$.
    To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
 
@@ -338,13 +338,19 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \sign{u}{\dataset}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
    \label{eqn:typed violations}
 \end{eqnarray}
-To determine whether rule $u$ is satisfied in dataset $\dataset$,
-the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
+   To determine whether rule $u$ is satisfied in dataset $\dataset$,
+   the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
 \begin{eqnarray}
    \sat{u}{\dataset}&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
    \label{eqn:sat}
 \end{eqnarray}
    Violations are used to produce meaningful error messages and to trigger changes in the dataset to satisfy rule $u$ again.
+
+   A subset of the rules are so called {\em enforce rules}.
+   A developer makes an enforce rule by using some special syntax.
+   Whenever the dataset violates an enforce rule,
+   the system will make other changes to the dataset to satisfy that rule.
+   Hence, an enforce rule $u$ can be violated during a small amount of time in which the system restores its invariance.
 
 \subsection{Functionality}
    The functionality of an information system is an integral part of it.
@@ -570,16 +576,24 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
          A developer defines a schema $\schema'$ of the new system as a first step in the deployment of the increment.
    \item The generator generates a migration system $\migrsys$ based on $\schema$ and $\schema'$,
          which gives the user the full functionality of the old system and the new system,
-         i.e.\ $\schema_{\migrsys}=\schema\sqcup\schema'$.
-   \item A migration engineer changes $\migrsys$ to accommodate the non-standard requirements of the migration,
-         yielding migration system .
+         i.e.\ $\schema_{\migrsys}=(\schema\sqcup\schema')\cup\id{migrationrules}$.
+         The schema $\id{migrationrules}$ represents the enforce rules that migrate the existing data to the new dataset.
+         TODO: $\id{migrationrules}$ bevat alleen tijdelijke datastructuur, indien nodig.
+   \item A migration engineer changes $\id{migrationrules}$ to accommodate the non-standard requirements of the migration,
+         yielding migration system $\migrsys'$.
+         TODO: de migration engineer kan alleen maar in $\dataset'$ dingen (laten) wijzigen, zodat je altijd terug kunt naar het oude systeem.
    \item The production environment switches instantly from $\infsys$ to $\migrsys'$,
          while $\dataset_{\infsys}\subseteq\dataset_{\migrsys'}$.
          This means that the data of the old system remains intact.
    \item After a finite span of time, $\dataset_{\migrsys'}$ satisfies all its enforce rules.
          This implies that the generated rules plus the changes made by the migration engineer ensure the preservation of the meaning of the old data.
-   \item The system removes the data, the schema, and the functionality of $\migrsys'$ that are not supported by $\schema'$.
-         i.e\ $\schema_{\migrsys''}=\schema'$ and $\dataset_{\migrsys''}=\select{\schema'}{\dataset_{\migrsys''}}$.
+   \item Users may have to perform manual migration steps.
+         These are specified as process rules in $\id{migrationrules}$.
+         % Dit zijn "kurk" regels.
+         The system ensures that the amount of work needed to perform these steps is finite.
+   \item The patron of the system can decide whether to carry on with the migration or to roll back to the old system.
+         She can do that incrementally by switching off the interfaces one-by-one.
+   \item The system retains the data, the schema, and the functionality that is covered by $\schema'$, dropping everything else.
 \end{enumerate}
 
    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
