@@ -139,16 +139,16 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Analysis}
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   A system $\infsys$ contains a dataset $\dataset$, which represents the state of the system.%
-\footnote{Where ambiguity lures, we write $\dataset_{\infsys}$ instead of $\dataset$, to indicate that we specifically mean the dataset of $\infsys$.}
+   A system $\infsys$ contains a dataset $\dataset$, which represents the state of the system.
+   We write $\dataset_{\infsys}$ to refer to dataset $\dataset$.
    Every event that an actor causes in system $\infsys$ may change the state $\dataset$ of that system.
    To keep our theory technology independent, we will assume that a dataset contains triples.
    Data migration occurs when an old system, $\infsys$, is replaced by a new system, $\infsys'$,
    while preserving the meaning of the data from $\infsys$ as much as possible.
    Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both systems differ.
 
-   The schema $\schema$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.%
-\footnote{Where ambiguity lures, we write $\schema_{\infsys}$ instead of $\schema$ to indicate that we specifically mean the schema of $\infsys$.}
+   The schema $\schema$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.
+   We write $\schema_{\infsys}$ to refer to schema $\schema$.
    The Ampersand compiler generates systems, which keep all constraints satisfied at all times.
    This is why we have done this research with Ampersand.
    Much like~\cite{Spivak2012}, in our work the schema encodes the semantics of a system.
@@ -317,7 +317,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    in which $\concepts$ is a finite set of concepts,
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
-   Where ambiguity lures, we write $\concepts_{\schema}$, $rels_{\schema}$, and $\rules_{\schema}$ to indicate that we specifically mean the schema $\schema$.
+   We write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ to refer to $\concepts$, $\rels$, and $\rules$ respectively.
 %  Every schema is an element of an infinite set called $\Schema$.
 
    In order to attach types to atoms, relations must be declared in the schema.
