@@ -38,7 +38,7 @@
 % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
 % -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreid) totdat het nieuwe systeem in gebruik genomen is?
 
-\title{A Theory for Data Migration of Generated Evolving Information Systems}
+\title{It's all about Meaning!\\{\normalsize A Theory for Data Migration during Software Development}}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
 \ead{stef.joosten@ou.nl}
 \author[umn]{Sebastiaan Joosten\fnref{fn2}}
@@ -77,11 +77,6 @@ relation algebra\sep software development\sep data migration\sep software migrat
    By generating rather than programming systems by hand,
    we avoid introducing errors in the translation from design to a concrete system.
    A mistake not made cannot propagate into production.
-   For this purpose, we use an existing compiler, Ampersand~\cite{Joosten-JLAMP2018},
-   that generates a system from an Ampersand script.
-   An Ampersand script contains just enough information to generate a complete system,
-   which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
-   For the purpose of this paper we can equate an Ampersand script with the schema of the generated system.
 
    We also believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
@@ -89,8 +84,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
    deployment frequency,
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
-   By installing upgrades automatically, frequently and in small increments,
-   users experience an evolving system.
+   By installing upgrades automatically, frequently, in small increments, and without down-time,
+   the users experience a system that evolves organically without them even noticing the updates.
 
    In each increment, we distinguish an ``old system'' and a ``new system''.
    The difference between the old system and the new system is not just a difference in two schemas.
@@ -102,11 +97,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
    migration engineers may exclude new functionality to avoid introducing new errors in an otherwise error-prone migration process.
    In our work, however, introducing new functionality and removing obsolete functionality is the very purpose of an increment.
    Data migration literature sometimes uses a different notion of increment.
-   For example, Walkingshaw et.al.~\cite{Walkingshaw2014} and Ataei~\cite{Ataei2021} define an increment as a variation between two data structures.
-   Ataei et.al. show how to unify databases with slight variations by preserving all variations in one comprehensive database.
+   For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
+   They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
    In our work, however, we want to get rid of the old system and not retain it.
    So, we need to look at a different approach.
-   Examples like these have convinced us to define a new method for data migration that is specifically meant for systems under incremental development.
+   Examples like these have convinced us to define a new method for data migration that is specifically meant for systems in production that are
+   continually developed further in small incrementals.
    
    The contribution of this paper is to derive a migration schema from two artifacts: an existing system
    (which has its own schema and dataset) and a new schema (which specifies the new system),
@@ -127,37 +123,46 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Our theory is based on the following assumptions and requirements:
 \begin{itemize}
-   \item the data migration is solely meant to deploy a software increment in production;
+   \item the data migration is meant to deploy a software increment in production;
    \item the old data set may be polluted, but it satisfies its schema;
    \item the data migration may require human interaction, which may take time;
    \item the meaning of data must be preserved;
    \item the business continues during the migration without interruption;
    \item there is a compiler to generate an information system from a given schema.
-         In this work, we use the Ampersand compiler for that purpose.
 \end{itemize}
 
 
 \section{Analysis}
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
-   A system $\infsys$ contains a dataset $\dataset$, which represents the state of the system.
-   We write $\dataset_{\infsys}$ to refer to dataset $\dataset$.
-   Every event that an actor causes in system $\infsys$ may change the state $\dataset$ of that system.
+   Every system contains a dataset, which represents the state of the system.
+   Events that the system detects may cause the state to change.
    To keep our theory technology independent, we will assume that a dataset contains triples.
-   Data migration occurs when an old system, $\infsys$, is replaced by a new system, $\infsys'$,
-   while preserving the meaning of the data from $\infsys$ as much as possible.
-   Just copying the set of data from $\infsys$ to $\infsys'$ is obviously wrong if the schemas of both systems differ.
+   This makes our theory valid for any kind of database that triples can represent,
+   such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
 
-   The schema $\schema$ of a system $\infsys$ is basically a set of semantic constraints on its dataset $\dataset$.
-   We write $\schema_{\infsys}$ to refer to schema $\schema$.
-   The Ampersand compiler generates systems, which keep all constraints satisfied at all times.
-   This is why we have done this research with Ampersand.
-   Much like~\cite{Spivak2012}, in our work the schema encodes the semantics of a system.
-   This will allow us to be explicit about ``preserving the meaning as much as possible''.
-   In contrast with~\cite{Spivak2012}, our approach does not work with functions (functors)
-   but with relations in a way that bears resemblance with Alloy~\cite{Alloy2006} and allegories%
+   Data migration occurs when a new system replaces an old one,
+   while preserving the meaning of the data from the old system as much as possible.
+   Just copying the set of data from the old system to the new is obviously wrong if the schemas of both systems differ.
+
+   We will assume that the schema of a system contains constraints on its dataset.
+   These constraints represent the semantics of the system~\cite{Spivak2012}.
+   This allows us to be explicit about ``preserving the meaning as much as possible''.
+   In contrast with~\cite{Spivak2012}, however, our approach does not work with functions (functors)
+   but with relations similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
 
-   Extra complications arise from accumulated data pollution in the old system.
+   In this work we use the Ampersand compiler~\cite{Joosten-JLAMP2018},
+   to generate information systems.
+   A script in the Ampersand language represents the system's semantics by constraints only.
+   The compiler builds systems that keep these constraints satisfied at all times.
+   We don't have to formalize the semantics from specifications or from source code
+   because the constraints are already explicitly available in the Ampersand script.
+   This makes Ampersand an obvious platform for validating our theory,
+   An Ampersand script contains just enough information to generate a complete system,
+   which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
+   For the purpose of this paper we can equate an Ampersand script with the schema of the generated system.
+
+   For data migration, complications arise from accumulated data pollution in the old system.
    We distinguish data pollution in the following categories:
 \begin{itemize}
    \item data pollution that cannot be captured in constraints on the dataset,
@@ -171,25 +176,26 @@ relation algebra\sep software development\sep data migration\sep software migrat
    so the system can help the user and simplify (or eliminate) the corresponding working procedure.
    Such constraints move this type of pollution to one of the other categories.
    The second category is about violations of constraints from the schema.
-   Such violations do not occur in our theory because the old system $\infsys$ was generated by Ampersand,
-   $\infsys$ keeps all constraints from the schema satisfied at all times.
+   Such violations do not occur in our theory because the old system was generated by Ampersand,
+   so that system will keep all constraints from the schema satisfied at all times.
    This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
    The third category, data pollution that is not captured by any of the constraints mentioned in the schema,
-   can be dealt with by adding constraints in the new system $\infsys'$.
-   In that case, a migration engineer must ensure that $\infsys'$ can start with data that satisfies all constraints in its schema.
+   can be dealt with by adding constraints in the new system.
+   In that case, a migration engineer must ensure that the new system can start with data that satisfies all constraints in its schema.
    So some human intervention may be necessary.
-   The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in $\infsys'$.
+   The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in the new system.
 
    This illustrates that automating data migrations has its limits.
    Some effort of a migration engineer may be required.
-   If the semantics encoded in the new schema $\schema'$ differs from the old schema $\schema$,
+   If the semantics encoded in the new schema differs from the old schema,
    a migration engineer must make choices on how to interpret existing data in the new schema.
    She may even want to adapt existing data of which the constraints in the schema have not changed.
-   This requires a third schema, $\schema_{\migrsys}$, which specifies the migration itself.
+   This requires a third schema, which specifies the migration itself.
    It preserves all data from the old system, which may be needed for the migration.
    It also contains the new schema and possibly some new data, which is specified by the migration engineer.
-   Hence, the migration is based on the disjoint union of $\schema$ and $\schema'$.
-   We generate $\schema_{\migrsys}$ in the form of source code, so the migration engineer can change everything she wants to suit the particulars of the data migration.
+   Hence, the migration is based on the disjoint union of the old and the new schemas.
+   We generate the schema of the migration system in the form of source code,
+   so the migration engineer can change everything she wants to suit the particulars of the data migration.
 
    A naive migration might proceed as follows:
    Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
@@ -250,7 +256,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \subsection{Datasets}
 \label{sct:Datasets}
    A dataset $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
-   The purpose of a dataset is to describe the data of a system at one point in time, so that data changes are representable. 
+   We write $\dataset_{\infsys}$ to refer to the dataset of a particular information system $\infsys$.
+   The purpose of a dataset is to describe the data of a system at one point in time. 
    Before defining datasets, we must first define the constituent notions of atom, concept, relation, and triple.
    
    Atoms serve as data elements.
@@ -262,52 +269,66 @@ relation algebra\sep software development\sep data migration\sep software migrat
    
    Concepts are names that group atoms of the same type.
    All concepts are taken from an infinite set $\Concepts$.
-   $\Concepts$ and $\Atoms$ are disjoint sets.
-   For example, an engineer might choose to classify \atom{Peter} and \atom{Melissa} as \concept{Person},
+   $\Concepts$ and $\Atoms$ are disjoint.
+   For example, a developer might choose to classify \atom{Peter} and \atom{Melissa} as \concept{Person},
    and \atom{074238991} as a \concept{TelephoneNumber}.
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
    We will use variables $A$, $B$, $C$, $D$ to represent concepts.
-   The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
+
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
+   The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
    This relation is used in the type system.
-   
-   Relations serve to organize and store data, to allow an engineer to represent facts.
+   In the type system, every atom must have a type,
+   which makes $\inst$ a total relation:
+\begin{eqnarray}
+   \forall a\in\atoms\ \exists C\in\Concepts: a\ \inst\ C
+\label{eqn:concepts}
+\end{eqnarray}
+
+   Relations serve to organize and store data, to allow a developer to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations.
    All relations are taken from an infinite set $\Rels$.
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
+   Every relation $r$ has a name, a source concept, and a target concept.
+   We write $r=\declare{n}{A}{B}$ to denote that relation $r$ has name $n$, source concept $A$, and target concept $B$.
 
    Triples serve to represent data.
    A triple is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
-   A triple $\triple{\text{\atom{Peter}}}{\id{phone}}{\text{\atom{074238991}}}$ might mean in practice that
-   the ``thing'' that \atom{Peter} refers to has \atom{074238991} as a telephone number.
+   For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
+   Equation~\ref{eqn:type} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
+   In practice, users can say that Peter has telephone number 074238991.
+   So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    This ``meaning from practice'' has no consequences in the formal world.
    We leave it entirely up to a user to attach a practical meaning to a triple.
    In this paper, the informal meaning is interesting only for the sake of illustration.
-   This makes our theory valid for any kind of database that triples can represent,
-   such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
-   
-   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$,
-   in which $\triples$ is a finite set of triples
-   and $\inst$ is the instance relation.
-   We write $\triples_{\dataset}$ and $\inst_{\dataset}$ to refer to $\triples$ and $\inst$ respectively.
+
+   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
+\begin{eqnarray}
+   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
+   \label{eqn:type}
+\end{eqnarray}
+   $\triples$ is a finite set of triples and $\inst$ is the instance relation.
+   In case we need to be explicit about the dataset,
+   we will write $\triples_{\dataset}$ and $\inst_{\dataset}$ to refer to $\triples$ and $\inst$ respectively.
    Every dataset is an element of an infinite set called $\Dataset$.
    To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
+   Every atom has the type of the relation in which it resides:
 
    A relation $r$ can serve as a container of pairs,
-   as defined by the function $\id{pop}_r:\Dataset\rightarrow\Pair{\Atoms}{\Atoms}$.
+   as defined by the function $\id{pop}_r:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
    It defines a set of pairs, which we call the population of $r$:
 \begin{equation}
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
-   \label{eqn:pop}
+\label{eqn:pop}
 \end{equation}
-
-   Over time, an information system ``observes'' events that change the dataset by inserting and deleting triples.
-   By the same account, the population of relations changes over time.
-   These events may be caused by external systems, roles acting on the dataset, or any other force that changes triples in a dataset.
+   Equation~\ref{eqn:type} implies that for every dataset $\dataset$:
+\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ \inst\ A\ \wedge\ b\ \inst\ B\]
+   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
+   This allows for static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
 
 \subsection{Schemas}
 \label{sct:Schemas}
-   To design an information system, an engineer defines a schema in which she defines concepts, relations, and rules.
+   To design an information system, a developer defines a schema in which she defines concepts, relations, and rules.
    The purpose of a schema is to capture the semantics of an information system.
    Rules serve the purpose of invariants,
    i.e.\ properties that the data in the database must satisfy at all times.
@@ -317,40 +338,55 @@ relation algebra\sep software development\sep data migration\sep software migrat
    in which $\concepts$ is a finite set of concepts,
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
+   We write $\schema_{\infsys}$ to refer to the schema of information system $\infsys$.
    We write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ to refer to $\concepts$, $\rels$, and $\rules$ respectively.
 %  Every schema is an element of an infinite set called $\Schema$.
 
-   In order to attach types to atoms, relations must be declared in the schema.
-   Every relation $r$ has not only a name, but also a source concept and a target concept.
-   We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
-   We require that the source and target concepts are in the set of concepts:
+   In order to do static type checking,
+   all concepts and relations must be ``known'' in the schema:
 \begin{eqnarray}
-   \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:relationsIntroduceConcepts}
+   \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:relationsIntroduceConcepts}\\
+   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels\ \wedge\ a\ \inst\ A\wedge b\ \inst\ B
+   \label{eqn:define R}
 \end{eqnarray}
+
    A rule in a schema serves to constrain the dataset,
    to ensure the semantic integrity of the dataset.
-   For every rule $u$ in the schema, the Ampersand compiler generates code
-   for the function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
-   For any given dataset $\dataset$, $\viol{u}{\dataset}$ represents the set of violations of rule $u$.
-   The type of the atoms in a violation set is defined by the function $\Sign{u} : \Dataset\rightarrow\Pair{\Concepts}{\Concepts}$:
+   For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
+   that represents the set of violations of rule $u$ in any dataset.
+   We also assume a function $\Sign{u} : \Dataset\rightarrow\Pair{\Concepts}{\Concepts}$
+   that represents the signature of a rule, i.e. the type of atoms in violations:
 \begin{eqnarray}
    \sign{u}{\dataset}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
    \label{eqn:typed violations}
 \end{eqnarray}
    To determine whether rule $u$ is satisfied in dataset $\dataset$,
-   the Ampersand compiler also generates code for a predicate $\sat{u}{\Dataset}$:
+   we define $\sat{u}{\Dataset}$:
 \begin{eqnarray}
    \sat{u}{\dataset}&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
    \label{eqn:sat}
 \end{eqnarray}
-   Violations are used to produce meaningful error messages and to trigger changes in the dataset to satisfy rule $u$ again.
+   Violations are used to produce meaningful error messages and to trigger changes in the dataset to restore satisfaction of that rule.
 
-   A subset of the rules are so called {\em enforce rules}.
-   A developer makes an enforce rule by using some special syntax.
-   Whenever the dataset violates an enforce rule,
-   the system will make other changes to the dataset to satisfy that rule.
-   Hence, an enforce rule $u$ can be violated during a small amount of time in which the system restores its invariance.
+   We assume a special kind of rule that is used for specialization.
+   The rule $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
+\begin{equation}
+   \label{eqn:specialization}
+   \sat{A\isa B}{\dataset}\ \Leftrightarrow\ \forall a: a\ \inst\ A\rightarrow a\ \inst\ B
+\end{equation}
+   We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
+   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
+   All specialization rules in a schema together form a partial order $\isa : \Pair{\concepts}{\concepts}$.
+   Specialization rules are special for two reasons:
+   Firstly, the system keeps $A\isa B$ satisfied automatically by changing $\inst$ whenever needed.
+   This means that a system that contains rule $A\isa B$ can never be brought into a state in which $\id{sat}_{A\isa B}$ is False.
+   This allows for certain run-time optimizations, which are beyond the scope of this paper.
+   A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
+   For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
+   To ensure that this does not result in problems at run-time, users are required to write all specialization rules explicitly.
+
+   %These rules reflect the meaning (semantics) that is shared among users.
 
 \subsection{Functionality}
    The functionality of an information system is an integral part of it.
@@ -377,64 +413,42 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \item schema $\schema$ is defined as in section~\ref{sct:Schemas};
    \item $\functionality$ represents the functionality of the system, which is typically software;
    \item $\roles$ is a set of roles;
-   \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$; and
-   \item requirements~\ref{eqn:pop} thru~\ref{eqn:specialization} are satisfied.
+   \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$.
 \end{itemize}
 \end{definition}
-   Let us discuss these items one by one.
-
-   The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
-   Type checking is based on the schema only.
-   So, all concepts in the relation $\id{inst}$ and all relations in triples from the dataset must be ``known'' in the schema:
-\begin{eqnarray}
-   a\ \inst\ C&\Rightarrow&C\in\concepts
-   \label{eqn:concepts}\\
-   \triple{a}{r}{b}\in\triples&\Rightarrow&r\in\rels
-   \label{eqn:define R}
-\end{eqnarray}
-   Every atom is an instance of a concept:
-\begin{eqnarray}
-   a\ \inst\ A&\Leftrightarrow&(\exists n,b,B:\ \triple{a}{\declare{n}{A}{B}}{b}\in\triples\ \vee\ \triple{b}{\declare{n}{B}{A}}{a}\in\triples)
-   \label{eqn:instance}
-\end{eqnarray}
-   Every atom has the type of the relation in which it resides:
-\begin{eqnarray}
-   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
-   \label{eqn:type}
-\end{eqnarray}
-
-   Ampersand supports a special kind of rule that is used for specialization.
-   The rule $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-\begin{equation}
-   \label{eqn:specialization}
-   \sat{A\isa B}{\dataset}\ \Leftrightarrow\ \forall a: a\ \inst\ A\rightarrow a\ \inst\ B
-\end{equation}
-   We call this {\em specialization}, but it is also known as {\em generalization} or {\em subtyping}.
-   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
-   All specialization rules in a schema together form a partial order $\isa : \Pair{\concepts}{\concepts}$.
-   Specialization rules are special for two reasons:
-   Firstly, the system keeps $A\isa B$ satisfied automatically by changing $\inst$ whenever needed.
-   This means that a system that contains rule $A\isa B$ can never be brought into a state in which $\id{sat}_{A\isa B}$ is False.
-   This allows for certain run-time optimizations, which are beyond the scope of this paper.
-   A second property that sets specialization rules apart, is that they play a role in the Ampersand compiler.
-   For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
-   To ensure that this does not result in problems at run-time, users are required to write all specialization rules explicitly.
-
-   %These rules reflect the meaning (semantics) that is shared among users.
-
    A \define{role} is a name that identifies a group of users.
    It serves as a placeholder for a person or a machine (i.e. an actor) who can change the dataset.
-   The purpose of a role is to mention an individual user or an automated actor without knowing who that user is.
+   The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
    In the sequel, when we talk about a role we actually mean an actor who fulfills that role in the system.
 
-   Every rule is assigned to at least one role by means of the relation $\maintain$.
-   $o\ \maintain\ u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
-   After some event has violated a rule $u$ (by making changes in the dataset),
-   role $o$ maintains this rule by making other changes to satisfy rule $u$ again.
-   We call this ``to restore the invariance'' of rule $u$.
-   In other words: If anyone edits in the dataset and violates a rule, someone or something has to fix the dataset to satisfy that rule again.
+   Every rule in a schema is meant to be kept satisfied invariably.
+   The only way to break this invariance is to remove the rule from the schema.
+   So the "normal" state of a system is that its dataset $\dataset$ contains no violations of any rule in the schema:
+   $\forall u\in\rules:\ \sat{u}{\dataset}$.
+   However, the system continually registers events that insert or delete triples in its dataset,
+   which may cause rules to be satisfied no longer.
+   This is a temporary breach of the invariance of the affected rules,
+   which requires a reaction to restore invariance.
    Example: if a rule says that every request must be acknowledged, the receipt of a request will violate this rule.
    Sending a message that acknowledges this receipt will cause the rule to be satisfied again.
+
+   In this paper we assume two ways of enforcing satisfaction of rules: automatic or manual.
+   Manual enforcement is specified by the developer by assigning a rule $u$ to a role $o$.
+   Any actor with role $o$, whether person or machine,
+   can restore invariance of rule $u$ by inserting or deleting the right triples to compensate for the violations.
+   For this reason, we assume that every rule is assigned to at least one role by means of the relation $\maintain$.
+\begin{equation}
+   \forall u\in\rules\ \exists o\in\roles:\ o\ \maintain\ u\label{eqn:maintain}
+\end{equation}
+   $o\ \maintain\ u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
+   Not all ways of restoring invariance can be anticipated by an algorithm, which makes manual enforcement a necessary feature.
+   As long as rule $u$ is not satisfied, its violations won't go away, stimulating the actor to do something about it.
+
+   Automatic enforcement is specified by the developer with a special syntax,
+   which describes not only the rule, but also the way to restore invariance.
+   Whenever the dataset violates an enforce rule,
+   the system will make other changes to the dataset to satisfy that rule.
+   Hence, the violation of the rule exists during a small, finite amount of time in which the system restores its invariance.
 
    The fact that every rule has at least one role in the relation $\maintain$, means that all roles together are keeping all rules satisfied.
 
