@@ -80,7 +80,7 @@ lemma pairToRelUNIV[simp]:
   "(a, b) \<in> Domain (\<Union> (range pairToRel)) \<longleftrightarrow> b\<noteq>{}"
   by fastforce
 
-definition explicitTyping where
+definition explicitTyping :: "('l \<times> 'c \<times> 'c, 'v \<times> 'c set, 'c) graphTyping" where
   "explicitTyping = GT snd (Union (pairToRel ` UNIV))"
 
 definition augmentTypes where
@@ -222,7 +222,7 @@ qed
 
 definition map_labels_in_graphtype where
   "map_labels_in_graphtype gt f
-    = GT (decl gt o f) (inst gt)"
+    = GT (decl gt \<circ> f) (inst gt)"
 
 definition map_labels_in_graph where
   "map_labels_in_graph g f
