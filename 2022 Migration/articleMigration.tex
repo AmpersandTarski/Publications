@@ -71,13 +71,13 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Introduction}
 \label{sct:Introduction}
+   To automate the datamigrations that come with incrementally developing and deploying information systems.
+   That is the purpose of the theory proposed in this paper.
+
    We believe in generating information systems%
 \footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }
    to prevent human programming errors.
-   By generating rather than programming systems by hand,
-   we avoid introducing errors in the translation from design to a concrete system.
-   A mistake not made cannot propagate into production.
-
+   For, a mistake not made can never propagate into production.
    We also believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
    \footnote{These effects can be measured in terms of DevOps metrics such as
@@ -85,7 +85,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
    By installing upgrades automatically, frequently, in small increments, and without down-time,
-   the users experience a system that evolves organically without them even noticing the updates.
+   the users experience a system that evolves organically, without even noticing the updates.
+   Thus, we believe our theory will help to automate data migrations correctly and reliably.
+   The benefits work in two directions.
+   Automation data migrations saves effort and errors,
+   contributing to more frequent and smaller releases.
+   Smaller and faster releases also mean smaller migrations
+   and therefore a smaller difference between the old system and the new system.
+   The smaller that difference, the simpler the migration and the more of it can be automated.
 
    In each increment, we distinguish an ``old system'' and a ``new system''.
    The difference between the old system and the new system is not just a difference in two schemas.
@@ -102,7 +109,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    In our work, however, we want to get rid of the old system and not retain it.
    So, we need to look at a different approach.
    Examples like these have convinced us to define a new method for data migration that is specifically meant for systems in production that are
-   continually developed further in small incrementals.
+   continually evolving in small increments.
    
    The contribution of this paper is to derive a migration schema from two artifacts: an existing system
    (which has its own schema and dataset) and a new schema (which specifies the new system),
@@ -111,16 +118,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
    These tools must satisfy such practical requirements as
    zero down-time updates and ways to cope with data pollution.
    In practice, more frequent updates require that updates come with zero down-time.
-   For our theory, zero down-time means that the release of new functionality may not be delayed by anything a migration engineer must do.
+   For our theory, zero down-time means that all human activity for the data migration can be done without taking the system out of production.
+   We consider any delay caused by automatically switching from the old system to the new one negligible,
+   assuming a modern deployment platform that does this with zero down-time.
    
-   This theory has enhanced our formal understanding of data migration and it will help to automate data migrations correctly and reliably.
-   The benefits work in two directions.
-   Automation data migrations saves effort and errors,
-   contributing to more frequent and smaller releases.
-   Smaller and faster releases also mean smaller migrations
-   and therefore a smaller difference between the old system and the new system.
-   The smaller that difference, the simpler the migration and the more of it can be automated.
-
    Our theory is based on the following assumptions and requirements:
 \begin{itemize}
    \item the data migration is meant to deploy a software increment in production;
@@ -145,19 +146,19 @@ relation algebra\sep software development\sep data migration\sep software migrat
    Just copying the set of data from the old system to the new is obviously wrong if the schemas of both systems differ.
 
    We will assume that the schema of a system contains constraints on its dataset.
-   These constraints represent the semantics of the system~\cite{Spivak2012}.
+   These constraints represent the semantics of the system, similar to the theory developed by Spivak~\cite{Spivak2012}.
    This allows us to be explicit about ``preserving the meaning as much as possible''.
-   In contrast with~\cite{Spivak2012}, however, our approach does not work with functions (functors)
+   In contrast with Spivak, however, our approach does not work with functions (functors)
    but with relations similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
 
    In this work we use the Ampersand compiler~\cite{Joosten-JLAMP2018},
    to generate information systems.
    A script in the Ampersand language represents the system's semantics by constraints only.
-   The compiler builds systems that keep these constraints satisfied at all times.
    We don't have to formalize the semantics from specifications or from source code
    because the constraints are already explicitly available in the Ampersand script.
-   This makes Ampersand an obvious platform for validating our theory,
+   A system generated by the Ampersand compiler will keep these constraints satisfied at all times.
+   This makes Ampersand an obvious platform for validating our theory.
    An Ampersand script contains just enough information to generate a complete system,
    which means that a classical database schema (i.e. data structure plus semantics) can be extracted from the Ampersand script.
    For the purpose of this paper we can equate an Ampersand script with the schema of the generated system.
@@ -174,7 +175,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The first category of pollution must be dealt with by working procedures, to prevent such pollution as much as possible.
    In some cases, constraints on data can be formulated,
    so the system can help the user and simplify (or eliminate) the corresponding working procedure.
-   Such constraints move this type of pollution to one of the other categories.
+   So, such constraints may help to move this type of pollution to one of the other categories.
    The second category is about violations of constraints from the schema.
    Such violations do not occur in our theory because the old system was generated by Ampersand,
    so that system will keep all constraints from the schema satisfied at all times.
@@ -185,64 +186,77 @@ relation algebra\sep software development\sep data migration\sep software migrat
    So some human intervention may be necessary.
    The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in the new system.
 
+\begin{figure}[bht]
+   \begin{center}
+     \includegraphics[scale=.35]{Migration.png}
+   \end{center}
+\caption{Data migration}
+\label{fig:event flow}
+\end{figure}
    This illustrates that automating data migrations has its limits.
-   Some effort of a migration engineer may be required.
+   Some effort of a migration engineer can never be excluded.
    If the semantics encoded in the new schema differs from the old schema,
-   a migration engineer must make choices on how to interpret existing data in the new schema.
-   She may even want to adapt existing data of which the constraints in the schema have not changed.
-   This requires a third schema, which specifies the migration itself.
-   It preserves all data from the old system, which may be needed for the migration.
-   It also contains the new schema and possibly some new data, which is specified by the migration engineer.
-   Hence, the migration is based on the disjoint union of the old and the new schemas.
-   We generate the schema of the migration system in the form of source code,
+   a migration engineer must make choices.
+   If the interpretation of data changes,
+   a migration engineer must remove obsolete constraints from the old system and introduce new constraints in the new system.
+   The consequences of such changes may require changes in data as well.
+   The migration engineer may even want to adapt existing data of which the constraints in the schema have not changed.
+   All of this requires a third schema, which specifies the migration itself.
+   This migration schema preserves data from the old system, it may introduce new data automatically (generated from the old dataset),
+   and it may require users to introduce new data (which will take time). 
+   It must contain the old schema, but it also contains the new schema and possibly some new data, which is specified by the migration engineer.
+   As the migration schema must distinguish between the old dataset and the new dataset,
+   the migration must be based on the disjoint union of the two.
+   So the idea of a migration schema is to compute the disjoint union of the old and the new schemas
+   and to present it to the migration engineer in the form of source code,
    so the migration engineer can change everything she wants to suit the particulars of the data migration.
 
-   A naive migration might proceed as follows:
-   Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
-   However, numerous issues might impede that plan.
-   The following examples illustrate the practical issues that may occur:
-\begin{enumerate}
-\item Data required in the new system is missing in the old system.
-   There may be no way in the old system to enter that data.
-   An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
-   The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
+%    A naive migration might proceed as follows:
+%    Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
+%    However, numerous issues might impede that plan.
+%    The following examples illustrate the practical issues that may occur:
+% \begin{enumerate}
+% \item Data required in the new system is missing in the old system.
+%    There may be no way in the old system to enter that data.
+%    An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
+%    The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
 
-   This issue will require somebody to insert the missing addresses in the new system.
-\item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
-   An example is if the old system only allows approvals to be entered as the current user, and the CEO has always insisted that her administrative staff enters the approvals into the system for her.
-   This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
+%    This issue will require somebody to insert the missing addresses in the new system.
+% \item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
+%    An example is if the old system only allows approvals to be entered as the current user, and the CEO has always insisted that her administrative staff enters the approvals into the system for her.
+%    This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
 
-   This issue will require that the incorrect registration of staff members is corrected in the new system.
-\item Data in the old system does not satisfy invariants of the new system.
-   There may be no way in the old system of making the data satisfy those invariants.
-   We can use the same example as in the previous bullet point,
-   but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+%    This issue will require that the incorrect registration of staff members is corrected in the new system.
+% \item Data in the old system does not satisfy invariants of the new system.
+%    There may be no way in the old system of making the data satisfy those invariants.
+%    We can use the same example as in the previous bullet point,
+%    but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
 
-   This issue will require somebody to change the data to satisfy the broken invariants in the new system.
-\item A way of entering data into the old system is missing in the new system.
-   People or automated processes might rely on these ways of entering data.
-   An example could be that when employees turned their computers on or off,
-   an ad-hoc script would automatically check them in- and out to determine the number of hours they worked.
-   A handful of employees still relies on this.
+%    This issue will require somebody to change the data to satisfy the broken invariants in the new system.
+% \item A way of entering data into the old system is missing in the new system.
+%    People or automated processes might rely on these ways of entering data.
+%    An example could be that when employees turned their computers on or off,
+%    an ad-hoc script would automatically check them in- and out to determine the number of hours they worked.
+%    A handful of employees still relies on this.
 
-   This issue will require that users of obsolete functionality are informed and given a way to cope with the missing functionality where appropriate.
-\item Data present in the old system cannot be stored in the new system.
-   An example could be that references to physical locations where original receipts are kept are stored in the old system,
-   but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
+%    This issue will require that users of obsolete functionality are informed and given a way to cope with the missing functionality where appropriate.
+% \item Data present in the old system cannot be stored in the new system.
+%    An example could be that references to physical locations where original receipts are kept are stored in the old system,
+%    but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
 
-   This issue will require that the old data is kept until the original receipts have been scanned.
-\end{enumerate}
+%    This issue will require that the old data is kept until the original receipts have been scanned.
+% \end{enumerate}
 
-(@Bas, het volgende zit al in de oplossingen sfeer. Willen we dat hier al doen?)
-   To mitigate these issues, we:
+% (@Bas, het volgende zit al in de oplossingen sfeer. Willen we dat hier al doen?)
+%    To mitigate these issues, we:
    
-   \begin{enumerate}
-   \item Allow `missing' triples requirements to be ignored during migration.
-   \item Allow triples to be migrated while being marked as needing correction.
-   \item Allow invariants in the new system to be ignored for certain triples during migration.
-   \item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
-   \item Retain data in the old system until it can be marked as ready to be phased out.
-   \end{enumerate}   
+%    \begin{enumerate}
+%    \item Allow `missing' triples requirements to be ignored during migration.
+%    \item Allow triples to be migrated while being marked as needing correction.
+%    \item Allow invariants in the new system to be ignored for certain triples during migration.
+%    \item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
+%    \item Retain data in the old system until it can be marked as ready to be phased out.
+%    \end{enumerate}   
 
    In the following section we introduce the definitions required to migrate data from one system to another.
 
@@ -294,6 +308,11 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Triples serve to represent data.
    A triple is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
+   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
+\begin{eqnarray}
+   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
+   \label{eqn:type}
+\end{eqnarray}
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
    Equation~\ref{eqn:type} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
    In practice, users can say that Peter has telephone number 074238991.
@@ -302,11 +321,6 @@ relation algebra\sep software development\sep data migration\sep software migrat
    We leave it entirely up to a user to attach a practical meaning to a triple.
    In this paper, the informal meaning is interesting only for the sake of illustration.
 
-   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
-\begin{eqnarray}
-   \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
-   \label{eqn:type}
-\end{eqnarray}
    $\triples$ is a finite set of triples and $\inst$ is the instance relation.
    In case we need to be explicit about the dataset,
    we will write $\triples_{\dataset}$ and $\inst_{\dataset}$ to refer to $\triples$ and $\inst$ respectively.
@@ -577,13 +591,6 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 %    we have now defined a small system.
 
 \subsection{Data migration}
-\begin{figure}[bht]
-   \begin{center}
-     \includegraphics[scale=.45]{Migration.png}
-   \end{center}
-\caption{Data migration}
-\label{fig:event flow}
-\end{figure}
    To migrate system $\infsys$ to $\infsys'$, we take the following steps:
 \begin{enumerate}
    \item Let the old system $\infsys$ have state $\dataset$ and schema $\schema$.
