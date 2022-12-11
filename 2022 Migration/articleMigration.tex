@@ -481,12 +481,6 @@ RELATION takes[Student*Course] =
    This declaration introduces a relation with name \verb#takes#,
    source concept \verb#Student#, and
    target concept \verb#Course#.
-   It also introduces three triples:
-\[\begin{array}{l}
-   \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-   \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}
-\end{array}\]
    The informal meaning of this relation is that it states which students are taking which courses.
    So, there is a student, Peter, taking the course Management and two students, Susan and John, taking the course Business IT.
 
@@ -521,9 +515,8 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 \label{eqn:example isEnrolledFor}
 \end{equation}
 
-   Summarizing, this example contains a dataset with seven triples
+   This example contains a dataset with seven triples
    and a schema with three concepts, three relations, and one rule.
-
    Now let us check the requirements to verify that this example defines an information system.
    The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
    It defines the set of triples $\triples$ as:
