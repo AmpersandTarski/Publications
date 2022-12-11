@@ -296,12 +296,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
    The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
-   This relation is used in the type system, in which $\inst$ assigns a type to every atom.
-   This makes $\inst$ total on the atoms in the dataset:
-\begin{eqnarray}
-   \forall a\in\atoms\ \exists C\in\Concepts: a\ \inst\ C
-\label{eqn:typedAtom}
-\end{eqnarray}
+   This relation is used in the type system, in which $\inst$ assigns a type to every atom in the dataset.
 
    Relations serve to organize and store data, to allow a developer to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations.
@@ -312,6 +307,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
    Triples serve to represent data.
    A triple is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
+
    A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
 \begin{eqnarray}
    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
@@ -324,11 +320,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
    This ``meaning from practice'' has no consequences in the formal world.
    We leave it entirely up to a user to attach a practical meaning to a triple.
 
-   $\triples$ is a finite set of triples and $\inst$ is the instance relation.
    In case we need to be explicit about the dataset,
    we will write $\triples_{\dataset}$ and $\inst_{\dataset}$ to refer to $\triples$ and $\inst$ respectively.
    Every dataset is an element of an infinite set called $\Dataset$.
-   To save writing in the sequel, we will write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
+   To save writing in the sequel, we may write $a\ r\ b$ to denote that $\triple{a}{r}{b}\in\triples$.
 
    A relation $r$ can serve as a container of pairs,
    as defined by the function $\id{pop}_r:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
@@ -338,7 +333,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \label{eqn:pop}
 \end{equation}
    Equation~\ref{eqn:wellTypedEdge} implies that for every dataset $\dataset$:
-\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ \inst\ A\ \wedge\ b\ \inst\ B\]
+\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\ \inst\ A\ \wedge\ b\ \inst\ B\]
    For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
    This allows for static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
 
@@ -355,7 +350,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
    We write $\schema_{\infsys}$ to refer to the schema of information system $\infsys$.
-   We write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ to refer to $\concepts$, $\rels$, and $\rules$ respectively.
+   If needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ to refer to $\concepts$, $\rels$, and $\rules$ respectively.
 %  Every schema is an element of an infinite set called $\Schema$.
 
    In order to do static type checking,
@@ -368,13 +363,14 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \end{eqnarray}
 
    A rule in a schema serves to constrain the dataset, to ensure its semantic integrity.
+   Every rule is an element of an infinite set called $\Rules$,
+   which is disjoint from $\Concepts$, $\Rels$, and $\Atoms$.
    For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
    that represents the set of violations of rule $u$ in any dataset.
-   We also assume a function $\Sign : \rules\rightarrow\Pair{\Concepts}{\Concepts}$
+   We also assume a function $\id{sign} : \Rules\rightarrow\Pair{\Concepts}{\Concepts}$
    that represents the signature of a rule, i.e. the type of atoms in violations:
 \begin{eqnarray}
-   \sign{u}=\pair{A}{B}\\
-   \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
+   \sign{u}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
    \label{eqn:wellTypedEdged violations}
 \end{eqnarray}
    To determine whether rule $u$ is satisfied in dataset $\dataset$,
@@ -411,8 +407,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\la\dataset,\schema,\roles,\maintain\ra$, in which
 \begin{itemize}
-   \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
-   \item schema $\schema$ is defined as in section~\ref{sct:Schemas};
+   \item dataset $\dataset=\pair{\triples}{\inst}$ is defined as in section~\ref{sct:Datasets};
+   \item schema $\schema=\triple{\concepts}{\rels}{\rules}$ is defined as in section~\ref{sct:Schemas};
    \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$.
 \end{itemize}
@@ -535,7 +531,6 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
       \pair{\tt "Susan"}{\tt Student}\\
       \pair{\tt "John"}{\tt Student}
    \end{array}\]
-   Requirement~\ref{eqn:typedAtom} is satisfied because every atom has a concept.
    The tuple $\pair{\triples}{\inst}$ satisfies both requirements~\ref{eqn:wellTypedEdge} and~\ref{eqn:pop}.
    So, this defines a dataset $\dataset=\pair{\triples}{\inst}$ as introduced in section~\ref{sct:Datasets}.
 
@@ -873,7 +868,7 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
    Such changes have further reaching consequences, however.
    Changes to $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
    We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\rels,\dataset\ra$ as a change in which one or more of $\inst$, $\concepts$, or $\rels$ change.
-   To satisfy the definition of datasets, $\dataset$ and $\atoms$ must change too,
+   To satisfy the definition of datasets, $\dataset$ must change too,
    but the migration should try to preserve the maximal amount of data.
 
 \section{Validation}
