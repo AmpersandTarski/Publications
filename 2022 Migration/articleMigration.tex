@@ -267,8 +267,8 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \section{Terminology}
 \label{sct:Terminology}
-   First,
-   we define ``information system'' as a combination of dataset, schema, and functionality.
+   An ``information system'' is a combination of dataset, schema, and functionality.
+   For the purpose of this paper, we ignore the functionality because it does not impact the migration.
    We start with datasets in section~\ref{sct:Datasets}, then we define schemas in section~\ref{sct:Schemas},
    and then we can define information systems.
 
@@ -297,10 +297,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
    The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
    This relation is used in the type system, in which $\inst$ assigns a type to every atom.
-   This makes $\inst$ a total relation:
+   This makes $\inst$ total on the atoms in the dataset:
 \begin{eqnarray}
    \forall a\in\atoms\ \exists C\in\Concepts: a\ \inst\ C
-\label{eqn:concepts}
+\label{eqn:typedAtom}
 \end{eqnarray}
 
    Relations serve to organize and store data, to allow a developer to represent facts.
@@ -315,10 +315,10 @@ relation algebra\sep software development\sep data migration\sep software migrat
    A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
 \begin{eqnarray}
    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B
-   \label{eqn:type}
+   \label{eqn:wellTypedEdge}
 \end{eqnarray}
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
-   Equation~\ref{eqn:type} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
+   Equation~\ref{eqn:wellTypedEdge} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
    In practice, users can say that Peter has telephone number 074238991.
    So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    This ``meaning from practice'' has no consequences in the formal world.
@@ -337,7 +337,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
 \label{eqn:pop}
 \end{equation}
-   Equation~\ref{eqn:type} implies that for every dataset $\dataset$:
+   Equation~\ref{eqn:wellTypedEdge} implies that for every dataset $\dataset$:
 \[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ \inst\ A\ \wedge\ b\ \inst\ B\]
    For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
    This allows for static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
@@ -370,11 +370,12 @@ relation algebra\sep software development\sep data migration\sep software migrat
    A rule in a schema serves to constrain the dataset, to ensure its semantic integrity.
    For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
    that represents the set of violations of rule $u$ in any dataset.
-   We also assume a function $\Sign{u} : \Dataset\rightarrow\Pair{\Concepts}{\Concepts}$
+   We also assume a function $\Sign : \rules\rightarrow\Pair{\Concepts}{\Concepts}$
    that represents the signature of a rule, i.e. the type of atoms in violations:
 \begin{eqnarray}
-   \sign{u}{\dataset}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
-   \label{eqn:typed violations}
+   \sign{u}=\pair{A}{B}\\
+   \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
+   \label{eqn:wellTypedEdged violations}
 \end{eqnarray}
    To determine whether rule $u$ is satisfied in dataset $\dataset$,
    we define $\sat{u}{\Dataset}$:
@@ -402,24 +403,16 @@ relation algebra\sep software development\sep data migration\sep software migrat
    For example, code that determines equality between atoms only works for atoms that are an instance of the same concept.
    To ensure that this does not result in problems at run-time, users are required to write all specialization rules explicitly.
 
-   %These rules reflect the meaning (semantics) that is shared among users.
-
-\subsection{Functionality}
-   The functionality of an information system is an integral part of it.
-   It consists of software.
-   In this paper, we are not interested in the precise nature of the functionality.
-
 \subsection{Information Systems}
 \label{sct:Information Systems}
    This section defines the notion of information system.
    As before, we will suffix the elements of this definition if the situation requires it.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\functionality,\roles,\maintain\ra$, in which
+\item An information system $\infsys$ is a tuple $\la\dataset,\schema,\roles,\maintain\ra$, in which
 \begin{itemize}
    \item dataset $\dataset$ is defined as in section~\ref{sct:Datasets};
    \item schema $\schema$ is defined as in section~\ref{sct:Schemas};
-   \item $\functionality$ represents the functionality of the system, which is typically software;
    \item $\roles$ is a set of roles;
    \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules from $\schema$.
 \end{itemize}
@@ -507,11 +500,12 @@ RELATION isEnrolledFor[Student*Module]
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-   The actual constraint, \verb#isEnrolledFor |- takes;isPartOf~#, is written in logic as:
+   The semantics of Ampersand defines $\viol{\tt EnrollRule}{\dataset}$ as follows:
 \begin{equation}
-   \begin{array}{l}\forall s\in\text{\tt Student}, m\in\text{\tt Module}\ \exists c\in\text{\tt Course}:\\
+   \viol{\tt EnrollRule}{\dataset}\ =\{\begin{array}{l}
+   \pair{m}{s}\mid\neg\exists c\in\text{\tt Course}:\\
 s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
-\end{array}
+\end{array}\}
 \label{eqn:example isEnrolledFor}
 \end{equation}
 
@@ -541,9 +535,9 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
       \pair{\tt "Susan"}{\tt Student}\\
       \pair{\tt "John"}{\tt Student}
    \end{array}\]
-   Requirement~\ref{eqn:concepts} is satisfied because every atom has a concept.
-   Dataset $\pair{\triples}{\inst}$ satisfies both requirements~\ref{eqn:type} and~\ref{eqn:pop}.
-   So, the dataset $\dataset=\pair{\triples}{\inst}$ satisfies the requirements from section~\ref{sct:Datasets}
+   Requirement~\ref{eqn:typedAtom} is satisfied because every atom has a concept.
+   The tuple $\pair{\triples}{\inst}$ satisfies both requirements~\ref{eqn:wellTypedEdge} and~\ref{eqn:pop}.
+   So, this defines a dataset $\dataset=\pair{\triples}{\inst}$ as introduced in section~\ref{sct:Datasets}.
 
    The Ampersand compiler generates a schema $\schema$, which contains concepts, relations, and rules.
    It defines the set of concepts to satisfy requirement~\ref{eqn:relationsIntroduceConcepts}:
@@ -564,19 +558,18 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    To fulfill the definition of information system, definition~\ref{def:information system},
    Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$ and
    a relation $\maintain$, which contains one pair only: $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
-   For the purpose of this paper, the functionality $\functionality$ is irrelevant (onderbouwen!).
    The constraint~\ref{eqn:example isEnrolledFor} of rule {\tt EnrollRule} is satisfied
    because relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty.
-   So, there are no violations, which satisfies requirement~\ref{eqn:typed violations}.
+   So, there are no violations, which satisfies requirement~\ref{eqn:wellTypedEdged violations}.
    With only one rule in the system, requirement~\ref{eqn:sat} is satisfied too.
    Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
-   This completes the requirements for the entire quintuple $\la\dataset,\schema,\functionality,\roles,\maintain\ra$.
+   This completes the requirements for $\la\dataset,\schema,\roles,\maintain\ra$.
    So we can conclude that information system $\infsys$ satisfies definition~\ref{def:information system}.
 
 %    The language Ampersand is typed, to prevent a substantial amount of programming mistakes at compile-time.
 %    This means that every atom is an instance of a concept:
 % \begin{eqnarray}
-%    \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:concepts}
+%    \forall a\in\atoms\ \exists A\in\concepts&:&a\ \inst\ A\label{eqn:typedAtom}
 % \end{eqnarray}
 %    To do type checking based on the schema only,
 %    all relations in triples from the dataset must be ``known'' in the schema:
@@ -588,8 +581,8 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 %    For this reason, every relation $r$ has not only a name, but also a source concept and a target concept.
 %    We write $r=\declare{nm}{A}{B}$ to denote that relation $r$ has name \id{nm}, source concept $A$, and target concept $B$.
 % \begin{eqnarray}
-%    \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\label{eqn:concepts}\\
-%    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:type}
+%    \forall\declare{n}{A}{B}\in\rels&:&A\in\concepts\ \wedge\ B\in\concepts\label{eqn:typedAtom}\\
+%    \forall\triple{a}{\declare{n}{A}{B}}{b}\in\triples&:&a\ \inst\ A\ \wedge\ b\ \inst\ B\label{eqn:wellTypedEdge}
 % \end{eqnarray}
 %    The type checker in the Ampersand compiler will spot violations and refuse to generate a system if they occur.
 
