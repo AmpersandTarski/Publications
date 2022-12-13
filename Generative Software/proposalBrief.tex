@@ -6,8 +6,12 @@
 % \usepackage{amssymb}
 % \usepackage{amsthm}
 \usepackage[english]{babel}
+\usepackage{libertine}
+\usepackage{inconsolata}
 % \usepackage[official,right]{eurosym}
 \selectlanguage{english}
+\frenchspacing
+
 \begin{document}
 % \include{preamble}
 
@@ -19,8 +23,10 @@
 \begin{abstract}
     This paper summarizes the capability of the Open Universiteit in generative software development.
     We offer this enabling technology as a component of a larger effort that involves designing distributed information systems.
-    Generative software development offers attractive benefits for security and resilience,
-    and enables a product to be demonstrated live every 2 or 3 weeks as it develops into an end product.
+    Generative software development offers attractive benefits for correctness, security, and resilience.
+    Also, it enables a product to be demonstrated live during its creation,
+    hereby supporting agile software development methods.
+    %every 2 or 3 weeks as it develops into an end product.
 \end{abstract}
 
 \begin{keyword}
@@ -51,11 +57,11 @@
    This is useful for supporting distributed business processes that require a mix of human and automated activity.
 
 \section{Benefits}
-    The Open University offers its expertise~\cite{Joosten-JLAMP2018,JoostenRAMiCS2017,10.1145/3354166.3354182} and tools as a building block for a larger research effort,
+    The Open University offers its expertise~\cite{JoostenRAMiCS2017,Steenvoorden2022} and tools~\cite{Joosten-JLAMP2018,10.1145/3354166.3354182} as a building block for a larger research effort,
     in which generative software development is an enabler for the research proposed.
     This capability offers the following benefits:
 \begin{itemize}
-    \item By generating prototypes, we can produce live demonstrations periodically to keep the future user population informed of the progress.
+    \item By generating software, we can produce live demonstrations periodically to keep the future user population informed of the progress.
     This produces quick results, which keeps funders happy.
     \item By automating software production, we can prevent a large class of mistakes and thereby reduce the project risk.
     \item By formally specifying the functionality, we can give valuable guarantees on the correctness of the results.
@@ -63,11 +69,13 @@
 \end{itemize}
 
 \section{Researchers}
-    The authors are acknowledged scientists, both with a proven track record in generative software development.
+    The authors are acknowledged scientists, both with a proven track record in generative software development and workflow modelling.
 
-    \section{Bibliography}
-\bibliographystyle{elsarticle-harv}
-\bibliography{doc}
-    
+\newpage
+
+\section{Bibliography}
+    \bibliographystyle{elsarticle-harv}
+    \bibliography{doc}
+
 
 \end{document}
