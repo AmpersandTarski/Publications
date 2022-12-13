@@ -494,14 +494,14 @@ RELATION isEnrolledFor[Student*Module]
 \end{verbatim}
 
    To complete the semantics,
-   we also define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that a student takes.
-   In Ampersand, which is a syntactically sugared form of relation algebra,
+   we also define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
+   In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
    we give each rule a name and declare a role to preserve its invariance:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
 \end{verbatim}
-   The semantics of Ampersand defines $\sat{\tt EnrollRule}{\dataset}$ as follows:
+   The semantics of this rule defines $\sat{\tt EnrollRule}{\dataset}$ as:
 \begin{equation}
    \begin{array}{l}
    \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}\ \exists c\in\text{\tt Course}:\\
