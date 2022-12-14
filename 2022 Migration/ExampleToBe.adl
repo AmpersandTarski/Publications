@@ -8,8 +8,6 @@ RELATION isEnrolledFor [Student*Module] =
    ; ("Susan", "IT-Governance")
    ; ("Susan", "Business Rules")
    ]
-RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-ROLE Administrator MAINTAINS EnrollRule
 
 RELATION course[ExamReg*Course] [UNI] =
 [ ("ER1", "Management")

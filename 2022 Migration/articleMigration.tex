@@ -1,5 +1,6 @@
 \documentclass{elsarticle}
-\usepackage{graphicx}
+% \usepackage{graphicx}
+\usepackage{hyperref}
 %\usepackage{multicol}
 %\usepackage{footmisc}
 \usepackage{amstext}
@@ -57,7 +58,7 @@
    To prevent that, a migration engineer must transfer the old data to the new system by hand.
 
    In this contribution we develop a theory for reliable data migration to help the migration engineer
-   to transfer the data and preserve the semantics as much as possible.
+   to transfer the data and preserve their semantics as much as possible.
    We aim to automate the data migration,
    to prevent mistakes and enable more frequent migrations.
    The target is to generate a migration script from two specifications: the old specification and the new specification.
@@ -194,7 +195,7 @@ relation algebra\sep software development\sep data migration\sep software migrat
 
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.35]{Migration.png}
+     \includegraphics[scale=.35]{Migration.drawio.png}
    \end{center}
 \caption{Data migration}
 \label{fig:event flow}
@@ -496,7 +497,7 @@ RELATION isEnrolledFor[Student*Module]
    To complete the semantics,
    we also define a rule, {\tt EnrollRule}, that states that a student can enroll for any module that is part of a course that student takes.
    In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
-   we give each rule a name and declare a role to preserve its invariance:
+   we give each rule a name and declare a role to maintain its invariance:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 ROLE Administrator MAINTAINS EnrollRule
@@ -557,25 +558,46 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$ and
    a relation $\maintain$, which contains one pair only: $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
-   This completes the requirements for $\infsys=\la\dataset,\schema,\roles,\maintain\ra$.
-   So we can conclude that information system $\infsys$ satisfies definition~\ref{def:information system}.
+   This completes the requirements for $\infsys=\la\dataset,\schema,\roles,\maintain\ra$ from definition~\ref{def:information system}.
+   So we can conclude that $\infsys$ is an  information system.
 
 \subsection{Data migration}
+   In a datamigration, we distinguish three moments:
+\begin{enumerate}
+   \item the moment of transition, i.e. the moment the old system is replaced (in production) by the new system;
+   \item the decision point, i.e. the moment a business authority declares the migration successful;
+   \item the point of no return, i.e. the moment that the migration cannot be undone other than by the regular backup-procedure.
+\end{enumerate}
+   The decision point must come after the moment of transition, to allow the business to verify the migration.
+   The point of no return must come after the decision point, to allow for a no-go decision from the business.
+
    To migrate system $\infsys$ to $\infsys'$, we take the following steps:
 \begin{enumerate}
    \item Let the old system $\infsys$ have state $\dataset$ and schema $\schema$.
-         A developer defines a schema $\schema'$ of the new system as a first step in the deployment of the increment.
-   \item The generator generates a migration system $\migrsys$ based on $\schema$ and $\schema'$,
+         A developer defines a new system $\infsys'$, which contains a dataset $\dataset'$, a schema $\schema'$, and the functionality\footnote{For now, we ignore the functionality.}.
+         In Ampersand, this means that the developer produces an Ampersand script for the new system.
+         The difference between the new system and the old system is the increment.
+         To preserve the semantics of data means that the dataset $\dataset$ must be combined with $\dataset'$ in the new system.
+         Dataset $\dataset'$ is optional, in case the developer wants to add some new data into the system on the moment of transition.
+         If $\schema$ equals $\schema'$, we call the migration trivial because a migration is not necessary.
+   \item The generator generates a migration system $\migrsys$ based on $\schema$ and $\infsys'$,
          which gives the user the full functionality of the old system and the new system,
          i.e.\ $\schema_{\migrsys}=(\schema\sqcup\schema')\cup\id{migrationrules}$.
          The schema $\id{migrationrules}$ represents the enforce rules that migrate the existing data to the new dataset.
          TODO: $\id{migrationrules}$ bevat alleen tijdelijke datastructuur, indien nodig.
    \item A migration engineer changes $\id{migrationrules}$ to accommodate the non-standard requirements of the migration,
          yielding migration system $\migrsys'$.
-         TODO: de migration engineer kan alleen maar in $\dataset'$ dingen (laten) wijzigen, zodat je altijd terug kunt naar het oude systeem.
+         The migration engineer does not alter the old system $\infsys$ nor the specification new system $\infsys'$ that the developer has produced.
+         As a result, the migration engineer can always restore the old system because it is part of the migration system.
    \item The production environment switches instantly from $\infsys$ to $\migrsys'$,
          while $\dataset_{\infsys}\subseteq\dataset_{\migrsys'}$.
          This means that the data of the old system remains intact.
+         This event marks the moment of transition.
+   \item The rules in the migration system that are not in $\schema'$ will remain in the system until they are satisfied,
+         to enforce their execution.
+         Automatic migration rules can be executed at the moment of transition.
+         Migration rules that are enforced manually will be held alive until they are satisfied.
+         All rules from $\schema$ (the rules from the old system) are removed on the moment of transition, because the are satisfied by property~\ref{eqn:satisfaction}.
    \item After a finite span of time, $\dataset_{\migrsys'}$ satisfies all its enforce rules.
          This implies that the generated rules plus the changes made by the migration engineer ensure the preservation of the meaning of the old data.
    \item Users may have to perform manual migration steps.
@@ -590,12 +612,17 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
-   \omit\rlap{$\pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}$}\notag\\
+   \rlap{$\pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}$}\notag\\
    &=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\notag\\
       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
 \end{eqnarray}
 \end{definition}
+
+\begin{lemma}
+   If $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
+\end{lemma}
+   This lemma is being proven in Isabelle/HOL~\cite{Isabelle}. The proof is published \href{location.domain}{here}
 
 \begin{definition}[disjoint union of schemas]
 \begin{eqnarray}
@@ -612,8 +639,47 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 %       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
 % \end{eqnarray}
 % \end{definition}
-Note that if $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
+\begin{lemma}
+   If $\schema$ and $\schema'$ are schemas, then so is $\schema\sqcup\schema'$.
+\end{lemma}
+The proof of this lemma is published \href{location.domain}{here}
 
+To implement the disjoint union, we need to relabel 
+\begin{definition}[relabel concepts]
+   \[\subst{C}{D}{A}\ =\ \text{\bf if}\ C=A\ \text{\bf then}\ D\ \text{\bf else}\ A\]
+\end{definition}
+\begin{definition}[relabel concepts in triples]
+   \[\subst{C}{D}{\triple{a}{r}{b}} = \triple{a}{\subst{C}{D}{r}}{b}\]
+\end{definition}
+\begin{definition}[relabel concepts in relations]
+   \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
+\end{definition}
+\begin{definition}[relabel concepts in datasets]
+   \[\begin{array}{rcl}
+      \rlap{$\subst{C}{D}{\pair{\triples}{\inst}}$}\\
+      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\{a\ \inst\ \subst{C}{D}{A}\mid a\ \inst\ A\}}
+   \end{array}\]
+\end{definition}
+\begin{definition}[relabel concepts in rules]
+   \[\sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}\]
+\end{definition}
+\begin{definition}[relabel concepts in schemas]
+   \begin{eqnarray}
+      \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+      &=&\begin{array}[t]{l@{}l}
+         \la&\{\subst{C}{D}{t}\mid t\in\triples\}\\
+         ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
+         ,&\{\subst{C}{D}{u}\mid u\in\rules\}\ \ra\notag
+         \end{array}
+   \end{eqnarray}
+\end{definition}
+   
+   The relabeling of concepts is not trivial because of specialization.
+   To illustrate this point, suppose $D\isa A$.
+   Then the substitution $[C\rightarrow D]$ means that every atom $a$ that used to be of concept $C$ in the old system, is now not only a $D$ but also an $A$.
+   For example by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
+   all atoms that represent hotels might suddenly be expected to have parking lots.
+   So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 \subsection{Example}
    Let us proceed to specify a new system, $\infsys'$, to illustrate a (toy) migration.
    We will use the example in section~\ref{old IS} as the old system
