@@ -654,10 +654,13 @@ To implement the disjoint union, we need to relabel
 \begin{definition}[relabel concepts in relations]
    \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
 \end{definition}
+\begin{definition}[relabel concepts in $\inst$]
+   \[a\ \subst{C}{D}{\inst}\ A\ =\ \text{\bf if}\ C=A\ \text{\bf then}\ a\ \inst\ D\ \text{\bf else}\ a\ \inst\ A\]
+\end{definition}
 \begin{definition}[relabel concepts in datasets]
    \[\begin{array}{rcl}
       \rlap{$\subst{C}{D}{\pair{\triples}{\inst}}$}\\
-      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\{a\ \inst\ \subst{C}{D}{A}\mid a\ \inst\ A\}}
+      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\inst}}
    \end{array}\]
 \end{definition}
 \begin{definition}[relabel concepts in rules]
