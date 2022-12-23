@@ -39,7 +39,7 @@
 % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
 % -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreid) totdat het nieuwe systeem in gebruik genomen is?
 
-\title{It's all about Meaning!\\{\normalsize A Theory for Data Migration when Deploying Changes}}
+\title{Data migration under a Changing Schema}
 \author[ou,ordina]{Stef Joosten\fnref{fn1}}
 \ead{stef.joosten@ou.nl}
 \author[umn]{Sebastiaan Joosten\fnref{fn2}}
@@ -60,13 +60,13 @@
    It develops a theory for deploying an incremental change,
    making Ampersand more useful for agile software development.
    We propose a migration method that features zero down-time,
-   and features an undo after verification by the business.
+   and features an undo after deployment.
    It also leaves room for the business to finish ongoing work
    after the moment the change has been deployed.
 \end{abstract}
 
 \begin{keyword}
-generative software\sep incremental software development\sep data migration\sep relation algebra \sep Ampersand
+generative software\sep incremental software development\sep data migration\sep relation algebra\sep Ampersand\sep schema change
 \end{keyword}
 \maketitle
 
@@ -91,11 +91,11 @@ generative software\sep incremental software development\sep data migration\sep 
    The benefits work in two directions.
    Automating data migrations saves effort and errors,
    contributing to more frequent and smaller releases.
-   Smaller and faster releases also mean a smaller difference between the old system and the new system.
+   Smaller and faster releases also mean a smaller difference between the old system and the desired system.
    The smaller that difference, the simpler the migration can be and the more of it can be automated.
 
-   In each increment, we distinguish an ``old system'' and a ``new system''.
-   A difference of schemas complicates the migration of data between the old system and the new system.
+   In each increment, we distinguish an ``old system'' and a ``desired system''.
+   A difference of schemas complicates the migration of data between the old system and the desired system.
    The purpose of incremental evolution poses specific requirements to data migration,
    which sets it apart from data migrations for other purposes.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -111,7 +111,7 @@ generative software\sep incremental software development\sep data migration\sep 
    evolving incrementally.
    
    The contribution of this paper is to derive a migration schema from two artifacts: an existing system
-   (which has its own schema and dataset) and a new schema (which specifies the new system).
+   (which has its own schema and dataset) and a new schema (which specifies the desired system).
    The purpose of our theory is to develop tools.
    These tools must satisfy such practical requirements as
    zero down-time updates and ways to cope with data pollution.
@@ -141,35 +141,50 @@ generative software\sep incremental software development\sep data migration\sep 
    
    Information systems are typically used by distributed actors (both users and computers) who continually work with data.
    As a consequence, the data in a system changes continually.
+   In practice, actors ``talk to'' the system through an ingress mechanism, which connects each user to the right service(s).
+   We assume that the ingress function is provided by the deployment platform, so it is beyond the scope of this paper.
+   We also assume that every service runs independent of other services,
+   meaning that the service can be stopped, (re)started and substituted without disrupting the other services.
+
    Every system contains a dataset, which represents the state of the system.
+   Every service produces and consumes events that may change the state of the system.
+   This state is represented in a persistent store, aka the database%
+\footnote{Whether the database is local, remote, or globally distributed is immaterial for the theory in this paper.}.
    Events that the system detects may cause the state to change.
+\begin{figure}[bht]
+   \begin{center}
+     \includegraphics[scale=.45]{datamigration-Pre-migration.drawio.png}
+   \end{center}
+\caption{Anatomy of an information system}
+\label{fig:pre-migration}
+\end{figure}
    To keep our theory technology independent, we will assume that a dataset contains triples.
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
+   We will also assume that the system's semantics are represented as constraints,
+   which can be implemented most database management systems as integrity rules that keep the constraints satisfied.
 
-   Data migration occurs when a new system replaces an old one,
-   while preserving the meaning of the data from the old system as much as possible.
-   Just copying the set of data from the old system to the new is obviously wrong if the schemas of both systems differ.
-
-   We will assume that the schema of a system contains constraints on its dataset.
-   These constraints represent the semantics of the system~\cite{Spivak2012}.
-   This allows us to be explicit about ``preserving the meaning as much as possible''.
-   Our approach works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
+   In this work, we use the Ampersand compiler~\cite{Joosten-JLAMP2018},
+   to validate our theory.
+   Ampersand is a tool to generate information systems.
+   It works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
-
-   In this work we use the Ampersand compiler~\cite{Joosten-JLAMP2018},
-   to generate information systems.
-   A script in the Ampersand language represents the system's semantics by rules,
-   which constrain the dataset.
-   We don't have to formalize the semantics from specifications or from source code
-   because the constraints are already explicitly available as rules in the Ampersand script.
-   A system generated by the Ampersand compiler will keep these constraints satisfied at all times.
-   This makes Ampersand an obvious platform for validating our theory.
+   Each rule in Ampersand is a constraint (aka invariant), which the Ampersand run-time engine keeps satisfied as long as that rule lives%
+\footnote{The dotted lines in the diagrams show which set of rules the engine keeps satisfied.}.
+   So, the user spends no effort to extract constraints from specifications or (even more laborious) from code
+   because all constraints are explicitly available as rules in the code.
+   This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform to validate the theory.
+   It also allows us to be explicit about ``preserving the meaning as much as possible''.
    An Ampersand script contains just enough information to generate a complete system,
    which means that a classical database schema (i.e.\ data structure plus semantics) can be extracted from the Ampersand script.
    For the purpose of this paper we can equate an Ampersand script with the schema of the generated system.
 
-   For data migration, complications arise from accumulated data pollution in the old system.
+   Data migration occurs when a desired system replaces an old one,
+   while preserving the meaning of the present data as much as possible~\cite{Spivak2012}.
+   Just copying the set of data from the old system to the desired is obviously wrong if the schemas of both systems differ.
+
+   Complications may arise as a result of data pollution,
+   which may require human interventions to resolve.
    We distinguish data pollution in the following categories:
 \begin{itemize}
    \item data pollution that violates a constraint in the schema.
@@ -183,72 +198,77 @@ generative software\sep incremental software development\sep data migration\sep 
    so the old system has kept all constraints from the schema satisfied.
    This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
    The second category, data pollution that is not captured by any of the constraints mentioned in the schema,
-   can be dealt with by adding constraints in the new system.
-   In that case, a migration engineer must ensure that the new system can start with data that satisfies all constraints in its schema.
+   can be dealt with by adding constraints in the desired system.
+   In that case, a migration engineer must ensure that the desired system can start with data that satisfies all constraints in its schema.
    So some human intervention may be necessary in specific cases.
    The third category of pollution must be dealt with by working procedures, to prevent such pollution as much as possible.
    In some cases, constraints on data can be formulated,
    so the system can help the user and simplify (or eliminate) the corresponding working procedure.
    So, such constraints may help to move this type of pollution to one of the other categories.
-   The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in the new system.
+   The last category of data pollution, erroneous constraints, must be fixed by replacing them by the correct constraints in the desired system.
 
+   This illustrates that automating data migrations may require user intervention,
+   either by a migration engineer or by end-users.
+   In our approach, such user interventions are given some time by
+   defining two distinct moments:
+\begin{enumerate}
+   \item the moment of transition (the MoT), i.e. the moment the new system is made available to users;
+   \item the moment of no return (the MoN), i.e. the moment that the migration cannot be undone other than by a backup-procedure%
+\footnote{Backup mechanisms are outside the scope of this paper.}.
+\end{enumerate}
+
+   During the time between the MoT and MoN,
+   we propose to keep the old system and the new system alive, side by side, as shown in figure
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.35]{Migration.drawio.png}
+     \includegraphics[scale=.35]{datamigration-Migration phase.drawio.png}
    \end{center}
-\caption{Data migration}
-\label{fig:event flow}
+\caption{Migration phase}
+\label{fig:migration phase}
 \end{figure}
-   This illustrates that automating data migrations has its limits.
-   We cannot eliminate the need for interventions by a migration engineer entirely.
-   If the semantics encoded in the new schema differs from the old schema,
-   a migration engineer sometimes has to make choices.
-   If the interpretation of data changes,
-   a migration engineer drops obsolete constraints from the old system and introduces new constraints in the new system.
-   The consequences of such changes may require changes in data as well.
-   The migration engineer may even want to adapt existing data of which the constraints in the schema have not changed.
-   All of this requires a third schema, which specifies the migration itself.
+
+   The migration requires a third schema, which specifies the migration itself.
+   The migration schema comprises the schemas of both the old system and the new system.
+   The rules of the migration schema will cause the correct data to be transported into the new system%
+\footnote{In this study we focus only on the correctness, not on the efficiency of this data transport}.
    This migration schema preserves data from the old system, it may introduce new data automatically (generated from the old dataset),
    and it may require users to introduce new data (which will take time). 
-   It must contain the old schema, but it also contains the new schema and possibly some new data, all of which a migration engineer must specify.
-   As the migration schema must distinguish between the old dataset and the new dataset,
-   the migration must be based on the disjoint union of the two.
    So the idea of a migration schema is to compute the disjoint union of the old and the new schemas
    and to present it to the migration engineer in the form of source code,
    so the migration engineer can change everything she wants to suit the particulars of the data migration.
 
 %    A naive migration might proceed as follows:
-%    Launch the new system in parallel to the old one, copy data from the old to the new system, and have everyone use the new system.
+%    Launch the desired system in parallel to the old one, copy data from the old to the desired system, and have everyone use the desired system.
 %    However, numerous issues might impede that plan.
 %    The following examples illustrate the practical issues that may occur:
 % \begin{enumerate}
-% \item Data required in the new system is missing in the old system.
+% \item Data required in the desired system is missing in the old system.
 %    There may be no way in the old system to enter that data.
 %    An example could be that every reimbursement form needs to have an address associated to it to mail the check to, but address information is not stored in the old system:
 %    The old system required the reimbursement office to look up employee's addresses from a hand-written list they had on their desk.
 
-%    This issue will require somebody to insert the missing addresses in the new system.
+%    This issue will require somebody to insert the missing addresses in the desired system.
 % \item Data in the old system is wrong but cannot be corrected there due to how the old system was designed.
 %    An example is if the old system only allows approvals to be entered as the current user, and the CEO has always insisted that her administrative staff enters the approvals into the system for her.
 %    This may result in approvals being entered as admin staff, where it was really the CEO making the approval.
 
-%    This issue will require that the incorrect registration of staff members is corrected in the new system.
-% \item Data in the old system does not satisfy invariants of the new system.
+%    This issue will require that the incorrect registration of staff members is corrected in the desired system.
+% \item Data in the old system does not satisfy invariants of the desired system.
 %    There may be no way in the old system of making the data satisfy those invariants.
 %    We can use the same example as in the previous bullet point,
-%    but add the requirement (in the new system) that every purchase above a certain amount needs to be approved by the CEO.
+%    but add the requirement (in the desired system) that every purchase above a certain amount needs to be approved by the CEO.
 
-%    This issue will require somebody to change the data to satisfy the broken invariants in the new system.
-% \item A way of entering data into the old system is missing in the new system.
+%    This issue will require somebody to change the data to satisfy the broken invariants in the desired system.
+% \item A way of entering data into the old system is missing in the desired system.
 %    People or automated processes might rely on these ways of entering data.
 %    An example could be that when employees turned their computers on or off,
 %    an ad-hoc script would automatically check them in- and out to determine the number of hours they worked.
 %    A handful of employees still relies on this.
 
 %    This issue will require that users of obsolete functionality are informed and given a way to cope with the missing functionality where appropriate.
-% \item Data present in the old system cannot be stored in the new system.
+% \item Data present in the old system cannot be stored in the desired system.
 %    An example could be that references to physical locations where original receipts are kept are stored in the old system,
-%    but the new system relies on scans of receipts and allows the originals to be destroyed or not submitted.
+%    but the desired system relies on scans of receipts and allows the originals to be destroyed or not submitted.
 
 %    This issue will require that the old data is kept until the original receipts have been scanned.
 % \end{enumerate}
@@ -259,10 +279,24 @@ generative software\sep incremental software development\sep data migration\sep 
 %    \begin{enumerate}
 %    \item Allow `missing' triples requirements to be ignored during migration.
 %    \item Allow triples to be migrated while being marked as needing correction.
-%    \item Allow invariants in the new system to be ignored for certain triples during migration.
-%    \item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the new system.
+%    \item Allow invariants in the desired system to be ignored for certain triples during migration.
+%    \item Allow continued use of interfaces of the old system, data entered into the old system via those interfaces needs to be continuously copied to the desired system.
 %    \item Retain data in the old system until it can be marked as ready to be phased out.
 %    \end{enumerate}   
+
+   During the migration phase, transactions in the old system are allowed because the migration engine will transport them to the new system.
+   This allows the business to finish transactions in the old system while the new system is already up and running.
+   Rules in the migration system that require user interaction are given time by requiring that the migration phase ends
+   only after all old rules and migration rules are at rest.
+   At the MoN, the migration engineer takes down everything but the new system,
+   leaving the business with a successful migration.
+\begin{figure}[bht]
+   \begin{center}
+     \includegraphics[scale=.35]{datamigration-Post-migration.drawio.png}
+   \end{center}
+\caption{The system after the data migration}
+\label{fig:post-migration}
+\end{figure}
 
    In the following section we introduce the definitions required to migrate data from one system to another.
 
@@ -472,7 +506,7 @@ RELATION takes[Student*Course] =
 ; ("John", "Business IT")
 ]
 \end{verbatim}
-   This declaration introduces a relation with name \verb#takes#,
+   This declaration introduces a relation with the name \verb#takes#,
    source concept \verb#Student#, and
    target concept \verb#Course#.
    The informal meaning of this relation is that it states which students are taking which courses.
@@ -563,47 +597,41 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 
 \subsection{Data migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example old IS} both show a complete information system.
-   This section studies the transition from an old system to a new one, involving a data migration.
-
-   In a datamigration, we distinguish three moments:
-\begin{enumerate}
-   \item the moment of transition, i.e. the moment the old system is replaced (in production) by the new system;
-   \item the decision point, i.e. the moment a business authority declares the migration successful;
-   \item the point of no return, i.e. the moment that the migration cannot be undone other than by a backup-procedure,
-         which is outside the scope of this paper.
-\end{enumerate}
-   The decision point must come after the moment of transition, to allow the business to verify the migration.
-   The point of no return must come after the decision point, to allow for a no-go decision from the business.
+   This section studies the transition from an old system to a desired one, involving a data migration.
 
    To migrate system $\infsys$ to $\infsys'$, we take the following steps:
 \begin{enumerate}
    \item Let the old system $\infsys$ have state $\dataset$ and schema $\schema$.
-         A developer defines a new system $\infsys'$, which contains a dataset $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.}.
-         In Ampersand, this means that the developer produces an Ampersand script for the new system.
-         The {\em increment} is the difference between the new system and the old system.
-         The new system must contain the triples from $\dataset$ and $\dataset'$, to preserve the old data.
-         If the developer wants to add some new data into the system on the moment of transition,
+         A developer defines a desired system $\infsys'$ by specifying an initial dataset $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.}.
+         Schema $\schema'$ is the schema that governs the system after the migration.
+         After the migration, the system must contain the triples from $\dataset$ and $\dataset'$, to preserve the old data.
+         If the developer wants to add some new data into the system on the moment of transition (MoT),
          she specifies that in $\dataset'$.
          That might be necessary to initialize specific new features.
          If $\schema$ equals $\schema'$, we call the migration trivial because a migration is not necessary.
-   \item The generator generates a migration system $\migrsys$ based on $\schema$ and $\infsys'$,
-         which gives the user the full functionality of the old system and the new system,
-         i.e.\ $\schema_{\migrsys}=(\schema\sqcup\schema')\cup\id{migrationrules}$.
+   \item The generator generates a migration script $\migrsys$ based on $\schema$ and $\infsys'$,
+         such that $\schema_{\migrsys}=(\schema\sqcup\schema')\cup\id{migrationrules}$.
          The schema $\id{migrationrules}$ represents the enforce rules that migrate the existing data to the new dataset.
          TODO: $\id{migrationrules}$ bevat alleen tijdelijke datastructuur, indien nodig.
    \item A migration engineer changes $\id{migrationrules}$ to accommodate the non-standard requirements of the migration,
-         yielding migration system $\migrsys'$.
-         The migration engineer does not alter the old system $\infsys$ nor the specification of the new system $\infsys'$ that the developer has produced.
+         yielding migration script $\migrsys'$.
+         The migration engineer does not alter the old system $\infsys$ nor the specification of the desired system $\infsys'$ that the developer has produced.
          As a result, the migration engineer can always restore the old system because it is part of the migration system.
    \item The production environment switches instantly from $\infsys$ to $\migrsys'$,
-         while $\dataset_{\infsys}\subseteq\dataset_{\migrsys'}$.
-         This means that the data of the old system remains intact.
-         This event marks the moment of transition.
-   \item The rules in the migration system that are not in $\schema'$ will remain in the system until they are satisfied,
-         to enforce their execution.
-         Automatic migration rules can be executed at the moment of transition.
-         Migration rules that are enforced manually will be held alive until they are satisfied.
-         All rules from $\schema$ (the rules from the old system) are removed on the moment of transition, because the are satisfied by property~\ref{eqn:satisfaction}.
+         while the data of the old system remains intact.
+         This can be realized by configuring the ingress system to open the route to the new system,
+         while keeping the old system accessible.
+         This event marks the MoT.
+         From this point onward, both the old functionality and the desired functionality are available to users.
+   \item The business has the opportunity to evaluate the change, which must end in a go/no-go decision.
+   \item In case of a go-decision, the migration engineer can disable the undo-facility.
+         In case of a no-go, the migration engineer restores the old system.
+         This event marks the moment of no return (MoN)
+   % \item The rules in the migration system that are not in $\schema'$ will remain in the system until they are satisfied,
+   %       to enforce their execution.
+   %       Automatic migration rules can be executed at the MoT.
+   %       Migration rules that are enforced manually will be held alive until they are satisfied.
+   %       All rules from $\schema$ (the rules from the old system) are removed on the MoT, because the are satisfied by property~\ref{eqn:satisfaction}.
    \item After a finite span of time, $\dataset_{\migrsys'}$ satisfies all its enforce rules.
          This implies that the generated rules plus the changes made by the migration engineer ensure the preservation of the meaning of the old data.
    \item Users may have to perform manual migration steps.
@@ -690,12 +718,12 @@ To implement the disjoint union, we need to relabel
    all atoms that represent hotels might suddenly be expected to have parking lots.
    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 \subsection{Example}
-   Let us proceed to specify a new system, $\infsys'$, to illustrate a (toy) migration.
+   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
    We will use the example in section~\ref{old IS} as the old system
    and call that $\infsys$ in this section.
    Its population reflects the state of the system just before the migration.
 
-   Information system $\infsys'$, the new system, is specified by:
+   Information system $\infsys'$, the desired system, is specified by:
 \begin{verbatim}
    RELATION takes[Student*Course]
    RELATION isPartOf[Module*Course] [UNI]=
@@ -798,7 +826,7 @@ To implement the disjoint union, we need to relabel
 
 \subsubsection{Strategies for restoring invariance}
 
-We allow ExamRule2 to be broken during the transition to the new system, and expect people with the Administrator role to deal with them.
+We allow ExamRule2 to be broken during the transition to the desired system, and expect people with the Administrator role to deal with them.
 
 However, the violations that arise when taking the (non-disjoint) union of the two scripts include violations of rules that the system should maintain.
 This means that if we cannot generate software based on the disjoint union as it is.
@@ -814,7 +842,7 @@ This in itself is not an issue: problems need to be solved one way or another.
 However, a problem that may occur is that regular users of the system, who are used to the old system, might be adding data to the system that causes violations faster than they can be solved.
 To mitigate this, we propose two solutions.
 
-One solution is to state that the only violations that may occur in \verb=isPartOfUNI= are those that were present when the migration started:
+One solution is to state that the only violations that may occur in the relation \verb=isPartOfUNI= are those that were present when the migration started:
 \begin{verbatim}
    RELATION isPartOf[Module*Course]
    RULE isPartOfUNI: isPartOf;isPartOf~ |- I
@@ -822,7 +850,8 @@ One solution is to state that the only violations that may occur in \verb=isPart
    
    RELATION isPartOfUNI_violations[Module*Module]
      = [("IT-Governance", "IT-Governance")]
-   RULE isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I |- isPartOfUNI_violations
+   RULE isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I
+         |- isPartOfUNI_violations
    SYSTEM MAINTAINS isPartOfUNI_progress
    
    ENFORCE isPartOfUNI_violations :< -(isPartOf;isPartOf~) /\ I  
@@ -849,7 +878,8 @@ Rather than taking the union of all triples, we can take the disjoint union inst
       [ ("IT-Governance", "Business IT") ]
    RELATION isPartOf_ignored[Module*Course]
    
-   RULE isPartOf_isUnion:  isPartOf_old :- isPartOf \/ isPartOf_ignored
+   RULE isPartOf_isUnion:
+         isPartOf_old |- isPartOf \/ isPartOf_ignored
    ROLE migrationHelper MAINTAINS isPartOf_isUnion
    
    ENFORCE isPartOf_ignored :> isPartOf
@@ -890,7 +920,10 @@ Indeed, ExamRule2 initially has more violations in this scenario.
    \end{eqnarray}
 \end{definition}
 
-The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statements add $((C',1),(C,0))$ and  $((C,0),(C',1))$ to the $\isa$ relation. Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
+The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statement adds two pairs to the $\isa$ relation:
+$\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
+Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added%
+\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
 The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
 The expressions $e$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
 
@@ -921,13 +954,13 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
    % -> het migratie-systeem bevat alle oude data, ihb nog steeds na het toepassen van de enforce regels
    \item $\migrsys$ contains the old data, insofar its enforce rules have not deleted it.
    % -> er is een pad naar ingebruikname van het nieuwe systeem (vanaf de initiële toestand van het migratie-systeem)
-   \item there is a path to releasing the new system, starting with the initial state of the $\migrsys$.
+   \item there is a path to releasing the desired system, starting with the initial state of the $\migrsys$.
    % -> corollary: op het moment van ingebruikname van het nieuwe systeem, is het migratie-systeem vrij van overtredingen op regels die het nieuwe systeem moet bewaken
-   \item As a result, the new system $\infsys'$ is void of violations at the start of its production life.
+   \item As a result, the desired system $\infsys'$ is void of violations at the start of its production life.
    % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
-   \item Optionally, the new system can be used in production after a limited number of steps.
+   \item Optionally, the desired system can be used in production after a limited number of steps.
    % -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreidt) totdat het nieuwe systeem in gebruik genomen is?
-   \item Optionally, there is a migration systen that preserves the functionality of the old system until the new system has been put in production.
+   \item Optionally, there is a migration systen that preserves the functionality of the old system until the desired system has been put in production.
 \end{itemize}
 % Bewijsverplichtingen:
 
