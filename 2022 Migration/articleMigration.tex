@@ -6,6 +6,7 @@
 \usepackage{amstext}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{mathrsfs}
 \usepackage{amsthm}
 \usepackage[english]{babel}
 %\usepackage[official,right]{eurosym}
@@ -506,7 +507,6 @@ generative software\sep incremental software development\sep data migration\sep 
 
 \subsection{Example}
 \label{sct:Example existing IS}
-\label{existing IS}
    Having defined an information system in mathematical terms, let us discuss a small example.
    For this purpose we use the language Ampersand
    because it makes the examples more appealing to read.
@@ -616,17 +616,17 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    \item Let the existing system $\infsys$ have state $\dataset$ and schema $\schema$.
          A developer defines a desired system $\infsys'$ by specifying an initial dataset $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.}.
          Schema $\schema'$ is the schema that governs the system after the migration.
-         After the migration, the system must contain the triples from $\dataset$ and $\dataset'$, to preserve the existing data.
+         After the migration, the system must contain the triples from both $\dataset$ and $\dataset'$, to preserve the existing data.
          If the developer wants to add some new data into the system on the moment of transition (MoT),
          she specifies that in $\dataset'$.
          That might be necessary to initialize specific new features.
          If $\schema$ equals $\schema'$, we call the migration trivial because a migration is not necessary.
-   \item The generator generates a migration script $\migrsys$ based on $\schema$ and $\infsys'$,
-         such that $\schema_{\migrsys}=(\schema\sqcup\schema')\cup\id{migrationrules}$.
+   \item The generator generates a migration script $\migrsys$ based on $\schema$ and $\infsys'$
+         to migrate the data and define the semantics during the migration phase as far as a generator can reasonably predict.
          The schema $\id{migrationrules}$ represents the enforce rules that migrate the existing data to the desired dataset.
-         TODO: $\id{migrationrules}$ bevat alleen tijdelijke datastructuur, indien nodig.
    \item A migration engineer changes $\id{migrationrules}$ to accommodate the non-standard requirements of the migration,
          yielding migration script $\migrsys'$.
+         This schema also contains data structures and rules that are needed for the duration of the migration phase.
          The migration engineer does not alter the existing system $\infsys$ nor the specification of the desired system $\infsys'$ that the developer has produced.
          As a result, the migration engineer can always restore the existing system because it is part of the migration system.
    \item The production environment switches instantly from $\infsys$ to $\migrsys'$,
@@ -635,17 +635,12 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
          while keeping the existing system accessible.
          This event marks the MoT.
          From this point onward, both the existing functionality and the desired functionality are available to users.
+   \item The migration system $\dataset_{\migrsys'}$ must be at rest before the MoN,
+         to ensure that the migration has completed before the migration becomes irreversible.
    \item The business has the opportunity to evaluate the change, which must end in a go/no-go decision.
-   \item In case of a go-decision, the migration engineer can disable the undo-facility.
+   \item In case of a go-decision, the migration engineer can disable the undo-facility as soon as the migration system is at rest.
          In case of a no-go, the migration engineer restores the existing system.
          This event marks the moment of no return (MoN)
-   % \item The rules in the migration system that are not in $\schema'$ will remain in the system until they are satisfied,
-   %       to enforce their execution.
-   %       Automatic migration rules can be executed at the MoT.
-   %       Migration rules that are enforced manually will be held alive until they are satisfied.
-   %       All rules from $\schema$ (the rules from the existing system) are removed on the MoT, because the are satisfied by property~\ref{eqn:satisfaction}.
-   \item After a finite span of time, $\dataset_{\migrsys'}$ satisfies all its enforce rules.
-         This implies that the generated rules plus the changes made by the migration engineer ensure the preservation of the meaning of the existing data.
    \item Users may have to perform manual migration steps.
          These are specified as process rules in $\id{migrationrules}$.
          % Dit zijn "kurk" regels.
@@ -716,7 +711,7 @@ To implement the disjoint union, we need to relabel
    \begin{eqnarray}
       \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
       &=&\begin{array}[t]{l@{}l}
-         \la&\{\subst{C}{D}{t}\mid t\in\triples\}\\
+         \la&\{\subst{C}{D}{c}\mid c\in\concepts\}\\
          ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
          ,&\{\subst{C}{D}{u}\mid u\in\rules\}\ \ra\notag
          \end{array}
