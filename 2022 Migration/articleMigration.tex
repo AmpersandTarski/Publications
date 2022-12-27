@@ -614,12 +614,11 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    To migrate system $\infsys$ to $\infsys'$, we take the following steps:
 \begin{enumerate}
    \item Let the existing system $\infsys$ have state $\dataset$ and schema $\schema$.
-         A developer defines a desired system $\infsys'$ by specifying an initial dataset $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.}.
-         Schema $\schema'$ is the schema that governs the system after the migration.
-         After the migration, the system must contain the triples from both $\dataset$ and $\dataset'$, to preserve the existing data.
-         If the developer wants to add some new data into the system on the moment of transition (MoT),
-         she specifies that in $\dataset'$.
-         That might be necessary to initialize specific new features.
+         A developer defines a desired system $\infsys'$, which contains a dataset of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
+         After the migration, the system will contain the triples from $\dataset$, to preserve the existing data.
+         The developer may want to add some new data into the system,
+         for instance to initialize new features on the moment of transition (MoT).
+         She specifies such data in $\dataset'$.
          If $\schema$ equals $\schema'$, we call the migration trivial because a migration is not necessary.
    \item The generator generates a migration script $\migrsys$ based on $\schema$ and $\infsys'$
          to migrate the data and define the semantics during the migration phase as far as a generator can reasonably predict.
@@ -634,20 +633,18 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
          This can be realized by configuring the ingress system to open the route to the desired system,
          while keeping the existing system accessible.
          This event marks the MoT.
-         From this point onward, both the existing functionality and the desired functionality are available to users.
-   \item The migration system $\dataset_{\migrsys'}$ must be at rest before the MoN,
-         to ensure that the migration has completed before the migration becomes irreversible.
-   \item The business has the opportunity to evaluate the change, which must end in a go/no-go decision.
+         From this point onward, both the existing functionality and the desired functionality are available to users as illustrated in figure~\ref{fig:migration phase}.
+   \item To ensure that all data is migrated before the the migration engineer makes the migration irreversible,
+         we require that the rules of the the migration system $\rules_{\migrsys'}$ are at rest before the migration engineer takes down the existing system.
+         Users (i.e.\ the business) must do the work to satisfy the manually enforced rules.
+         Ampersand guarantees that enforce rules will eventually be satisfied.
+   \item To give the business an opportunity to evaluate the change,
+         we can require a go/no-go decision before the the migration engineer makes the migration irreversible.
    \item In case of a go-decision, the migration engineer can disable the undo-facility as soon as the migration system is at rest.
          In case of a no-go, the migration engineer restores the existing system.
-         This event marks the moment of no return (MoN)
-   \item Users may have to perform manual migration steps.
-         These are specified as process rules in $\id{migrationrules}$.
-         % Dit zijn "kurk" regels.
-         The system ensures that the amount of work needed to perform these steps is finite.
-   \item The patron of the system can decide whether to carry on with the migration or to roll back to the existing system.
-         She can do that incrementally by switching off the interfaces one-by-one.
+         This event marks the moment of no return (MoN).
    \item The system retains the data, the schema, and the functionality that is covered by $\schema'$, dropping everything else.
+         This establishes the post-migration situation (figure~\ref{fig:post-migration}).
 \end{enumerate}
 
    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
