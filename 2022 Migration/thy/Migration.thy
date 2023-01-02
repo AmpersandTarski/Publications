@@ -8,10 +8,12 @@ theory Migration
   imports Graph_Saturation.LabeledGraphs
 begin
 
+(* The datatype graphTyping is meant for typing datasets. *)
 datatype ('l,'v,'c) graphTyping
  = GT (decl : "'l \<Rightarrow> 'c \<times> 'c")
       (inst : "('v \<times> 'c) set")
 
+(* This function corresponds to \ref{eqn:wellTypedEdge} in the article.  *)
 fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
   = (case lt l of
