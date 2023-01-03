@@ -714,28 +714,24 @@ To implement the disjoint union, we need to relabel
    \end{eqnarray}
 \end{definition}
 \begin{definition}[relabel relations]
-   \[\subst{\declare{n}{A}{B}}{r}{{\declare{m}{C}{D}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ r\ \text{\bf else}\ \declare{m}{C}{D}\]
+   \[\subst{\declare{m}{C}{D}}{m'}{{\declare{n}{A}{B}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ \declare{m'}{A}{B}\ \text{\bf else}\ \declare{m}{A}{B}\]
 \end{definition}
 \begin{definition}[relabel relations in triples]
-   \[\subst{p}{q}{\triple{a}{r}{b}} = \triple{a}{\subst{p}{q}{r}}{b}\]
+   \[\subst{\declare{m}{C}{D}}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{\declare{m}{C}{D}}{m'}{r}}{b}\]
 \end{definition}
 \begin{definition}[relabel relations in datasets]
    \[\begin{array}{rcl}
-      \rlap{$\subst{p}{q}{\pair{\triples}{\inst}}$}\\
-      &=&\pair{\{\subst{p}{q}{t}\mid t\in\triples\}}{\inst}
+      \rlap{$\subst{\declare{m}{C}{D}}{m'}{\pair{\triples}{\inst}}$}\\
+      &=&\pair{\{\subst{\declare{m}{C}{D}}{m'}{t}\mid t\in\triples\}}{\inst}
    \end{array}\]
 \end{definition}
 \begin{definition}[relabel relations in rules]
-   \[\sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{p}{q}{u}}{\subst{p}{q}{\dataset}}\]
+   \[\sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{\declare{m}{C}{D}}{m'}{u}}{\subst{\declare{m}{C}{D}}{m'}{\dataset}}\]
 \end{definition}
 \begin{definition}[relabel relations in schemas]
    \begin{eqnarray}
-      \rlap{$\subst{\declare{n}{A}{B}}{{\declare{m}{C}{D}}}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-      &=&\begin{array}[t]{l@{}l}
-         \la&\{\subst{B}{D}{{\subst{A}{C}{c}}}\mid c\in\concepts\}\\
-         ,&\{\subst{B}{D}{{\subst{A}{C}{{\subst{\declare{n}{A}{B}}{{\declare{m}{C}{D}}}{r}}}}}\mid r\in\rels\}\\
-         ,&\{\subst{B}{D}{{\subst{A}{C}{{\subst{\declare{n}{A}{B}}{{\declare{m}{C}{D}}}{u}}}}}\mid u\in\rules\}\ \ra\notag
-         \end{array}
+      \rlap{$\subst{\declare{m}{C}{D}}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+      &=&\la\concepts,\{\subst{\declare{m}{C}{D}}{m'}{r} \mid r\in\rels\}, \{\subst{\declare{m}{C}{D}}{m'}{u} \mid u\in\rules\}\ \ra\notag
    \end{eqnarray}
 \end{definition}
    
