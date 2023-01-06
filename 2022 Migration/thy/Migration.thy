@@ -8,8 +8,8 @@ theory Migration
   imports Graph_Saturation.LabeledGraphs
 begin
 
-(* The datatype graphTyping is meant for typing datasets. *)
-datatype ('l,'v,'c) graphTyping
+text "The datatype graphTyping is meant for typing datasets."
+datatype ('l,'v,'c) graphTyping (* 'l=\<real> (\Rels), 'v=\<bbbA> (\Atoms), 'c=\<complex> (\Concepts) *)
  = GT (decl : "'l \<Rightarrow> 'c \<times> 'c")
       (inst : "('v \<times> 'c) set")
 
