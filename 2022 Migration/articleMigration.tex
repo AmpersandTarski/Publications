@@ -423,7 +423,8 @@ generative software\sep incremental software development\sep data migration\sep 
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
 \end{eqnarray}
-
+   If a triple $\triple{a}{r}{b}$ satisfies requirement~\ref{eqn:define R} and its relation $r$ satisfies requirement~{eqn:relationsIntroduceConcepts},
+   we say that it {\em befits} schema $\triple{\concepts}{\rels}{\rules}$.
    We assume a special kind of rule that is used for specialization.
    The rule $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 \begin{equation}
@@ -601,8 +602,9 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    So, the schema $\schema=\triple{\concepts}{\rels}{\rules}$ satisfies the requirements from section~\ref{sct:Schemas}.
 
    Now let us check the definition of information system.
-   Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$ and
-   a relation $\maintain$, which contains one pair only: $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
+   Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
+   The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$,
+   instructing the run-time engine to forward all violations of {\tt EnrollRule} to an administrator so she can keep {\tt EnrollRule} satisfied.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
    This completes the requirements for $\infsys=\la\dataset,\schema,\roles,\maintain\ra$ from definition~\ref{def:information system}.
    So we can conclude that $\infsys$ is an  information system.
@@ -610,38 +612,49 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 \subsection{Process of Data Migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example existing IS} introduce a single information system.
    The transition from an existing system to the desired one is the topic of this section.
-   Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$ informally.
+   Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
 \begin{enumerate}
    \item Let the existing system $\infsys$ have state $\dataset$ and schema $\schema$.
          A developer defines a desired system $\infsys'$, which contains a dataset of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
-         After the migration, the system will contain the triples from $\dataset$, to preserve the existing data.
-         The developer may want to add some new data into the system,
+         After the migration, the system will contain the triples from $\dataset$ that befit $\schema'$,
+         except if the migration engineer decides otherwise (see step~\ref{item3}).
+         $\dataset'$ may contain some new data,
          for instance to initialize new features on the moment of transition (MoT).
-         She specifies such data in $\dataset'$.
-         If $\schema$ equals $\schema'$, we call the migration trivial because a data migration is not necessary.
-   \item The generator generates a migration script $\migrsys$ based on $\schema$ and $\infsys'$
+         If schemas $\schema$ equals $\schema'$, we call the migration trivial because a data migration is not necessary.
+   \item The generator generates a migration script $\migrsys$
          to migrate the data and define the semantics during the migration phase as far as a generator can reasonably predict.
-         It generates a schema $\id{migrationrules}$, which contains the enforce rules that migrate existing data to the desired dataset.
-   \item A migration engineer changes $\id{migrationrules}$ to accommodate the non-standard requirements of the migration,
+         It generates a schema, $\schema_{\migrsys}$, which contains the enforce rules that migrate existing data to the desired dataset.
+         It also contains data structures and rules that are needed for the duration of the migration phase.
+   \item\label{item3}
+         A migration engineer changes $\migrsys$ to accommodate the non-standard requirements of the migration,
          yielding migration script $\migrsys'$.
-         This script also contains data structures and rules that are needed for the duration of the migration phase.
-         The migration engineer does not alter the existing system $\infsys$ nor the specification of the desired system $\infsys'$ that the developer has produced.
-         As a result, the migration engineer can always restore the existing system.
-   \item The production environment switches instantly from $\infsys$ to $\migrsys'$.
-         This can be realized by configuring the ingress system to open the route to the migration system and the desired system,
-         while keeping the existing system accessible.
+         The migration engineer does not alter the existing system $\infsys$ nor the specification
+         of the desired system $\infsys'$ that the developer has produced.
+   \item The migration engineer deploys system $\migrsys'$.
+         This event starts the copying of data from $\dataset$ to $\dataset'$ (figure~\ref{fig:migration phase}).
+         During this phase, the ingress is still referring users to the existing system,
+         so they will not notice that the desired system is being fired up and loaded with data.
+         Users are still changing $\dataset$ (both inserts and deletes),
+         but these changes are being transferred to $\dataset'$ as well.
+         This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and
+         both datasets are in sync with respect to the ongoing transactions.
+   \item At this point, the ingress switches the traffic from $\infsys$ to $\migrsys'$,
+         so users will now experience the new functionality.
          This event marks the MoT.
-         From this point onward, both the existing functionality and the desired functionality are available to users as illustrated in figure~\ref{fig:migration phase}.
-   \item To ensure that all data is migrated before the the migration engineer makes the migration irreversible,
-         we require that every rule from $\rules_{\migrsys'}$ is satisfied before the migration engineer takes down the existing system.
-         Users (i.e.\ the business) must do the work to satisfy the manually enforced rules.
-         Ampersand guarantees that enforce rules will be satisfied.
+         From this point onward, users work with the desired functionality in dataset $\dataset'$.
    \item To give the business an opportunity to evaluate the change,
          we can require a go/no-go decision before the the migration engineer makes the migration irreversible.
-         In case of a go-decision, the migration engineer can disable the undo-facility as soon as the migration rules are satisfied.
-         In case of a no-go, the migration engineer restores the existing system.
          This event marks the moment of no return (MoN).
-   \item The system retains the data, the schema, and the functionality that is covered by $\schema'$ by dropping everything else.
+         In case of a go-decision, the migration engineer can take down the existing system, which by this time has become unreachable for users.
+         In case of a no-go, the migration engineer restores the existing system by letting the ingress switch traffic back to $\infsys$.
+   \item In more complex cases, the migration system contains rules that must be satisfied during the migration.
+         These rules can be necessary, for example to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
+         By putting it in the schema $\schema_{\migrsys'}$,
+         the migration engineer can fix such problems.
+         She can do this in the form of an enforce rule, which means that the problem gets fixed automatically.
+         Or she can use the business to satisfy this rule, in case human intelligence is required.
+         Whatever the choice, we require that every rule from $\rules_{\migrsys'}$ is satisfied before the migration engineer takes down the migration system.
+   \item After taking down the existing system and the migration system, the desired system remains in production and the migration is finished.
          This establishes the post-migration situation (figure~\ref{fig:post-migration}).
 \end{enumerate}
 
@@ -700,9 +713,10 @@ To implement the disjoint union, we need to relabel
       &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\inst}}
    \end{array}\]
 \end{definition}
-\begin{definition}[relabel concepts in rules]
-   \[\sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}\]
-\end{definition}
+   The relabeling of concepts in rules must satisfy:
+\begin{equation}
+   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}
+\end{equation}
 \begin{definition}[relabel concepts in schemas]
    \begin{eqnarray}
       \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
@@ -717,21 +731,22 @@ To implement the disjoint union, we need to relabel
    \[\subst{\declare{m}{C}{D}}{m'}{{\declare{n}{A}{B}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ \declare{m'}{A}{B}\ \text{\bf else}\ \declare{m}{A}{B}\]
 \end{definition}
 \begin{definition}[relabel relations in triples]
-   \[\subst{\declare{m}{C}{D}}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{\declare{m}{C}{D}}{m'}{r}}{b}\]
+   \[\subst{r'}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{r'}{m'}{r}}{b}\]
 \end{definition}
 \begin{definition}[relabel relations in datasets]
    \[\begin{array}{rcl}
-      \rlap{$\subst{\declare{m}{C}{D}}{m'}{\pair{\triples}{\inst}}$}\\
-      &=&\pair{\{\subst{\declare{m}{C}{D}}{m'}{t}\mid t\in\triples\}}{\inst}
+      \rlap{$\subst{r'}{m'}{\pair{\triples}{\inst}}$}\\
+      &=&\pair{\{\subst{r'}{m'}{t}\mid t\in\triples\}}{\inst}
    \end{array}\]
 \end{definition}
-\begin{definition}[relabel relations in rules]
-   \[\sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{\declare{m}{C}{D}}{m'}{u}}{\subst{\declare{m}{C}{D}}{m'}{\dataset}}\]
-\end{definition}
+   The relabeling of relation names in rules must satisfy:
+\begin{equation}
+   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{r'}{m'}{u}}{\subst{r'}{m'}{\dataset}}
+\end{equation}
 \begin{definition}[relabel relations in schemas]
    \begin{eqnarray}
-      \rlap{$\subst{\declare{m}{C}{D}}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-      &=&\la\concepts,\{\subst{\declare{m}{C}{D}}{m'}{r} \mid r\in\rels\}, \{\subst{\declare{m}{C}{D}}{m'}{u} \mid u\in\rules\}\ \ra\notag
+      \rlap{$\subst{r'}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+      &=&\la\concepts,\{\subst{r'}{m'}{r} \mid r\in\rels\}, \{\subst{r'}{m'}{u} \mid u\in\rules\}\ \ra\notag
    \end{eqnarray}
 \end{definition}
    
@@ -750,13 +765,8 @@ To implement the disjoint union, we need to relabel
    Information system $\infsys'$, the desired system, is specified by:
 \begin{verbatim}
    RELATION takes[Student*Course]
-   RELATION isPartOf[Module*Course] [UNI]=
-      [ ("IT-Governance", "Business IT") ]
-   RELATION isEnrolledFor [Student*Module] =
-      [ ("Susan", "Business Analytics")
-      ; ("Susan", "IT-Governance")
-      ; ("Susan", "Business Rules")
-      ]
+   RELATION isPartOf[Module*Course] [UNI]
+   RELATION isEnrolledFor [Student*Module]
    RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
    ROLE Administrator MAINTAINS EnrollRule
    
@@ -772,6 +782,40 @@ To implement the disjoint union, we need to relabel
    RULE ExamRule1: student~;course |- takes
    RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 \end{verbatim}
+
+
+   The generated migration system is:
+\begin{verbatim}
+   RELATION viol_EnrollRule[Student*Module]
+   RELATION diff_takes[Student*Course]
+   RELATION diff_isPartOf[Module*Course] [UNI]
+   RELATION diff_isEnrolledFor [Student*Module]
+
+   ENFORCE diff_takes :< old.takes-new.takes
+ 
+  -- ENFORCE new.takes >: old.takes  - diff_takes
+  -- ENFORCE new.takes :< old.takes \/ diff_takes
+   ENFORCE old.takes >: new.takes  - diff_takes
+   ENFORCE old.takes :< new.takes \/ diff_takes
+   
+   ENFORCE new.isPartOf := old.isPartOf
+   ENFORCE new.isEnrolledFor := old.isEnrolledFor
+\end{verbatim}
+   The prefix `old.` refers to concepts, relations, and rules from the existing information system, $\infsys$, which is defined in section~\ref{sct:Example existing IS}.
+   The prefix `new.` refers to items from the desired information system, $\infsys'$, defined in this section.
+   The population just before the moment of transition is.
+\begin{verbatim}
+   RELATION takes[Student*Course]
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("IT-Governance", "Business IT") ]
+   RELATION isEnrolledFor [Student*Module] =
+      [ ("Susan", "Business Analytics")
+      ; ("Susan", "IT-Governance")
+      ; ("Susan", "Business Rules")
+      ]
+\end{verbatim}
+
+
    This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
    Some new population, two new relations, and two new rules have been added to $\infsys'$.
    $\infsys'$ contains exam registrations (concept \verb-ExamReg-), which is new.
