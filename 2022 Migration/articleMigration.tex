@@ -73,13 +73,12 @@ generative software\sep incremental software development\sep data migration\sep 
 
 \section{Introduction}
 \label{sct:Introduction}
-   To automate the datamigrations that come with incrementally developing and deploying information systems;
-   that is the purpose of the theory proposed in this paper.
+   The purpose of this work is to automate the data migrations that come with incrementally developing and deploying information systems.
+   This paper proposes a theory for such data migrations in the context of generated information systems%
+\footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }.
 
-   We believe in generating information systems%
-\footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }
-   to prevent human programming errors.
-   For, a mistake not made can never propagate into production.
+   We believe in generating systems to prevent human programming errors.
+   For, every mistake not made will never propagate into production.
    We also believe that information systems should be released into production in small increments,
    to obtain shorter release cycles, more frequent releases, and thus a more agile software development process%
    \footnote{These effects can be measured in terms of DevOps metrics such as
@@ -97,7 +96,7 @@ generative software\sep incremental software development\sep data migration\sep 
 
    In each increment, we distinguish an ``existing system'' and a ``desired system''.
    A difference of schemas complicates the migration of data between the existing system and the desired system.
-   The purpose of incremental evolution poses specific requirements to data migration,
+   The purpose of incremental deployment poses specific requirements to data migration,
    which sets it apart from data migrations for other purposes.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
@@ -106,10 +105,10 @@ generative software\sep incremental software development\sep data migration\sep 
    Data migration literature sometimes uses a different notion of increment.
    For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
-   In our work, however, we want to get rid of the existing system and not retain it.
+   In our work, however, we want to get rid of the existing system and not retain variations.
    So, we need to look at a different approach.
    Examples like these have convinced us to define a new method for data migration that is specifically meant for systems in production that are
-   evolving incrementally.
+   deployed incrementally.
    
    The contribution of this paper is to derive a migration schema from two artifacts: an existing system
    (which has its own schema and dataset) and a new schema (which specifies the desired system).
@@ -141,12 +140,12 @@ generative software\sep incremental software development\sep data migration\sep 
    To preserve meaning, the business maintains semantic constraints on the data,
    amidst of all changes that are going on around them.
    
-   Information systems are typically used by distributed actors (both users and computers) who continually work with data.
+   Information systems are typically used by actors (both users and computers) who are distributed and work with data all the time.
    As a consequence, the data in a system changes continually.
    In practice, actors ``talk to'' the system through an ingress mechanism, which connects each user to the right service(s).
    We assume that the ingress function is provided by the deployment platform, so it is beyond the scope of this paper.
    We also assume that every service runs independent of other services,
-   meaning that the service can be stopped, (re)started and substituted without disrupting the other services.
+   meaning that each service can be stopped, (re)started and substituted without disrupting the other services.
 
    Every system contains a dataset, which represents the state of the system.
    Every service produces and consumes events that may change the state of the system.
@@ -164,7 +163,8 @@ generative software\sep incremental software development\sep data migration\sep 
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
    We will also assume that the system's semantics are represented as constraints,
-   which can be implemented most database management systems as integrity rules that keep the constraints satisfied.
+   which most database management systems refer to as integrity rules.
+   The purpose of integrity rules is to keep the constraints they represent satisfied.
 
    In this work, we use the Ampersand compiler~\cite{Joosten-JLAMP2018},
    to validate our theory.
@@ -183,7 +183,7 @@ generative software\sep incremental software development\sep data migration\sep 
 
    Data migration occurs when a desired system replaces an existing one,
    while preserving the meaning of the present data as much as possible~\cite{Spivak2012}.
-   Just copying the set of data from the existing system to the desired is obviously wrong if the schemas of both systems differ.
+   Just copying the set of data from the existing system to the desired system is obviously wrong if the schemas of both systems differ.
 
    Complications may arise as a result of data pollution,
    which may require human interventions to resolve.
@@ -231,7 +231,7 @@ generative software\sep incremental software development\sep data migration\sep 
 
    The migration requires a third schema, which specifies the migration itself.
    The migration schema comprises the schemas of both the existing system and the desired system.
-   The rules of the migration schema will cause the correct data to be transported into the desired system.
+   The rules of the migration schema will cause the right data to be copied correctly into the desired system.
    This migration schema preserves data from the existing system, it may introduce new data automatically (generated from the existing dataset),
    and it may require users to introduce new data (which will take time). 
    So the idea of a migration schema is to compute the disjoint union of the existing and the desired schemas
@@ -759,14 +759,14 @@ To implement the disjoint union, we need to relabel
 \subsection{Example}
    Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
    We will use the example in section~\ref{sct:Example existing IS} as the existing system
-   and call that $\infsys$ in this section.
+   and call that $\infsys$.
    Its population reflects the state of the system just before the migration.
 
    Information system $\infsys'$, the desired system, is specified by:
 \begin{verbatim}
    RELATION takes[Student*Course]
-   RELATION isPartOf[Module*Course] [UNI]
-   RELATION isEnrolledFor [Student*Module]
+   RELATION isPartOf[Module*Course]
+   RELATION isEnrolledFor[Student*Module]
    RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
    ROLE Administrator MAINTAINS EnrollRule
    
@@ -782,43 +782,13 @@ To implement the disjoint union, we need to relabel
    RULE ExamRule1: student~;course |- takes
    RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 \end{verbatim}
+   We can see that the relations and the rule of the existing system remain part of the desired system%
+\footnote{Removal or changing of relations is allowed as well.}
+   because the developer has copied these items into the script of the desired system.
+   However, she has lifted the restriction \verb-UNI- on the relation {\tt isPartOf}.
+   Besides, two new relations and two rules have appeared.
 
-
-   The generated migration system is:
-\begin{verbatim}
-   RELATION viol_EnrollRule[Student*Module]
-   RELATION diff_takes[Student*Course]
-   RELATION diff_isPartOf[Module*Course] [UNI]
-   RELATION diff_isEnrolledFor [Student*Module]
-
-   ENFORCE diff_takes :< old.takes-new.takes
- 
-  -- ENFORCE new.takes >: old.takes  - diff_takes
-  -- ENFORCE new.takes :< old.takes \/ diff_takes
-   ENFORCE old.takes >: new.takes  - diff_takes
-   ENFORCE old.takes :< new.takes \/ diff_takes
-   
-   ENFORCE new.isPartOf := old.isPartOf
-   ENFORCE new.isEnrolledFor := old.isEnrolledFor
-\end{verbatim}
-   The prefix `old.` refers to concepts, relations, and rules from the existing information system, $\infsys$, which is defined in section~\ref{sct:Example existing IS}.
-   The prefix `new.` refers to items from the desired information system, $\infsys'$, defined in this section.
-   The population just before the moment of transition is.
-\begin{verbatim}
-   RELATION takes[Student*Course]
-   RELATION isPartOf[Module*Course] [UNI]=
-      [ ("IT-Governance", "Business IT") ]
-   RELATION isEnrolledFor [Student*Module] =
-      [ ("Susan", "Business Analytics")
-      ; ("Susan", "IT-Governance")
-      ; ("Susan", "Business Rules")
-      ]
-\end{verbatim}
-
-
-   This specification shows that $\infsys'$ gets to keep all three relations and the rule from $\infsys$.
-   Some new population, two new relations, and two new rules have been added to $\infsys'$.
-   $\infsys'$ contains exam registrations (concept \verb-ExamReg-), which is new.
+   The desired system, $\infsys'$, contains exam registrations (concept \verb-ExamReg-), which is new.
    In an exam registration, a student registers for the examination of a course.
    $\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
    The first one says that an exam registration requires that a student actually takes the course.
@@ -838,6 +808,83 @@ To implement the disjoint union, we need to relabel
    % \viol{\text{\tt ExamRule2}}{\dataset}\\
    % \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
 % \end{array}\]
+
+\subsection{Copying Data}
+   For loading the data in the desired database, we use enforce rules.
+   In Ampersand, an enforce rule comes in one of the following three kinds:
+\begin{eqnarray}
+   \text{\tt ENFORCE}\ r\ \text{\tt :<}\ \id{expression}\label{enforce del}\\
+   \text{\tt ENFORCE}\ r\ \text{\tt :=}\ \id{expression}\label{enforce eq}\\
+   \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{expression}\label{enforce ins}
+\end{eqnarray}
+   Every enforce rule is enforced by an engine,
+   which changes the population of relation $r$ to satisfy the rule.
+   An enforce rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
+   When the expression is losing pairs that are in $r$, the engine will spontaneously remove such pairs from $r$ to keep $r$ smaller than or equal to \id{expression}.
+   An enforce rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
+   When the expression is growing with pairs that are in $r$, the engine will spontaneously insert such pairs in $r$ to keep $r$ greater than or equal to \id{expression}.
+   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression}.
+   It does so by inserting and deleting pairs in $r$ to keep it equal to \id{expression}.
+   Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
+
+   It would be tempting to state that a relation from the example system, say {\tt takes}, could be copied by the following code fragment%
+\footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
+The prefix {\tt new.} refers to items from the desired information system (this section).}:
+\begin{verbatim}
+   ENFORCE new.takes >: old.takes
+\end{verbatim}
+   This would mean, however, that all pairs from {\tt old.takes} will be in {\tt new.takes} forever.
+   An extra relation fixes this problem by remembering which pairs have been copied:
+
+\begin{verbatim}
+   RELATION copied_takes[Student*Course]
+   ENFORCE new.takes >: old.takes - copied_takes
+   ENFORCE copied_takes >: new.takes
+\end{verbatim}
+   Initially, when {\tt copied\_takes} is still empty, the difference between {\tt old.takes} and {\tt copied\_takes} equals {\tt old.takes}.
+   So, {\tt new.takes} will start filling up with the pairs of {\tt old.takes}.
+   Then, the second enforce rule will start filling {\tt copied\_takes} with pairs from {\tt new.takes},
+   and the difference between {\tt old.takes} and {\tt copied\_takes} gets smaller and smaller, until {\tt old.takes} and {\tt copied\_takes} are equal.
+   Then, the enforce rule that fills {\tt new.takes} will be satisfied forever and will change nothing more to {\tt new.takes}.
+
+   So, the generator that ``writes'' the code for the migration system must introduce an extra relation for each relation to be copied.
+   After the migration has finished, this extra relation and both enforce rules can be taken out of production.
+   For this purpose, the generator writes a rule that signals the migration engineer when copying is done.
+
+\subsection{Migration system}
+   The generated migration system is:
+\begin{verbatim}
+   RELATION copied_takes[Student*Course]
+   ENFORCE new.takes >: old.takes - copied_takes
+   ENFORCE copied_takes >: new.takes
+
+   RELATION copied_isPartOf[Module*Course]
+   ENFORCE new.isPartOf >: old.isPartOf - copied_isPartOf
+   ENFORCE copied_isPartOf >: new.isPartOf
+
+   RELATION copied_isEnrolledFor[Student*Module]
+   ENFORCE new.isEnrolledFor >: old.isEnrolledFor - copied_isEnrolledFor
+   ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
+
+   ROLE MigrationEngineer MAINTAINS migrating_takes, migrating_isPartOf, migrating_isEnrolledFor
+   RULE migrating_takes : old.takes-copied_takes = -V
+   RULE migrating_isPartOf : old.isPartOf-copied_isPartOf = -V
+   RULE migrating_isEnrolledFor : old.isEnrolledFor-copied_isEnrolledFor = -V
+\end{verbatim}
+
+\subsection{Moment of Transition}
+   Let us assume the population just before the moment of transition is.
+\begin{verbatim}
+   RELATION takes[Student*Course]
+   RELATION isPartOf[Module*Course] [UNI]=
+      [ ("IT-Governance", "Business IT") ]
+   RELATION isEnrolledFor [Student*Module] =
+      [ ("Susan", "Business Analytics")
+      ; ("Susan", "IT-Governance")
+      ; ("Susan", "Business Rules")
+      ]
+\end{verbatim}
+
 
    So let us now turn to the migration.
    The intention of any migration is to preserve as much of the data from $\infsys$ as possible into $\infsys'$,
