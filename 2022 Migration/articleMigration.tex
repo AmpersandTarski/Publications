@@ -525,10 +525,8 @@ RELATION takes[Student*Course] =
    The informal meaning of this relation is that it states which students are taking which courses.
 
    The example system also has a second relation that states which modules are part of which course.
-   It is constrained by \verb-[UNI]- to be univalent.
-   This means that every \verb-Module- is part of at most one \verb-Course-.
 \begin{verbatim}
-RELATION isPartOf[Module*Course] [UNI] =
+RELATION isPartOf[Module*Course] =
 [ ("Finance", "Management")
 ; ("Business Rules", "Business IT")
 ; ("Business Analytics", "Business IT")
@@ -621,15 +619,18 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
          $\dataset'$ may contain some new data,
          for instance to initialize new features on the moment of transition (MoT).
          If schemas $\schema$ equals $\schema'$, we call the migration trivial because a data migration is not necessary.
-   \item The generator generates a migration script $\migrsys$
+   \item The generator generates a migration script, $\migrsys$,
          to migrate the data and define the semantics during the migration phase as far as a generator can reasonably predict.
          It generates a schema, $\schema_{\migrsys}$, which contains the enforce rules that migrate existing data to the desired dataset.
          It also contains data structures and rules that are needed for the duration of the migration phase.
    \item\label{item3}
-         A migration engineer changes $\migrsys$ to accommodate the non-standard requirements of the migration,
-         yielding migration script $\migrsys'$.
-         The migration engineer does not alter the existing system $\infsys$ nor the specification
-         of the desired system $\infsys'$ that the developer has produced.
+         In many cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration.
+         However, a migration engineer may have specific requirements that call for changes in $\migrsys$.
+         For that purpose, the generator generates the migration script as an Ampersand script,
+         to let the migration engineer accommodate $\migrsys$ to the non-standard requirements.
+         The resulting migration script, $\migrsys'$, can be tested separately and can be used to take the desired system to production.
+         The migration engineer does not alter the schemas of the existing system or the desired system.
+         All migration functionality is concentrated in $\migrsys'$.
    \item The migration engineer deploys system $\migrsys'$.
          This event starts the copying of data from $\dataset$ to $\dataset'$ (figure~\ref{fig:migration phase}).
          During this phase, the ingress is still referring users to the existing system,
@@ -756,6 +757,75 @@ To implement the disjoint union, we need to relabel
    For example by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
    all atoms that represent hotels might suddenly be expected to have parking lots.
    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
+
+\subsection{Loading Data}
+   For loading the data in the desired database, we use enforce rules.
+   In Ampersand, an enforce rule comes in three flavors:
+\begin{eqnarray}
+   \text{\tt ENFORCE}\ r\ \text{\tt :<}\ \id{expression}\label{enforce del}\\
+   \text{\tt ENFORCE}\ r\ \text{\tt :=}\ \id{expression}\label{enforce eq}\\
+   \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{expression}\label{enforce ins}
+\end{eqnarray}
+   Every enforce rule is enforced by an engine,
+   which changes the population of relation $r$ to satisfy the rule.
+   An enforce rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
+   When the population of this expression is losing pairs that are in $r$, the engine will remove such pairs from $r$ to keep $r$ smaller than or equal to \id{expression}.
+   An enforce rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
+   When the population of this expression is growing with pairs that are not in $r$, the engine will insert such pairs in $r$ to keep $r$ greater than or equal to \id{expression}.
+   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression}.
+   It does so by inserting and deleting pairs in $r$ to keep it equal to \id{expression}.
+   Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
+
+   It would be tempting to state that a relation from the example system, say {\tt takes}, could be copied by the following code fragment%
+\footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
+The prefix {\tt new.} refers to items from the desired information system.}:
+\begin{verbatim}
+   ENFORCE new.takes >: old.takes
+\end{verbatim}
+   This would mean, however, that all pairs from {\tt old.takes} will be in {\tt new.takes} forever.
+   An extra relation (\ref{extraRelation}) fixes this problem by remembering which pairs have been copied:
+\begin{eqnarray}
+   &&\verb#RELATION copied_takes[Student*Course]#\label{extraRelation}\\
+   &&\verb#ENFORCE new.takes >: old.takes - copied_takes#\label{difference}\\
+   &&\verb#ENFORCE copied_takes := new.takes#\label{fill copies with new.takes}\\
+   &&\verb#ENFORCE copied_takes :< old.takes#\label{del copies from old.takes}
+\end{eqnarray}
+   Initially, when {\tt copied\_takes} is still empty, the difference between {\tt old.takes} and {\tt copied\_takes} equals {\tt old.takes}.
+   So, {\tt new.takes} will start filling up with the pairs of {\tt old.takes} by rule~\ref*{difference}.
+   Then, the engine will start filling {\tt copied\_takes} with pairs from {\tt new.takes} because of rule~\ref*{fill copies with new.takes}.
+   As a result, the difference between {\tt old.takes} and {\tt copied\_takes} gets smaller and smaller, until {\tt old.takes} and {\tt copied\_takes} are equal.
+   While this copying process is going on, {\tt old.takes} may accumulate more pairs or lose pairs.
+\begin{itemize}
+\item If pair $p$ is inserted in {\tt old.takes} and $p$ is not in {\tt copied\_takes},
+      then rule~\ref{difference} causes the engine to insert $p$ in {\tt new.takes}.
+      Subsequently, rule~\ref{fill copies with new.takes} causes the engine to insert $p$ in {\tt copied\_takes} as well.
+\item If pair $p$ is inserted in {\tt old.takes} and $p$ is already in {\tt copied\_takes},
+      then nothing happens.
+\item If pair $p$ is deleted from {\tt old.takes} and $p$ is in {\tt copied\_takes},
+      then rule~\ref{del copies from old.takes} causes the engine to delete $p$ from {\tt copied\_takes}.
+\item If pair $p$ is deleted from {\tt old.takes} and $p$ is not in {\tt copied\_takes},
+      then nothing happens.
+\item If pair $p$ is inserted in {\tt new.takes},
+      rule~\ref{fill copies with new.takes} causes the engine to insert $p$ into {\tt copied\_takes}.
+\item If pair $p$ is deleted from {\tt new.takes},
+      rule~\ref{fill copies with new.takes} causes the engine to delete $p$ from {\tt copied\_takes}.
+      If this pair is in {\tt old.takes}, rule~\ref{difference} causes the engine to insert $p$ back into {\tt new.takes}.
+\end{itemize}
+
+   These new pairs are copied by the same rule.
+   However, {\tt old.takes} may also lose pairs, which are 
+   Then, the enforce rule that fills {\tt new.takes} will be satisfied forever and will change nothing more to {\tt new.takes}.
+
+   But what if (in the meantime) someone removes a pair from {\tt old.takes} that has already been inserted in {\tt new.takes}?
+\begin{verbatim}
+   RELATION added_takes[Student*Course]
+   RELATION deleted_takes[Student*Course]
+   ENFORCE new.takes >: old.takes - added_takes
+   ENFORCE added_takes >: new.takes
+\end{verbatim}
+   So, the generator that ``writes'' the code for the migration system must introduce an extra relation for each relation to be copied.
+   After the migration has finished, this extra relation and both enforce rules can be taken out of production.
+
 \subsection{Example}
    Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
    We will use the example in section~\ref{sct:Example existing IS} as the existing system
@@ -765,7 +835,7 @@ To implement the disjoint union, we need to relabel
    Information system $\infsys'$, the desired system, is specified by:
 \begin{verbatim}
    RELATION takes[Student*Course]
-   RELATION isPartOf[Module*Course]
+   RELATION isPartOf[Module*Course] [UNI]
    RELATION isEnrolledFor[Student*Module]
    RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
    ROLE Administrator MAINTAINS EnrollRule
@@ -779,13 +849,15 @@ To implement the disjoint union, we need to relabel
       [ ("ER1", "Peter")
       ; ("ER2", "Susan")
       ]
+   ROLE Student MAINTAINS ExamRule1, ExamRule2
    RULE ExamRule1: student~;course |- takes
    RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 \end{verbatim}
    We can see that the relations and the rule of the existing system remain part of the desired system%
 \footnote{Removal or changing of relations is allowed as well.}
    because the developer has copied these items into the script of the desired system.
-   However, she has lifted the restriction \verb-UNI- on the relation {\tt isPartOf}.
+   However, she has imposed the restriction \verb-UNI- on the relation {\tt isPartOf}, stating that this relation is univalent.
+   This means that every \verb-Module- is part of at most one \verb-Course-.
    Besides, two new relations and two rules have appeared.
 
    The desired system, $\infsys'$, contains exam registrations (concept \verb-ExamReg-), which is new.
@@ -801,6 +873,8 @@ To implement the disjoint union, we need to relabel
 \[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
    e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
 \end{array}\]
+   Both rules must be maintained by the student.
+   So, a student can register for an exam only if (s)he is taking the course for which (s)he registers and if (s)he is enrolled for every module of that course.
    % Ampersand also derives the following violation sets:
 % \[\begin{array}{l}
    % \viol{\text{\tt ExamRule1}}{\dataset}\\
@@ -809,50 +883,8 @@ To implement the disjoint union, we need to relabel
    % \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
 % \end{array}\]
 
-\subsection{Copying Data}
-   For loading the data in the desired database, we use enforce rules.
-   In Ampersand, an enforce rule comes in one of the following three kinds:
-\begin{eqnarray}
-   \text{\tt ENFORCE}\ r\ \text{\tt :<}\ \id{expression}\label{enforce del}\\
-   \text{\tt ENFORCE}\ r\ \text{\tt :=}\ \id{expression}\label{enforce eq}\\
-   \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{expression}\label{enforce ins}
-\end{eqnarray}
-   Every enforce rule is enforced by an engine,
-   which changes the population of relation $r$ to satisfy the rule.
-   An enforce rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
-   When the expression is losing pairs that are in $r$, the engine will spontaneously remove such pairs from $r$ to keep $r$ smaller than or equal to \id{expression}.
-   An enforce rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
-   When the expression is growing with pairs that are in $r$, the engine will spontaneously insert such pairs in $r$ to keep $r$ greater than or equal to \id{expression}.
-   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression}.
-   It does so by inserting and deleting pairs in $r$ to keep it equal to \id{expression}.
-   Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
-
-   It would be tempting to state that a relation from the example system, say {\tt takes}, could be copied by the following code fragment%
-\footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
-The prefix {\tt new.} refers to items from the desired information system (this section).}:
-\begin{verbatim}
-   ENFORCE new.takes >: old.takes
-\end{verbatim}
-   This would mean, however, that all pairs from {\tt old.takes} will be in {\tt new.takes} forever.
-   An extra relation fixes this problem by remembering which pairs have been copied:
-
-\begin{verbatim}
-   RELATION copied_takes[Student*Course]
-   ENFORCE new.takes >: old.takes - copied_takes
-   ENFORCE copied_takes >: new.takes
-\end{verbatim}
-   Initially, when {\tt copied\_takes} is still empty, the difference between {\tt old.takes} and {\tt copied\_takes} equals {\tt old.takes}.
-   So, {\tt new.takes} will start filling up with the pairs of {\tt old.takes}.
-   Then, the second enforce rule will start filling {\tt copied\_takes} with pairs from {\tt new.takes},
-   and the difference between {\tt old.takes} and {\tt copied\_takes} gets smaller and smaller, until {\tt old.takes} and {\tt copied\_takes} are equal.
-   Then, the enforce rule that fills {\tt new.takes} will be satisfied forever and will change nothing more to {\tt new.takes}.
-
-   So, the generator that ``writes'' the code for the migration system must introduce an extra relation for each relation to be copied.
-   After the migration has finished, this extra relation and both enforce rules can be taken out of production.
-   For this purpose, the generator writes a rule that signals the migration engineer when copying is done.
-
 \subsection{Migration system}
-   The generated migration system is:
+   The generated migration system, $\migrsys$, is:
 \begin{verbatim}
    RELATION copied_takes[Student*Course]
    ENFORCE new.takes >: old.takes - copied_takes
@@ -872,12 +904,23 @@ The prefix {\tt new.} refers to items from the desired information system (this 
    RULE migrating_isEnrolledFor : old.isEnrolledFor-copied_isEnrolledFor = -V
 \end{verbatim}
 
-\subsection{Moment of Transition}
-   Let us assume the population just before the moment of transition is.
+\subsection{Preparing for the Moment of Transition}
+   Just before loading the desired system with data,
+   the data in the existing system is no longer the data we saw in section~\ref{sct:Example existing IS}.
+   Let us assume the actual population at this time is:
 \begin{verbatim}
-   RELATION takes[Student*Course]
+   RELATION takes[Student*Course] =
+      [ ("Peter", "Management")
+      ; ("Susan", "Business IT")
+      ; ("John", "Business IT")
+      ]
    RELATION isPartOf[Module*Course] [UNI]=
-      [ ("IT-Governance", "Business IT") ]
+      [ ("Finance", "Management")
+      ; ("Business Rules", "Business IT")
+      ; ("Business Analytics", "Business IT")
+      ; ("IT-Governance", "Management")
+      ; ("IT-Governance", "Business IT")
+      ]
    RELATION isEnrolledFor [Student*Module] =
       [ ("Susan", "Business Analytics")
       ; ("Susan", "IT-Governance")
