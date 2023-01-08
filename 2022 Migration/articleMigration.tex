@@ -812,20 +812,6 @@ The prefix {\tt new.} refers to items from the desired information system.}:
       If this pair is in {\tt old.takes}, rule~\ref{difference} causes the engine to insert $p$ back into {\tt new.takes}.
 \end{itemize}
 
-   These new pairs are copied by the same rule.
-   However, {\tt old.takes} may also lose pairs, which are 
-   Then, the enforce rule that fills {\tt new.takes} will be satisfied forever and will change nothing more to {\tt new.takes}.
-
-   But what if (in the meantime) someone removes a pair from {\tt old.takes} that has already been inserted in {\tt new.takes}?
-\begin{verbatim}
-   RELATION added_takes[Student*Course]
-   RELATION deleted_takes[Student*Course]
-   ENFORCE new.takes >: old.takes - added_takes
-   ENFORCE added_takes >: new.takes
-\end{verbatim}
-   So, the generator that ``writes'' the code for the migration system must introduce an extra relation for each relation to be copied.
-   After the migration has finished, this extra relation and both enforce rules can be taken out of production.
-
 \subsection{Example}
    Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
    We will use the example in section~\ref{sct:Example existing IS} as the existing system
