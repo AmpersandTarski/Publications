@@ -1,4 +1,5 @@
 \documentclass{elsarticle}
+% \usepackage{natbib}
 % \usepackage{graphicx}
 % \usepackage{footmisc}
 % \usepackage{amstext}
@@ -6,25 +7,37 @@
 % \usepackage{amssymb}
 % \usepackage{amsthm}
 \usepackage[english]{babel}
+\usepackage{libertine}
+\usepackage{inconsolata}
 % \usepackage[official,right]{eurosym}
 \selectlanguage{english}
+\usepackage{hyperref}
+\frenchspacing
+
 \begin{document}
 % \include{preamble}
 
-\title{Generation of user interfaces\\{\em\normalsize Research Proposal}}
-\author{Stef Joosten\footnote{ORCID 0000-0001-8308-0189}}
-\author{Tim Steenvoorden\footnote{ORCID 0000-0002-8436-2054}}
+\title{Generative Software Development\\{\em\normalsize Research Offering}}
+\author{prof.dr.ir.\ Stef Joosten\footnote{ORCID 0000-0001-8308-0189}}
+\author{dr.\ Tim Steenvoorden\footnote{ORCID 0000-0002-8436-2054}}
 \address{Open Universiteit Nederland, Heerlen, the Netherlands}
 
 \begin{abstract}
-Disciplines: software engineering, 
+    This paper summarizes the capability of the Open Universiteit in generative software development.
+    We offer this enabling technology as a component of a larger effort that involves designing distributed information systems.
+    Generative software development offers attractive benefits for correctness, security, and resilience.
+    Also, it enables a product to be demonstrated live during its creation,
+    hereby supporting agile software development methods.
+    %every 2 or 3 weeks as it develops into an end product.
 \end{abstract}
 
 \begin{keyword}
+    generative software, software engineering, security, prototyping, correctness, Ampersand, TopHat
 \end{keyword}
 \maketitle
 
-\section{Requirements}
+\section{Requirements (remove this section before submitting)}
+Reviewers will judge this proposal by the following requirements.
 \subsection{Scientific quality}
 \begin{enumerate}
    \item 	To what extent is the proposed research original and how would you rate the innovative elements?
@@ -46,26 +59,68 @@ Disciplines: software engineering,
    \item 	What are the strong and weak points of the utilisation plan?   
 \end{enumerate}
 
-
 \section{Research question}
-   Data driven organizations that need to adapt frequently to changing circumstances face a software dilemma.
+\label{sct:Research question}
+   Data driven organizations that change frequently are facing the dilemma of buy vs. build.
    On one hand, flexible and fast adaptation requires immediate deployment of new software components, without interrupting the ongoing business.
    On the other hand, one-of-a-kind organizations require one-of-a-kind components that need to be developed first.
-   If the required component is generic enough, commercial off-the-shelf (COTS) components solve that problem.
-   However, if very specific components are not on the market, organizations must revert to homebrew components.
-   They either sacrifice the specific support for their business and choose a generic but readily available solution,
-   or they sacrifice their flexibility and enter into a software project to achieve the specific support they desire.
-
+   Commercial off-the-shelf (COTS) components provide speedy deployments, but can be too generic.
+   Homebrew components can satisfy specific requirements, but take time to build and maintain.
+   The so called ``low code platforms'' are sometimes advocated as the solution
+   because they generate user functionality from a graphical coding environment.
+   However, practical experience shows that these platforms are not so ``low code'' after all,
+   when the database structure is not properly aligned with the user functionality.
+ 
    In practice, we see many organizations that opt for homebrew solutions.
-   In these situations, generative software can shorten the development time and reclaim some of the desired flexibility.
-   Software generators are popular for many different purposes.
-   There are generators that build the database structure from a (textual or graphical) specification.
-   The so called ``low code platforms'' generate user functionality from a graphical coding environment.
-   When the database structure is not in-sync with the user functionality, custom code is needed to link the two together.
-   Generating user interfaces
-   The state of the art in generative software is that databases can be generated from specifications.
-   
-\label{sct:Introduction}
+   Generative development can shorten the development time of homebrew software, regaining some of the desired flexibility.
+
+\section{Plan}
+   We want to participate in a larger research project by means of one researcher (PhD candidate, full-time, 4 years) and one scientific programmer.
+   We intend to further the knowledge about generative software development by participating in a larger research effort.
+   We bring the expertise~\cite{JoostenRAMiCS2017,Steenvoorden2022} and tools~\cite{Joosten-JLAMP2018,10.1145/3354166.3354182} on generative software development
+   as an asset to that project at no extra cost.
+   The authors also intend to participate in person in the role of supervisors of the researcher and the scientific programmer, each for 0.1 FTE.
+
+   This capability offers the following benefits:
+\begin{itemize}
+    \item By generating software, we can produce live demonstrations periodically to keep the future user population informed of the progress.
+    This produces quick results, which keeps funders happy.
+    \item By automating software production, we can prevent a large class of mistakes and thereby reduce the project risk.
+    \item By formally specifying the functionality, we can give valuable guarantees on the correctness of the results.
+    \item Software that is correctly generated needs no testing. This yields significant savings on testing and test maintenance.
+    \item The tooling that has been developed at the Open University is especially suitable for automating business processes and workflows.
+\end{itemize}
+
+\section{Qualification of researchers}
+\label{sct:Qualification}
+   Research into generative software has a long tradition at the OU.
+   Results from this research comprise:
+\begin{itemize}
+   \item A generator, Ampersand, that produces a complete information system from a specification,
+         and a generator, TopHat, that produces a workflow system from a specification,
+         demonstrating that this research has tangible results~\cite{Michels2011}.
+   \item Numerous publications in peer-reviewed scientific conferences and journals,
+         demonstrating that this research is scientifically relevant.
+         Some of the highlights:
+         \begin{itemize}
+            \item A type system for information systems to ensure that all data is meaningful (i.e. has an interpretation)~\cite{vdWoude2011}
+            \item A book, "Rule Based Design", published as open educational content on the web~\cite{RBD}
+            \item An application that checks modeling conventions in architectural specifications~\cite{iceis22}
+            \item An application for identity and access management~\cite{SIAM2008}
+            \item Domain analysis~\cite{Joosten2015}.
+         \end{itemize}
+   \item A course, Rule Based Design, which is in the Master's program of the Computer Science curriculum and the Business Process Management \& IT program of the OU,
+         demonstrating that this research is valued by the OU.
+   \item over 10 generated information systems in production, made by TNO and one made by the OU,
+         demonstrating that this research has practical value for industry.
+   \item in-kind support from Ordina,
+         demonstrating that this research can draw positive attention from the IT industry.
+\end{itemize}
+
+Current work in our group is about supporting incremental changes to an information system generatively,
+to support DevOps teams who need incremental deployments.
+Supporting incremental deployments with a generator is likely to decrease deployment times,
+to increase the number of releases per time unit, and to decrease the risk of errors propagating to production.
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
 \bibliography{doc}
