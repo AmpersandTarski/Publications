@@ -228,35 +228,43 @@ definition map_labels_in_graphtype where
 
 definition map_labels_in_graph where
   "map_labels_in_graph g f
-    = LG (apfst f ` edges g) (vertices g)"
+    = LG (apfst f -` edges g) (vertices g)"
 
-(* Todo: change the definition of 'map_labels_in_graph' and move the function down?
-     A problem lies in how to avoid two different labels with different types
-       getting mapped to the same label.
-   *)
 lemma map_labels_preserves_wellTypedness:
-  assumes "typedGraph gt (map_labels_in_graph g f)"
-  shows "typedGraph (map_labels_in_graphtype gt f) g"
+  assumes "typedGraph gt g"
+  shows "typedGraph (map_labels_in_graphtype gt f) (map_labels_in_graph g f)"
 proof
-  show "graph g"
+  show "graph (map_labels_in_graph g f)"
     using typedGraphE(1)[OF assms]
     unfolding map_labels_in_graph_def
     by fastforce
-  fix e assume e:"e \<in> edges g"
-  hence "apfst f e \<in> edges (map_labels_in_graph g f)"
+  fix e assume e:"e \<in> edges (map_labels_in_graph g f)"
+  hence "apfst f e \<in> edges g"
     unfolding map_labels_in_graph_def by auto
-  hence "wellTypedEdge gt (apfst f e)" using assms by auto
+  hence "wellTypedEdge gt (apfst f e)"
+    using assms by auto
   thus "wellTypedEdge (map_labels_in_graphtype gt f) e"
     unfolding map_labels_in_graphtype_def
     by(cases gt;cases e;auto)
 next
-  fix v assume v:"v \<in> vertices g"
-  hence "v \<in> vertices (map_labels_in_graph g f)"
+  fix v assume v:"v \<in> vertices (map_labels_in_graph g f)"
+  hence "v \<in> vertices g"
     unfolding map_labels_in_graph_def by auto
   hence "typedVertex gt v" using assms by auto
   thus "typedVertex (map_labels_in_graphtype gt f) v"
     unfolding map_labels_in_graphtype_def
     by(cases gt;auto)
 qed
+
+definition union_typing where
+  "union_typing gt1 gt2
+    = GT (\<lambda> l. case l of Inl v \<Rightarrow> (decl gt1 l) | Inr v \<Rightarrow> (decl gt2 l)) 
+         (inst gt1 \<union> inst gt2)"
+
+(* did not use 'map_types_in_graphtypes', checking if neccessary first... *)
+definition disjoint_union_typing where
+  "disjoint_union_typing gt1 gt2
+     = union_typing (map_labels_in_graphtype (map_vertices_in_graphtype gt1 Inl) (inv Inl))
+                    (map_labels_in_graphtype (map_vertices_in_graphtype gt2 Inr) (inv Inr))"
 
 end
