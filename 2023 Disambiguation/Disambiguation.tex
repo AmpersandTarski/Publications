@@ -1,0 +1,127 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithmic}
+\usepackage{bbold}
+\usepackage[cal=boondoxo]{mathalfa}
+\begin{document}
+
+\title{What's in a name? Disambiguation strategies for relational descriptions}
+\author{Sebastiaan Joosten}
+\date{Work in progress}
+\maketitle
+
+\section{Motivation}
+Notations matter: They help communicate ideas by establishing expectations.
+When programming, it is recommended to choose function symbols, variable names, etcetera, in a way that it helps the reader of the program.
+Notations refer to a certain semantical notion, and choosing a good notation can help establish that.
+Regardless of expectations, the thing a notation refers to must always be clear.
+
+Programming languages greatly influence the notations a programmer uses through the rules on what a notation might refer to.
+This paper looks at how identifiers that refer to binary relations might be used in a semantic modeling language.
+In particular, we look at the use of identifiers in the programming language Ampersand, and ways in which changes to the language might effect the use of identifiers.
+
+Modeling in Ampersand happens via the use of binary relations, which are declared by stating a name, a source concept, and a target concept.
+When referring to binary relations, we typically only refer to them by their name.
+It is desirable to allow different binary relations to have the same name:
+Allowing this gives the programmer greater flexibility in which names to use.
+
+\subsection{Running example}
+An application can be described by binary relations over concepts, a description of what the concepts and relations mean, stating invariants and process rules that determine the behavior of the system, and describing interfaces to interact with the system.
+For the purposes of this article, we just declare binary relations and some invariants.
+
+We give the following planning application as an example in which binary relations share a name:
+\begin{verbatim}
+before : Task * Task
+before : Time * Time
+scheduled : Task * Time
+\end{verbatim}
+
+An invariant in this system is:
+
+\[
+\mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}} \subseteq \mathrm{scheduled};\mathrm{before}_{\mathrm{Time * Time}}
+\]
+
+Such invariants are well-typed: a Task is only compared to a Task, and a Time is only compared to a Time, and the only way in which a Task and a Time are related is through explicitly declared relations.
+We can consider the same expression in which types are dropped: $\mathrm{before};\mathrm{scheduled} \subseteq \mathrm{scheduled};\mathrm{before}$.
+If we require that invariants are well-typed, there is only one way of annotating such expressions with types, regardless of our interpretation.
+
+In Ampersand's implementation, Ampersand does not require writing the types: the use of the possibly ambiguous relation name $\mathrm{before}$ is allowed as long as it is clear which relation is intended, as is the case here.
+We refer to the problem of determining which relation is intended as the disambiguation problem, which we investigate more closely in a separate section.
+
+\subsection{Generalization}
+A common task in semantic modeling is to identify that some concepts are generalizations or specializations of other concepts.
+This section motivates the need for a special language feature to deal with generalizations.
+
+As an example, our planning application allows regular working hours to be set, which means that some times fall during regular hours.
+This means that such times would be a specialization of a time.
+We can model this with a relation called $\mathrm{worktime}$ and an invariant: $\mathrm{worktime} \subseteq \mathbb{1}_{Time}$, where $\mathbb{1}_{A} = \{(a,a) \mid a\in A \}$ is the relational identity.
+Another way to model this, is to introduce a concept $\mathrm{Worktime}$ and use $\mathbb{1}_\mathrm{Worktime}$ in the place of the relation $\mathrm{worktime}$, along with the invariant $\mathbb{1}_\mathrm{Worktime} \subseteq \mathbb{1}_{Time}$.
+However, this latter invariant is ill-typed: the expression on the left of the subset ($\subseteq$) is of type $(\mathrm{Worktime},\mathrm{Worktime})$, while the expression on the right is of type $(\mathrm{Time},\mathrm{Time})$.
+To allow expressions like $\mathbb{1}_\mathrm{Worktime} \subseteq \mathbb{1}_{Time}$ in a programming language, we need a more refined notion of which expressions are `type correct'.
+A paper by van der Woude and Joosten shows how one can do this~\cite{Woude11}.
+However, that paper does not consider the interplay with disambiguation which we consider here.
+
+\subsection{Two interpretations.}
+There are two different ways in which we can think of the two binary relations called $\mathrm{before}$.
+In one interpretation, we can say that $\mathrm{before}$ is a single binary relation, defined over the (disjoint) union between Task and Time.
+Whenever we use $\mathrm{before}$, we restrict its type to either \verb=Task * Task= or \verb=Time * Time= to get two completely separate behaviors.
+This means that we read $\mathrm{before}_{\mathrm{Task * Task}}$ as $\mathrm{before} \cap (\mathrm{Task}\times\mathrm{Task})$.
+
+Another interpretation is to say that there are two entirely separate relations, $\mathrm{before}_{\mathrm{Task * Task}}$ and $\mathrm{before}_{\mathrm{Time * Time}}$.
+In this interpretation, we can consider ${\mathrm{Task * Task}}$ as a part of the name of the relation.
+
+Note our interpretation does not matter for the behavior we get from well-typed invariants like the one we saw before.
+However, a problem arises if we add generalization.
+
+If we were to state - for some obscure reason - that every Task is a Time, in our first interpretation we would expect that $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$, since $(\mathrm{Task}\times\mathrm{Task}) \subseteq (\mathrm{Time}\times\mathrm{Time})$.
+In our second interpretation, we would not expect the behavior to change.
+
+Observe that we are free to add $\mathrm{before}_{\mathrm{Task * Task}} \subseteq \mathrm{before}_{\mathrm{Time * Time}}$, or the stronger statement $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$, as an invariant under the second interpretation.
+Therefore, we conclude that working with the second interpretation is most flexible and propose to follow this interpretation.
+
+At the time of writing, Ampersand infers the invariant $\mathrm{before}_{\mathrm{Task * Task}} \subseteq \mathrm{before}_{\mathrm{Time * Time}}$ without requiring that $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$. This can be seen as a sort of middle ground between the two interpretations. However, we foresee that Ampersand will change its implementation and do not follow its behavior here.
+
+\section{Solving the disambiguation problem without generalization}
+As an aside, we ask whether a compiler can be expected to figure out which relations are intended in reasonable time. In this section, we answer this question for a very simple setting in the affirmative by giving a simple efficient algorithm.
+
+We can define the disambiguation problem as follows:
+
+A disambiguation problem is given by an expression $E$ using the operations $\cap$ and $;$, and relation names from a set of names $\mathcal{N}$, and a set of possible types of each name: $\mathcal{t}(n) \subseteq \mathcal{T}\times \mathcal{T}$ for $n\in \mathcal{N}$.
+A solution to the disambiguation problem is a well-typed expression $S$ in which the annotations to relation names corresponds to an element in $\mathcal{t}(n)$, such that dropping the types from the expression yields $E$.
+
+As an example, $E = (\mathrm{before};\mathrm{scheduled}) \cap (\mathrm{scheduled};\mathrm{before})$ with types $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$, is a disambiguation problem.
+A solution would be:
+\[\left(\mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}}\right) \cap \left(\mathrm{scheduled};\mathrm{before}_{\mathrm{Time * Time}}\right)\]
+
+We can solve the disambiguation problem using two passes through $E$.
+In the first pass, we decorate the expression tree for $E$ with all the possible types for each sub-expression bottom up.
+Let $p(e)$ denote the possible types, then $p(n) = \mathcal{t}(n)$, and $p(e_1;e_2) = \{(x,y) \mid \exists z. (x,z) \in p(e_1) \wedge (z,y) \in p(e_2))\}$, and $p(e_1 \cap e_2) = p(e_1) \cap p(e_2)$.
+If $p(E)$ is the empty set, then there is no solution to the disambiguation problem, and we are done.
+If $p(E)$ contains multiple elements, then there are multiple solutions to the disambiguation problem.
+We can arbitrarily select a single element from $p(E)$ to get an arbitrary solution\footnote{In practice, we might want to indicate that $E$ is ambiguous, which could require running the next step twice: once for two different elements in $p(E)$.}.
+
+For the top-down step, let $d(e,t)$ denote the disambiguated expression $e$ with the type $t$.
+For the top-level call of $d(e,t)$, let $e=E$ and $t\in p(E)$.
+Then $d(n,t) = n_{[t]}$, $d(e_1 \cap e_2, t) = d(e_1,t) \cap d(e_2,t)$ and $d(e_1 ; e_2, (x,y)) = d(e_1, (x,z)) ; d(e_2, (z,y))$ where $z$ is picked such that $(x,z)\in p(e_1)$ and $(z,y)\in p(e_2)$.
+Such a $z$ is guaranteed to exist by how $p$ is defined.
+
+As an example, let's look at $E = (\mathrm{before};\mathrm{scheduled}) \cap (\mathrm{scheduled};\mathrm{before})$.
+Then $p(\mathrm{before}) =  \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ following $\mathcal{t}$ and similarly $p(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$.
+This gives subterms $p(\mathrm{before};\mathrm{scheduled}) = p(\mathrm{scheduled};\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Time})\}$ so $p(E) = \{(\mathrm{Task}, \mathrm{Time})\}$.
+
+Top-down, $d(E,t) = d(\mathrm{before};\mathrm{scheduled},t) \cap d(\mathrm{scheduled};\mathrm{before},t)$ with $t=(\mathrm{Task}, \mathrm{Time})$.
+Since $E$ is not ambiguous, we have only one possible way to continue as we solve the disambiguation problem:
+\begin{align*}d(\mathrm{before};\mathrm{scheduled},t) &= d(\mathrm{before},(\mathrm{Task}, \mathrm{Task})) ;  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time})) \\
+&=\mathrm{before}_{\mathrm{Task} * \mathrm{Task}}; \mathrm{scheduled}_{\mathrm{Task}* \mathrm{Time}}\\
+d(\mathrm{scheduled};\mathrm{before},t) &=  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time}));d(\mathrm{before},(\mathrm{Time}, \mathrm{Time}))\\
+&=\mathrm{scheduled}_{\mathrm{Time} * \mathrm{Task}}; \mathrm{before}_{\mathrm{Time}* \mathrm{Time}}\\
+\end{align*}
+
+The disambiguation problem and the corresponding algorithm can be extended over all operations in relation algebra.
+
+\section{Interplay between Generalization and Disambiguation}
+
+% van der Woude paper: https://link.springer.com/chapter/10.1007/978-3-642-21070-9_25
+\end{document}
