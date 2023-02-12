@@ -3,6 +3,12 @@
 *)
 
 section \<open>Migration\<close>
+(* TODO: introduce schemas
+Question: can we rename "typedGraph" to "typedDataset", to let this predicate refer to datasets rather than graphs.
+Question: can we rename "graphTyping" to "dataset", to let this datatype match closer to the paper?
+Question: can we reorganise and rename triples "(l, x, y)" to resemble triples in the paper better?
+Question: can we rename "wellTypedEdge" to "wellTypedTriple", to let this predicate refer to triples?
+*)
 
 theory Migration
   imports Graph_Saturation.LabeledGraphs
@@ -13,16 +19,20 @@ datatype ('l,'v,'c) graphTyping (* 'l=\<real> (\Rels), 'v=\<bbbA> (\Atoms), 'c=\
  = GT (decl : "'l \<Rightarrow> 'c \<times> 'c")
       (inst : "('v \<times> 'c) set")
 
-(* This function corresponds to \ref{eqn:wellTypedEdge} in the article.  *)
+(* This function corresponds to \ref{eqn:wellTypedEdge} in the article.
+TODO: add specialization.
+See articleMigration.tex, where I adapted equation \ref{eqn:wellTypedEdge}. *)
 fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
   = (case lt l of
       (xt,yt) \<Rightarrow> (x,xt) \<in> vt \<and> (y,yt) \<in> vt)"
 
 lemma wellTypedEdgeI[intro]:
+(* "e" represents a triple <a,n[A*B],b> with  l=n[A*B]  and  x=a  and  y=b.
+*)
   assumes
-    "((fst (snd e)),fst (decl gt (fst e))) \<in> inst gt"
-    "((snd (snd e)),snd (decl gt (fst e))) \<in> inst gt"
+    "(fst (snd e),fst (decl gt (fst e))) \<in> inst gt" (* so "(a,A) \<in> inst gt" *)
+    "(snd (snd e),snd (decl gt (fst e))) \<in> inst gt" (* so "(b,B) \<in> inst gt" *)
   shows "wellTypedEdge gt e"
   using assms by (cases gt;cases e;auto)
 lemma wellTypedEdgeE[elim]:
@@ -32,6 +42,7 @@ lemma wellTypedEdgeE[elim]:
     "((snd (snd e)),snd (decl gt (fst e))) \<in> inst gt"
   using assms by (cases gt;cases e;force)+
 
+(* typedVertex represents a predicate that determines whether a concept is in \<C> (\concepts) *)
 fun typedVertex :: "('l,'v,'c) graphTyping \<Rightarrow> 'v \<Rightarrow> bool" where
 "typedVertex (GT lt vt) x
   = (x \<in> Domain vt)"
