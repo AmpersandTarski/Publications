@@ -4,6 +4,10 @@
 \usepackage{algorithmic}
 \usepackage{bbold}
 \usepackage[cal=boondoxo]{mathalfa}
+\newcommand{\id}[1]{\text{\it #1\/}}
+\newcommand{\Relations}{\mathbb{R}}
+\newcommand{\inst}{\mathbin{\id{inst}}}
+\newcommand{\pair}[2]{\langle{#1},{#2}\rangle}
 \begin{document}
 
 \title{What's in a name? Disambiguation strategies for relational descriptions}
@@ -19,7 +23,7 @@ Regardless of expectations, the thing a notation refers to must always be clear.
 
 Programming languages greatly influence the notations a programmer uses through the rules on what a notation might refer to.
 This paper looks at how identifiers that refer to binary relations might be used in a semantic modeling language.
-In particular, we look at the use of identifiers in the programming language Ampersand, and ways in which changes to the language might effect the use of identifiers.
+In particular, we look at the use of identifiers in the programming language Ampersand, and ways in which changes to the language might affect the use of identifiers.
 
 Modeling in Ampersand happens via the use of binary relations, which are declared by stating a name, a source concept, and a target concept.
 When referring to binary relations, we typically only refer to them by their name.
@@ -39,9 +43,10 @@ scheduled : Task * Time
 
 An invariant in this system is:
 
-\[
-\mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}} \subseteq \mathrm{scheduled};\mathrm{before}_{\mathrm{Time * Time}}
-\]
+\begin{eqnarray}
+    \mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}}&\subseteq&\mathrm{scheduled};\mathrm{before}_{\mathrm{Time * Time}}
+    \label{eqn:well-typed example}
+\end{eqnarray}
 
 Such invariants are well-typed: a Task is only compared to a Task, and a Time is only compared to a Time, and the only way in which a Task and a Time are related is through explicitly declared relations.
 We can consider the same expression in which types are dropped: $\mathrm{before};\mathrm{scheduled} \subseteq \mathrm{scheduled};\mathrm{before}$.
@@ -59,23 +64,55 @@ This means that such times would be a specialization of a time.
 We can model this with a relation called $\mathrm{worktime}$ and an invariant: $\mathrm{worktime} \subseteq \mathbb{1}_{Time}$, where $\mathbb{1}_{A} = \{(a,a) \mid a\in A \}$ is the relational identity.
 Another way to model this, is to introduce a concept $\mathrm{Worktime}$ and use $\mathbb{1}_\mathrm{Worktime}$ in the place of the relation $\mathrm{worktime}$, along with the invariant $\mathbb{1}_\mathrm{Worktime} \subseteq \mathbb{1}_{Time}$.
 However, this latter invariant is ill-typed: the expression on the left of the subset ($\subseteq$) is of type $(\mathrm{Worktime},\mathrm{Worktime})$, while the expression on the right is of type $(\mathrm{Time},\mathrm{Time})$.
-To allow expressions like $\mathbb{1}_\mathrm{Worktime} \subseteq \mathbb{1}_{Time}$ in a programming language, we need a more refined notion of which expressions are `type correct'.
-A paper by van der Woude and Joosten shows how one can do this~\cite{Woude11}.
+To allow this in a programming language, we let the user declare that $\mathrm{Worktime}$ is a specialization of $\mathrm{Time}$
+\begin{verbatim}
+CLASSIFY Worktime ISA Time
+\end{verbatim}
+The meaning of this statement is:
+\begin{eqnarray}
+    \forall t&:&t\in{\tt Worktime}\Rightarrow t\in{\tt Time}
+\end{eqnarray}
+Specialization requires a more refined notion of which expressions are `type correct'.
+A paper by van der Woude and Joosten shows how one can do this~\cite{vdWoude2011}.
 However, that paper does not consider the interplay with disambiguation which we consider here.
 
 \subsection{Two interpretations.}
+Let us go back to the running example, in which we have:
+\begin{verbatim}
+before : Task * Task
+before : Time * Time
+\end{verbatim}
 There are two different ways in which we can think of the two binary relations called $\mathrm{before}$.
-In one interpretation, we can say that $\mathrm{before}$ is a single binary relation, defined over the (disjoint) union between Task and Time.
+In one interpretation, we can say that $\mathrm{before}$ is a single binary relation, say $r$, defined over the (disjoint) union between Task and Time.
 Whenever we use $\mathrm{before}$, we restrict its type to either \verb=Task * Task= or \verb=Time * Time= to get two completely separate behaviors.
 This means that we read $\mathrm{before}_{\mathrm{Task * Task}}$ as $\mathrm{before} \cap (\mathrm{Task}\times\mathrm{Task})$.
 
-Another interpretation is to say that there are two entirely separate relations, $\mathrm{before}_{\mathrm{Task * Task}}$ and $\mathrm{before}_{\mathrm{Time * Time}}$.
+Bas, ik lees dat als:
+\begin{eqnarray}
+    \pair{a}{b}\in r&\Rightarrow&a\in\mathrm{Time}\cup\mathrm{Task}\wedge b\in\mathrm{Time}\cup\mathrm{Task}\\
+    \mathrm{before}_{\mathrm{Time * Time}}&=&r\cap (\mathrm{Time}\times\mathrm{Time})\\
+    \mathrm{before}_{\mathrm{Task * Task}}&=&r\cap (\mathrm{Task}\times\mathrm{Task})
+\end{eqnarray}
+Another interpretation is to say that there are two entirely separate relations,
+$r:\mathrm{before}_{\mathrm{Time * Time}}$ and $r':\mathrm{before}_{\mathrm{Task * Task}}$.
 In this interpretation, we can consider ${\mathrm{Task * Task}}$ as a part of the name of the relation.
 
-Note our interpretation does not matter for the behavior we get from well-typed invariants like the one we saw before.
+Bas, ik lees dat als:
+\begin{eqnarray}
+    \pair{a}{b}\in r&\Rightarrow&a\in\mathrm{Time}\wedge b\in\mathrm{Time}\\
+    \pair{a}{b}\in r'&\Rightarrow&a\in\mathrm{Task}\wedge b\in\mathrm{Task}\\
+    \mathrm{before}_{\mathrm{Time * Time}}&=&r\\
+    \mathrm{before}_{\mathrm{Task * Task}}&=&r'
+\end{eqnarray}
+
+Note our interpretation does not matter for the behavior we get from well-typed invariants like equation~\ref{eqn:well-typed example}.
 However, a problem arises if we add generalization.
 
-If we were to state - for some obscure reason - that every Task is a Time, in our first interpretation we would expect that $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$, since $(\mathrm{Task}\times\mathrm{Task}) \subseteq (\mathrm{Time}\times\mathrm{Time})$.
+If we were to state - for some obscure reason - that every Task is a Time, this adds:
+\begin{equation}
+    t\in\mathrm{Task}\ \Rightarrow\ t\in\mathrm{Time}
+\end{equation}
+In our first interpretation we would expect that $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$, since $(\mathrm{Task}\times\mathrm{Task}) \subseteq (\mathrm{Time}\times\mathrm{Time})$.
 In our second interpretation, we would not expect the behavior to change.
 
 Observe that we are free to add $\mathrm{before}_{\mathrm{Task * Task}} \subseteq \mathrm{before}_{\mathrm{Time * Time}}$, or the stronger statement $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$, as an invariant under the second interpretation.
@@ -122,6 +159,10 @@ d(\mathrm{scheduled};\mathrm{before},t) &=  d(\mathrm{scheduled},(\mathrm{Task},
 The disambiguation problem and the corresponding algorithm can be extended over all operations in relation algebra.
 
 \section{Interplay between Generalization and Disambiguation}
+
+\section{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{doc}
 
 % van der Woude paper: https://link.springer.com/chapter/10.1007/978-3-642-21070-9_25
 \end{document}
