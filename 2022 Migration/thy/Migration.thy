@@ -4,7 +4,7 @@
 
 section \<open>Migration\<close>
 (* TODO: introduce schemas
-Question: can we rename "typedGraph" to "typedDataset", to let this predicate refer to datasets rather than graphs.
+Question: can we rename "typedGraph" to "isDataset", to let this predicate refer to datasets rather than graphs.
 Question: can we rename "graphTyping" to "dataset", to let this datatype match closer to the paper?
 Question: can we reorganise and rename triples "(l, x, y)" to resemble triples in the paper better?
 Question: can we rename "wellTypedEdge" to "wellTypedTriple", to let this predicate refer to triples?
@@ -20,16 +20,15 @@ datatype ('l,'v,'c) graphTyping (* 'l=\<real> (\Rels), 'v=\<bbbA> (\Atoms), 'c=\
       (inst : "('v \<times> 'c) set")
 
 (* This function corresponds to \ref{eqn:wellTypedEdge} in the article.
-TODO: add specialization.
-See articleMigration.tex, where I adapted equation \ref{eqn:wellTypedEdge}. *)
+It gives a name, wellTypedEdge, to this system invariant, which yields more readable proofs.
+*)
 fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
   = (case lt l of
-      (xt,yt) \<Rightarrow> (x,xt) \<in> vt \<and> (y,yt) \<in> vt)"
+      (src,tgt) \<Rightarrow> (x,src) \<in> vt \<and> (y,tgt) \<in> vt)"
 
 lemma wellTypedEdgeI[intro]:
-(* "e" represents a triple <a,n[A*B],b> with  l=n[A*B]  and  x=a  and  y=b.
-*)
+(* "e" represents a triple <a,n[A*B],b> with  l=n[A*B]  and  x=a  and  y=b. *)
   assumes
     "(fst (snd e),fst (decl gt (fst e))) \<in> inst gt" (* so "(a,A) \<in> inst gt" *)
     "(snd (snd e),snd (decl gt (fst e))) \<in> inst gt" (* so "(b,B) \<in> inst gt" *)
@@ -57,6 +56,10 @@ definition typedGraph where
   (graph lg \<and> Ball (edges lg) (wellTypedEdge gt)
             \<and> Ball (vertices lg) (typedVertex gt))"
 
+(* "typedGraph gt dataset" means that "dataset" is well-typed,
+i.e. it satisfies all requirements from the paper.
+So in order to talk about any dataset "d", we must assume or establish "typedGraph gt d" first. *)
+
 lemma typedGraphI[intro]:
   assumes isGraph:      "graph lg"
    and wellTypedEdges:  "\<And> e. e \<in> edges lg \<Longrightarrow> wellTypedEdge gt e"
@@ -71,6 +74,7 @@ lemma typedGraphE[elim]:
     "\<And> v. v \<in> vertices lg \<Longrightarrow> typedVertex gt v"
   using assms unfolding typedGraph_def by auto
 
+(* Waarom moeten we het triviale geval apart nemen? Volgt dit niet uit het voorgaande? *)
 definition trivialTyping where
   "trivialTyping = GT (\<lambda> _. ((),())) UNIV"
 
@@ -81,13 +85,21 @@ lemma trivialTyping :
   shows "typedGraph trivialTyping lg"
   using assms unfolding trivialTyping_def by auto
 
+(* Wat is augment en waartoe gaan we dat doen?
+Working with atoms presumes that it has one or more concepts that serve as its type.
+We call the notation of an atom together with its set of type the "augmented atom".
+ *)
 fun augmentTypeToVertex where
   "augmentTypeToVertex gt v = (v, inst gt `` {v})"
 fun augmentTypeToEdge where
   "augmentTypeToEdge gt (l,x,y) = ((l,decl gt l), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
 
+(* Waartoe dient pairToRel? *)
 fun pairToRel where
   "pairToRel (v,ts) = (\<lambda> t. ((v,ts),t)) ` ts"
+lemma (* This shows an equivalent definition, in case you find it easier to read. *)
+  "pairToRel (v',ts') = { ((v,ts),t) . v'=v \<and> t\<in>ts' \<and> ts'=ts }"
+  by auto
 
 lemma pairToRelUNIV[simp]:
   "(a, b) \<in> Domain (\<Union> (range pairToRel)) \<longleftrightarrow> b\<noteq>{}"

@@ -8,17 +8,18 @@
 \newcommand{\cod}[1]{\id{cod}(#1)}
 \renewcommand{\int}[2]{\id{inter}(#1,#2)}
 \newcommand{\relsIn}[1]{\id{relsIn}(#1)}    % maps a Term to a set of Relations
-\newcommand{\maintain}{\id{maint}}
+\newcommand{\maintain}{\mathbin{\id{maint}}}
 \newcommand{\pop}[2]{\id{pop}_{#1}(#2)}
-\newcommand{\inst}{\id{inst}}
+\newcommand{\inst}{\mathbin{\id{inst}}}
 \newcommand{\relname}[1]{\id{relname}(#1)}
+\newcommand{\ins}[1]{#1\id{ins}}
+\newcommand{\del}[1]{#1\id{del}}
 \newcommand{\src}[1]{\id{src}(#1)}
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
 \newcommand{\sat}[2]{\id{sat}_{#1}(#2)}
 \newcommand{\viol}[2]{\id{viol}_{#1}(#2)}
 \newcommand{\sign}[1]{\id{sign}(#1)}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
-\newcommand{\theCode}{\url{http://cs.ru.nl/~B.Joosten/ampTypes/}}
 \newcommand{\la}{\langle}
 \newcommand{\ra}{\rangle}
 \newcommand{\full}{V}
@@ -28,11 +29,11 @@
 \newcommand{\iden}{I}
 \newcommand{\ident}[1]{I_{\id{#1}}}
 \newcommand{\expr}[3]{(#1)_{#2\times #3}}
-\newcommand{\pair}[2]{\la{#1},{#2}\ra}
+\newcommand{\pair}[2]{\langle{#1},{#2}\rangle}
 \newcommand{\Pair}[2]{#1\times#2}
 \newcommand{\pairs}[1]{\id{pairs}(#1)}
-\newcommand{\triple}[3]{\la{#1},{#2},{#3}\ra}
-\newcommand{\quadruple}[4]{\la{#1},{#2},{#3},{#4}\ra}
+\newcommand{\triple}[3]{\langle{#1},{#2},{#3}\rangle}
+\newcommand{\quadruple}[4]{\langle{#1},{#2},{#3},{#4}\rangle}
 \newcommand{\atom}[1]{{\tt\small #1}}
 \newcommand{\atoms}{\mathcal{A}}
 \newcommand{\Atoms}{\mathbb{A}}
