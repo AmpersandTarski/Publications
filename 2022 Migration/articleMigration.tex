@@ -51,8 +51,8 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-   To support incremental software development with a software generator bears the potential of decreasing the time to deploy changes.
-   However, an increment that changes the database schema causes a nontrivial data migration problem.
+   To support incremental software development with a software generator bears the potential of saving work and decreasing the time to deploy changes.
+   However, increments that change the database schema cause nontrivial data migration issues.
    The problem is how to preserve the semantics of the data as much as possible and satisfy elementary business requirements at the same time.
 
    To generate an information system in a non-incremental manner is already
@@ -99,12 +99,13 @@ generative software\sep incremental software development\sep data migration\sep 
    which sets it apart from data migrations for other purposes.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers may exclude new functionality to avoid introducing new errors in an otherwise error-prone migration process.
+   migration engineers may deliberately exclude new functionality to avoid introducing new errors in an otherwise error-prone migration process.
    In our work, however, introducing new functionality and removing obsolete functionality is the very purpose of an increment.
    Data migration literature sometimes uses a different notion of increment.
    For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
    This work, however, gets rid of the existing system without retaining the variations.
+   So this is clearly a different notion of increment.
    Examples like these have convinced the authors to define a new method for data migration that is specifically meant for systems in production that are
    deployed incrementally.
    
@@ -329,21 +330,20 @@ generative software\sep incremental software development\sep data migration\sep 
    In the sequel, variables $A$, $B$, $C$, $D$ will represent concepts.
 
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
-   The expression $a\ \inst\ C$ means that atom $a$ is an \emph{instance} of concept $C$.
-   This relation is used in the type system, in which $\inst$ assigns a concept to every atom in the dataset.
+   The expression $a\inst C$ means that atom $a$ is an \emph{instance} of concept $C$.
+   This relation is used in the type system, in which $\inst$ assigns one or more concepts to every atom in the dataset.
 
    Specialization, also known as {\em generalization} or {\em subtyping}, is a relation between concepts.
    The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
 \begin{equation}
    \label{eqn:specialization}
-   A\isa B\ \Leftrightarrow\ \forall a: a\ \inst\ A\rightarrow a\ \inst\ B
+   A\isa B\ \Leftrightarrow\ \forall a: a\inst A\rightarrow a\inst B
 \end{equation}
-   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal'',
-   in which a user defines a pair of concepts in the relation $\isa$.
-   A compiler can construct $\isa$ as the transitive, reflexive closure of such user-defined pairs of concepts.
-   It must test for antisymmetry, ensuring that $\isa$ is a partial order of concepts.
+   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
+   In her script, a user can declare a specialization as a pair of concepts in the relation $\isa$.
+   A compiler can construct $\isa$ as the transitive, reflexive closure of all user-defined specializations.
+   It must make sure that $\isa$ is antisymmetric, so that $\isa$ is a partial order of concepts.
    Specialization causes atoms to have multiple concepts of which they can be an instance.
-   To ensure that this does not result in problems at run-time, a compiler can require users to declare all specializations explicitly.
    As a result, if an atom is an instance of concept $A$ and $A\isa B$,
    this atom has all properties that atoms of type $B$ have.
 
@@ -358,13 +358,9 @@ generative software\sep incremental software development\sep data migration\sep 
    A triple\footnote{Please note that this paper uses the word {\em triple} in a more restricted way than in natural language.}
    is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
 
-   A dataset $\dataset$ is a structure $\triple{\triples}{\isa}{\inst}$ that satisfies:
+   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
 \begin{eqnarray}
-   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&
-      \begin{array}[t]{@{}l}
-         \exists C: C\isa A\ \wedge\ a\ \inst\ C\ \wedge\\
-         \exists D: D\isa B\ \wedge\ b\ \inst\ D
-      \end{array}
+   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\inst A\ \wedge\ b\inst B
    \label{eqn:wellTypedEdge}
 \end{eqnarray}
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
@@ -375,7 +371,8 @@ generative software\sep incremental software development\sep data migration\sep 
    Users are entirely free to attach a practical meaning to a triple.
 
    The notations $\triples_{\dataset}$ and $\inst_{\dataset}$ are used to disambiguate $\triples$ and $\inst$ when necessary.
-   Every dataset is an element of an infinite set called $\Dataset$.
+   Every dataset is an element of an infinite set called $\Dataset$,
+   which is disjoint from $\Rels$, $\Concepts$ and $\Atoms$.
    To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
 
    A relation $r$ can serve as a container of pairs,
@@ -386,9 +383,24 @@ generative software\sep incremental software development\sep data migration\sep 
 \label{eqn:pop}
 \end{equation}
    Equation~\ref{eqn:wellTypedEdge} implies that for every dataset $\dataset$:
-\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\ \inst\ A\ \wedge\ b\ \inst\ B\]
+\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\inst A\ \wedge\ b\inst B\]
    For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
    This allows for static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
+
+\subsection{Changing data}
+\label{sct:Changing data}
+   Events can cause data to change.
+   For triples, we distinguish just two types of event: insert and delete events.
+   An event is a label (ins or del) with a dataset that is to be inserted in or deleted from another dataset.
+   So we shall write
+\begin{eqnarray}
+   \ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}\pair{\triples}{\inst}&=&\pair{\triples\cup\triples_{\id{ev}}}{\inst\cup\inst_{\id{ev}}}\\
+   \del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}\pair{\triples}{\inst}&=&\pair{\triples-\triples_{\id{ev}}}{\inst-\inst_{\id{ev}}}
+\end{eqnarray}
+   Insert events are represented as $\ins{\dataset}$ and delete events by $\del{\dataset}$.
+   Both are functions $\Dataset\rightarrow\Dataset$, which are defined as:
+   Since datasets are sets, we will use set union ($\cup$) and set difference ($-$) to make changes in datasets.
+
 
 \subsection{Schemas}
 \label{sct:Schemas}
@@ -411,7 +423,7 @@ generative software\sep incremental software development\sep data migration\sep 
 %    We also assume a function $\id{sign} : \Rules\rightarrow\Pair{\Concepts}{\Concepts}$
 %    that represents the signature of a rule, i.e. the type of atoms in violations:
 % \begin{eqnarray}
-%    \sign{u}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\ \inst\ A\wedge b\ \inst\ B
+%    \sign{u}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\inst A\wedge b\inst B
 %    \label{eqn:wellTypedEdged violations}
 % \end{eqnarray}
 %    To determine whether rule $u$ is satisfied in dataset $\dataset$,
@@ -427,7 +439,7 @@ generative software\sep incremental software development\sep data migration\sep 
    At times in which the dataset does not satisfy a rule, that rule is said to be {\em broken}.
    In those cases, something or someone must take action to fix the situation and restore invariance of that rule.
 
-   A schema $\schema$ is a structure $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
+   A schema $\schema$ is a tuple $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
    in which $\concepts$ is a finite set of concepts,
    $\isa$ is a partial order of concepts,
    $\rels$ is a finite set of relations,
@@ -440,10 +452,10 @@ generative software\sep incremental software development\sep data migration\sep 
    In order to do static type checking,
    all concepts and relations must be ``known'' in the schema:
 \begin{eqnarray}
-   A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:isasIntroduceConcepts}\\
    \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
    \label{eqn:relationsIntroduceConcepts}\\
+   A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:isasIntroduceConcepts}\\
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
 \end{eqnarray}
@@ -456,15 +468,14 @@ generative software\sep incremental software development\sep data migration\sep 
    As before, a suffix disambiguates the elements of this definition when needed.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a structure $\la\dataset,\schema,\roles,\maintain\ra$, in which
+\item An information system $\infsys$ is a tuple $\quadruple{\dataset}{\schema}{\roles}{\maintain}$, in which
 \begin{itemize}
-   \item dataset $\dataset=\triple{\triples}{\isa}{\inst}$ is defined as in section~\ref{sct:Datasets};
+   \item dataset $\dataset=\pair{\triples}{\inst}$ is defined as in section~\ref{sct:Datasets};
    \item schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ is defined as in section~\ref{sct:Schemas};
    \item $\roles$ is a set of roles;
-   \item $\maintain : \roles\times\rules$ is the maintainance relation between roles and rules.
+   \item ${\maintain} : \roles\times\rules$ is the maintainance relation between roles and rules.
 \end{itemize}
 \end{definition}
-   Note that dataset $\dataset$ and schema $\schema$ have the same specialization relation $\isa$.
    A \define{role} is a name that identifies a group of users.
    It serves as a placeholder for a person or a machine (i.e. an actor) that works with the dataset (i.e. create, read, update, or delete triples).
    The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
@@ -486,15 +497,15 @@ generative software\sep incremental software development\sep data migration\sep 
    can restore invariance of rule $u$ by inserting or deleting the right triples.
    For this reason, every rule is assigned to at least one role by means of the relation $\maintain$.
 \begin{equation}
-   \forall u\in\rules\ \exists o\in\roles:\ o\ \maintain\ u\label{eqn:maintain}
+   \forall u\in\rules\ \exists o\in\roles:\ o\maintain u\label{eqn:maintain}
 \end{equation}
-   $o\ \maintain\ u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
+   $o\maintain u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
    As long as rule $u$ is broken, the system should notify actors in the role(s) that are administered in $\maintain$ to do something about it.
 
    Automatic enforcement is specified by the developer with a special syntax,
    the {\em enforce rule}.
    An enforce rule specifies not only the rule, but also the way to restore invariance.
-   The system features an engine that restores invariance of all enforce rules without unneccessary delay.
+   The system features an engine that restores invariance of all enforce rules without delay.
    Whenever the dataset violates an enforce rule,
    this engine will make other changes to the dataset to satisfy that rule.
    Hence, the rule is not satisfied during a small, finite amount of time.
@@ -553,6 +564,7 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    Rule {\tt EnrollRule} is satisfied because relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty.
 
    Now let us check the requirements to verify that this example defines an information system.
+   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
    The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
    It defines the set of triples $\triples$ as:
    \[\begin{array}[t]{l}
@@ -578,10 +590,12 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    \end{array}\]
    The pair $\pair{\triples}{\inst}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a dataset $\dataset$ as introduced in section~\ref{sct:Datasets}.
 
-   The Ampersand compiler generates a schema $\schema$, which contains concepts, relations, and rules.
+   The Ampersand compiler generates a schema $\schema$, which contains concepts, a specialization relation, relations, and rules.
    It defines the set of concepts to satisfy requirement~\ref{eqn:relationsIntroduceConcepts}:
    \[\concepts=\{ {\tt Module}, {\tt Course}, {\tt Student}\}\]
-   It defines the set of relations to satisfy requirement~\ref{eqn:define R}:
+   The user has defined no specializations.
+   This means that $\isa$ equals the identity relation on $\concepts$ and requirement~\ref{eqn:isasIntroduceConcepts} is satisfied.
+   The set of relations, $\rels$, satisfies requirement~\ref{eqn:define R}:
    \[\begin{array}{rcl}
       \rels&=&\{\begin{array}[t]{l}
                   \declare{\tt takes}{\tt Student}{\tt Course},\\
@@ -591,7 +605,6 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
      \end{array}
    \]
    And, it defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
-   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
    So, the schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ satisfies the requirements from section~\ref{sct:Schemas}.
 
    Now let us check the definition of information system.
@@ -599,7 +612,7 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
    The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$,
    instructing the run-time engine to forward all violations of {\tt EnrollRule} to an administrator so she can keep {\tt EnrollRule} satisfied.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
-   This completes the requirements for $\infsys=\la\dataset,\schema,\roles,\maintain\ra$ from definition~\ref{def:information system}.
+   This completes the requirements for $\infsys=\quadruple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
    This concludes the argument that $\infsys$ is an information system.
 
 \subsection{Process of Data Migration}
@@ -647,8 +660,8 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
          In case of a no-go, the migration engineer restores the existing system by letting the ingress switch traffic back to $\infsys$.
    \item In more complex cases, the migration script contains rules that must be satisfied during the migration.
          These rules can be necessary, for example to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
-         By putting it in the schema $\schema_{\migrsys'}$,
-         the migration engineer can fix such problems.
+         By putting such rules in the schema $\schema_{\migrsys'}$,
+         the migration engineer can fix these problems.
          She can do this in the form of an enforce rule, which means that the problem gets fixed automatically.
          Or she can use the business to satisfy this rule, in case human intelligence is required.
          Whatever the choice, every rule from $\rules_{\migrsys'}$ must be satisfied before the migration engineer takes down the migration system.
@@ -680,7 +693,7 @@ s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ 
 % \begin{definition}[disjoint union of datasets]
 % \begin{eqnarray}
 %    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
-%    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\ \inst\uplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
+%    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\instuplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
 %       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
 %       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
 %       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
@@ -703,7 +716,7 @@ To implement the disjoint union, the following relabelling functions are needed:
    \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
 \end{definition}
 \begin{definition}[relabel concepts in $\inst$]
-   \[a\ \subst{C}{D}{\inst}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\ \inst\ A\]
+   \[a\ \subst{C}{D}{\inst}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\inst A\]
 \end{definition}
 \begin{definition}[relabel concepts in datasets]
    \[\begin{array}{rcl}
@@ -1070,7 +1083,7 @@ The expressions $e$ in these statements are such that $x\ (\inst \compose \kleen
 
 \begin{definition}[]
    \begin{eqnarray}
-      \infsys\sqcup\infsys'&=&\la\roles',\rules',\maintain',\dataset\sqcup\dataset'\ra
+      \infsys\sqcup\infsys'&=&\quadruple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
    \end{eqnarray}
 \end{definition}
 

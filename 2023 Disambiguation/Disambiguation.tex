@@ -34,7 +34,7 @@ Regardless of expectations, the thing a notation refers to must always be clear.
 
 Programming languages greatly influence the notations a programmer uses through the rules on what a notation might refer to.
 This paper looks at how identifiers that refer to binary relations might be used in a semantic modeling language.
-In particular, we look at the use of identifiers in the programming language Ampersand, and ways in which changes to the language might effect the use of identifiers.
+In particular, we look at the use of identifiers in the programming language Ampersand, and ways in which changes to the language might affect the use of identifiers.
 
 Modeling in Ampersand happens via the use of binary relations, which are declared by stating a name, a source concept, and a target concept.
 When referring to binary relations, we typically only refer to them by their name.
@@ -105,6 +105,27 @@ We refer to the problem of determining which relation is intended as the disambi
 %
 %Observe that we are free to add $\mathrm{before}_{\mathrm{Task * Task}} = \mathrm{before}_{\mathrm{Time * Time}} \cap (\mathrm{Task}\times\mathrm{Task})$ as an invariant under the second interpretation, mimicking the behavior of the first interpretation under the second interpretation.
 %Therefore, we conclude that working with the second interpretation is most flexible and propose to follow this interpretation.
+
+%
+%
+%Bas, ik lees dat als:
+%\begin{eqnarray}
+%    \pair{a}{b}\in r&\Rightarrow&a\in\mathrm{Time}\cup\mathrm{Task}\wedge b\in\mathrm{Time}\cup\mathrm{Task}\\
+%    \mathrm{before}_{\mathrm{Time * Time}}&=&r\cap (\mathrm{Time}\times\mathrm{Time})\\
+%    \mathrm{before}_{\mathrm{Task * Task}}&=&r\cap (\mathrm{Task}\times\mathrm{Task})
+%\end{eqnarray}
+%Another interpretation is to say that there are two entirely separate relations,
+%$r:\mathrm{before}_{\mathrm{Time * Time}}$ and $r':\mathrm{before}_{\mathrm{Task * Task}}$.
+%In this interpretation, we can consider ${\mathrm{Task * Task}}$ as a part of the name of the relation.
+%
+%Bas, ik lees dat als:
+%\begin{eqnarray}
+%    \pair{a}{b}\in r&\Rightarrow&a\in\mathrm{Time}\wedge b\in\mathrm{Time}\\
+%    \pair{a}{b}\in r'&\Rightarrow&a\in\mathrm{Task}\wedge b\in\mathrm{Task}\\
+%    \mathrm{before}_{\mathrm{Time * Time}}&=&r\\
+%    \mathrm{before}_{\mathrm{Task * Task}}&=&r'
+%\end{eqnarray}
+
 
 \section{Solving the disambiguation problem without generalization}
 As an aside, we ask whether a compiler can be expected to figure out which relations are intended in reasonable time. In this section, we answer this question for a very simple setting in the affirmative by giving a simple efficient algorithm.
@@ -211,6 +232,10 @@ s(\varphi \typesemi \psi) &= ..?\\
 s(\typecomp{\varphi}) &= ..?\\
 s(\typeconv{\varphi}) &= ..?
 \end{align*}
+
+\section{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{doc}
 
 % van der Woude paper: https://link.springer.com/chapter/10.1007/978-3-642-21070-9_25
 \end{document}

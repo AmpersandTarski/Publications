@@ -76,7 +76,7 @@ lemma trivialTyping :
 fun augmentTypeToVertex where
   "augmentTypeToVertex gt v = (v, inst gt `` {v})"
 fun augmentTypeToEdge where
-  "augmentTypeToEdge gt (l,x,y) = ((l,decl gt l), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
+  "augmentTypeToEdge gt (l,x,y) = ((l,SOME x. x\<in>(l `` decl gt)), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
 
 fun pairToRel where
   "pairToRel (v,ts) = (\<lambda> t. ((v,ts),t)) ` ts"
@@ -85,8 +85,8 @@ lemma pairToRelUNIV[simp]:
   "(a, b) \<in> Domain (\<Union> (range pairToRel)) \<longleftrightarrow> b\<noteq>{}"
   by fastforce
 
-definition explicitTyping :: "('l \<times> 'c \<times> 'c, 'v \<times> 'c set, 'c) graphTyping" where
-  "explicitTyping = GT snd (Union (pairToRel ` UNIV))"
+definition explicitTyping :: "('l \<times> ('c \<times> 'c) set, 'v \<times> 'c set, 'c) graphTyping" where
+  "explicitTyping = GT (Union (pairToRel ` UNIV)) (Union (pairToRel ` UNIV))"
 
 definition augmentTypes where
   "augmentTypes gt lg
