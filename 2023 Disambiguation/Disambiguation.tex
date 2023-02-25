@@ -169,17 +169,23 @@ Let's take $E_2 = \mathrm{scheduled};(\mathrm{before} \cup \mathbb{1})$ as an ex
 The types are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\{(t,t)\mid t\in \mathcal{T}\right\}$.
 This gives $p(E_2) = \{\mathrm{Task} * \mathrm{Time}\}$ and $d(\{\mathrm{Task} * \mathrm{Time}\},E_2) = \mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}};(\mathrm{before}_{\mathrm{Time} * \mathrm{Time}}\ \cup\ \mathbb{1}_{\mathrm{Time}})$, as desired.
 
-\section{Interplay between Generalization and Disambiguation}
+\section{Solving Disambiguation with Generalization}
 Before giving a solution to this problem, we first observe that the disambiguation algorithm discussed earlier fails for our running example.
 Following the declarations of the script, we let $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Event}, \mathrm{Time})\}$.
 Now the above algorithm would conclude with an error on $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
 
 The paper by van der Woude and Joosten~\cite{Woude11} introduced an embedding relation $\epsilon_{A*B} : A \times B$ to write sentences in heterogeneous relation algebra with sub-typing in terms of heterogeneous relation algebra without it.
 It can be thought of as defined by $\epsilon_{A*B} = \{(a,a) \mid a\in A \wedge a\in B\}$: it is the largest subset of the identity relation that fits the type $A\times B$.
-We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
-In this paper, we relax that requirement.
 
+This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as subtyping.
+Next, we define a language that is interpreted as a heterogeneous relation algebra with a typical set-interpretation.
+The semantics of the language with subtyping will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
+%We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
+%In this paper, we relax that requirement.
 
+\subsection{Language definitions}
+In this section, we introduce the language in which an Ampersand programmer can write terms, as well as the language for which the disambiguation problem is considered `solved'.
+The intended interpretation of these symbols is that of the regular relation algebraic operations, but we delay talking about semantics until later in this paper.
 
 Let $\mathcal{S}$ be the language of heterogeneous relation algebra with subtyping.
 It is defined by the following grammar, where $n\in\mathcal{N}$ and $A,B\in\mathcal{T}$:
@@ -210,6 +216,7 @@ We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for some
 By induction on the inductive definition of $\mathcal{R}$, the relation $:$ is between $\mathcal{R}$ and types $\mathcal{T}\times\mathcal{T}$ and univalent.
 In other words: well-typed terms in $\mathcal{R}$ have precisely one type, all of its sub-terms are well-typed, and $\bot$ does not occur as a pseudo-concept.
 
+\subsection{Translation process}
 Rather than translating terms in $\mathcal{S}$ into $\mathcal{R}$ directly, we create an intermediate language $\mathcal{D}$, which contains $\mathcal{R}$ (that is: $\mathcal{R} \subseteq \mathcal{D}$).
 This will allow us to use a purely syntactic translation from $\mathcal{S}$ to $\mathcal{D}$, after which we run a disambiguation algorithm to turn it into a term in $\mathcal{R}$.
 The language $\mathcal{D}$ is defined as follows, where $\xi \in \mathcal{R}$, $\Xi \subseteq \mathcal{R}$, and $A,B\in\mathcal{T}$:
@@ -236,14 +243,22 @@ s(\typenil) &= \{F_{A*B} \mid A,B\in\mathcal{T}\}\\
 s(\typeident) &= \{1_{A} \mid A\in\mathcal{T}\}\\
 s(\varphi \typeunion \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cup\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid A\preceq B \}$} \\
 s(\varphi \typeinter \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cap\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \}$}\\
-s(\varphi \typesemi \psi) &= s(\varphi);\varepsilon;s(\psi)&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \vee A\preceq B \}$}\\
+s(\varphi \typesemi \psi) &= s(\varphi);\varepsilon;s(\psi)&\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \vee A\preceq B \}$}\\
 s(\typecomp{\varphi}) &= \overline{s(\varphi)}\\
 s(\typeconv{\varphi}) &= \conv{s(\varphi)}
 \end{align*}
 
+
+\paragraph{[Aside],} The Ampersand language also allows for \verb=CLASSIFY A IS B /\ C= statements, meaning that elements are in $A$ if and only if they are in $B$ and in $C$.
+The information about this captured in $\preceq$ is just that $A \preceq B$ and $A\preceq C$, which means that information is lost.
+We can consider the lost information when dealing with the $\typesemi$ operation by changing the $\epsilon$ relations introduced there.
+However, it is an open problem to deal with this with the $\typeinter$ operation, so we give a simpler presentation that ignores this additional information in \verb=CLASSIFY _ IS _= statements for now.
+
+
+
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
-\bibliography{doc}
+\bibliography{Disambiguation}
 
 % van der Woude paper: https://link.springer.com/chapter/10.1007/978-3-642-21070-9_25
 \end{document}
