@@ -10,27 +10,30 @@ begin
 
 text "The datatype graphTyping is meant for typing datasets."
 datatype ('l,'v,'c) graphTyping (* 'l=\<real> (\Rels), 'v=\<bbbA> (\Atoms), 'c=\<complex> (\Concepts) *)
- = GT (decl : "'l \<Rightarrow> 'c \<times> 'c")
+ = GT (decl : "('l \<times> ('c \<times> 'c)) set")
       (inst : "('v \<times> 'c) set")
 
 (* This function corresponds to \ref{eqn:wellTypedEdge} in the article.  *)
 fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
-  = (case lt l of
-      (xt,yt) \<Rightarrow> (x,xt) \<in> vt \<and> (y,yt) \<in> vt)"
+  \<longleftrightarrow> l \<in> Domain lt \<and>
+      {b. \<exists> e. (l, (b,e)) \<in> lt} \<subseteq> {b. (x, b) \<in> vt} \<and>
+      {b. \<exists> e. (l, (e,b)) \<in> lt} \<subseteq> {b. (y, b) \<in> vt}"
 
 lemma wellTypedEdgeI[intro]:
   assumes
-    "((fst (snd e)),fst (decl gt (fst e))) \<in> inst gt"
-    "((snd (snd e)),snd (decl gt (fst e))) \<in> inst gt"
+    "(fst e,x,y) \<in> decl gt"
+    "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (fst (snd e),x) \<in> inst gt"
+    "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (snd (snd e),y) \<in> inst gt"
   shows "wellTypedEdge gt e"
   using assms by (cases gt;cases e;auto)
 lemma wellTypedEdgeE[elim]:
   assumes "wellTypedEdge gt e"
   shows
-    "((fst (snd e)),fst (decl gt (fst e))) \<in> inst gt"
-    "((snd (snd e)),snd (decl gt (fst e))) \<in> inst gt"
-  using assms by (cases gt;cases e;force)+
+    "fst e \<in> Domain (decl gt)"
+    "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (fst (snd e),x) \<in> inst gt"
+    "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (snd (snd e),y) \<in> inst gt"
+  using assms by ((cases gt;cases e);force)+
 
 fun typedVertex :: "('l,'v,'c) graphTyping \<Rightarrow> 'v \<Rightarrow> bool" where
 "typedVertex (GT lt vt) x
@@ -61,7 +64,7 @@ lemma typedGraphE[elim]:
   using assms unfolding typedGraph_def by auto
 
 definition trivialTyping where
-  "trivialTyping = GT (\<lambda> _. ((),())) UNIV"
+  "trivialTyping = GT (UNIV \<times> UNIV) UNIV"
 
 lemma DomainUNIV[simp]: "Domain UNIV = UNIV" by auto
 
@@ -266,5 +269,26 @@ definition disjoint_union_typing where
   "disjoint_union_typing gt1 gt2
      = union_typing (map_labels_in_graphtype (map_vertices_in_graphtype gt1 Inl) (inv Inl))
                     (map_labels_in_graphtype (map_vertices_in_graphtype gt2 Inr) (inv Inr))"
+
+lemma move_types_left:
+  assumes "typedGraph gt1 g1"
+  shows "typedGraph (disjoint_union_typing gt1 gt2)
+             (map_labels_in_graph (map_graph_fn g1 Inl) (inv Inl))"
+  unfolding disjoint_union_typing_def
+
+definition disjoint_union_graphs where
+  "disjoint_union_graphs g1 g2
+    = graph_union
+         (map_labels_in_graph (map_graph_fn g1 Inl) (inv Inl))
+         (map_labels_in_graph (map_graph_fn g2 Inr) (inv Inr))"
+
+lemma disjoint_union_well_typed:
+assumes
+  "typedGraph gt1 g1"
+  "typedGraph gt2 g2"
+shows
+"typedGraph (disjoint_union_typing gt1 gt2) (disjoint_union_graphs g1 g2)"
+  unfolding disjoint_union_graphs_def
+proof (rule graph_union_wellTyped_if_parts_wellTyped)
 
 end
