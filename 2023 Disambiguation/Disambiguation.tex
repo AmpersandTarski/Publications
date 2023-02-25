@@ -190,14 +190,16 @@ The grammar $\mathcal{S}$ allows the programmer to write relations with their ty
 However, the grammar is slightly more general, allowing type annotations for arbitrary terms $\typetyped{\varphi}{A*B}$.
 
 Our aim is to disambiguate expressions written in this language into `normal' heterogeneous relation algebra, that is: without subtyping.
-We use the following grammar to describe the language $\mathcal{R}$ for that, where $n_{A*B}$ satisfies $(A,B)\in \mathcal{t}(n)$, and $A,B\in\mathcal{T}$ for all other occurrences of $A$ and $B$:
+To signal certain type errors, we add an additional element $\bot$ to the set of concepts, that we will assume is different from every element in $\mathcal{T}$.
+Since $\mathcal{T}$ is referred to as the set of concepts, we will refer to $\mathcal{T}\cup\{\bot\}$ as the set of pseudo-concepts.
+We use the following grammar to describe the language $\mathcal{R}$ for that, where $n_{A*B}$ satisfies $(A,B)\in \mathcal{t}(n)$, and $A,B\in\mathcal{T}\cup\{\bot\}$ for all other occurrences of $A$ and $B$:
 \[
 \varphi,\psi\in\mathcal{R} \mathbin{:=} n_{A*B} \mid \epsilon_{A*B} \mid T_{A*B} \mid 1_{A} \mid F_{A*B} \mid \varphi \cup \psi \mid \varphi \cap \psi \mid \varphi ; \psi \mid \overline{\psi}\mid \conv{\psi}
 \]
 
 The type of a term in $\mathcal{R}$ is given by a partial typing function, which we define inductively via the relation symbol $:$ as follows:
 \begin{align*}
-x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$}\\
+x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$ and $A,B\in \mathcal{T}$}\\
 1_{A} &: A * A&\\
 \varphi \odot \psi &: A * B &\quad\text{For $\odot \in \{\cup,\cap\}$, $\varphi : A * B$ and $\psi : A * B$}\\
 \varphi ; \psi &: A * B &\text{For $\varphi : A * C$ and $\psi : C * B$}\\
@@ -205,7 +207,8 @@ x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$}\\
 \conv{\psi} &: A * B &\text{For $\psi : B * A$}
 \end{align*}
 We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for some $A$ and $B$.
-Univalence of $:$ follows by induction on the structure of $r$.
+By induction on the inductive definition of $\mathcal{R}$, the relation $:$ is between $\mathcal{R}$ and types $\mathcal{T}\times\mathcal{T}$ and univalent.
+In other words: well-typed terms in $\mathcal{R}$ have precisely one type, all of its sub-terms are well-typed, and $\bot$ does not occur as a pseudo-concept.
 
 Rather than translating terms in $\mathcal{S}$ into $\mathcal{R}$ directly, we create an intermediate language $\mathcal{D}$, which contains $\mathcal{R}$ (that is: $\mathcal{R} \subseteq \mathcal{D}$).
 This will allow us to use a purely syntactic translation from $\mathcal{S}$ to $\mathcal{D}$, after which we run a disambiguation algorithm to turn it into a term in $\mathcal{R}$.
@@ -219,6 +222,11 @@ For example, the ambiguous term $\mathrm{before}$ in $\mathcal{S}$ would be repr
 We syntactically distinguish terms of the shape $\Xi$ by writing set brackets $\{\}$ around them.
 Type annotations from $\mathcal{S}$ are kept in $\mathcal{D}$, but the structure is otherwise the same as that of $\mathcal{R}$.
 
+The translation from $\mathcal{S}$ to $\mathcal{D}$ will depend on the users's \verb=CLASSIFY= statements.
+We write $A\preceq B$ to indicate that the pair $A,B$ is in the transitive closure of the pairs written \verb=CLASSIFY _ ISA _=, meaning that all elements in $A$ must occur in $B$ whenever $A\preceq B$.
+Moreover, we let $\bot$ be a least element in this preorder: $\bot \preceq A$ for all $A$.
+Since there are no classify statements containing $\bot$ (the user cannot write them), the least element in $\preceq$ is unique.
+
 The translation $s : \mathcal{S} \to \mathcal{D}$ is as follows:
 \begin{align*}
 s(n) &= \{n_{A*B} \mid (A,B)\in\mathcal{t}(n)\}\\
@@ -226,11 +234,11 @@ s(\typetyped{\varphi}{A*B}) &= \typetyped{s(\varphi)}{A*B}\\
 s(\typevee) &= \{T_{A*B} \mid A,B\in\mathcal{T}\}\\
 s(\typenil) &= \{F_{A*B} \mid A,B\in\mathcal{T}\}\\
 s(\typeident) &= \{1_{A} \mid A\in\mathcal{T}\}\\
-s(\varphi \typeunion \psi) &= ..?\\
-s(\varphi \typeinter \psi) &= ..?\\
-s(\varphi \typesemi \psi) &= ..?\\
-s(\typecomp{\varphi}) &= ..?\\
-s(\typeconv{\varphi}) &= ..?
+s(\varphi \typeunion \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cup\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid A\preceq B \}$} \\
+s(\varphi \typeinter \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cap\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \}$}\\
+s(\varphi \typesemi \psi) &= s(\varphi);\varepsilon;s(\psi)&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \vee A\preceq B \}$}\\
+s(\typecomp{\varphi}) &= \overline{s(\varphi)}\\
+s(\typeconv{\varphi}) &= \conv{s(\varphi)}
 \end{align*}
 
 \section{Bibliography}
