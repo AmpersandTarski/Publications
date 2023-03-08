@@ -86,26 +86,23 @@ generative software\sep incremental software development\sep data migration\sep 
    change failure rate~\cite{DevOps2021}.}.
    By installing upgrades automatically, frequently, in small increments, and without down-time,
    the users experience a system that evolves organically, without even noticing the updates.
-   Thus, this paper will help to automate data migrations correctly and reliably.
-   The benefits work in two directions.
-   Automating data migrations saves effort and errors,
-   contributing to more frequent and smaller releases.
+   By automating data migrations correctly and reliably, migration engineers save effort and errors.
+   As a result, they can release smaller increments more frequently, which contributes to a more agile software development process.
    Smaller and faster releases also mean a smaller difference between the existing system and the desired system.
-   The smaller that difference, the simpler the migration can be and the more of it can be automated.
-
-   Each increment has an ``existing system'' and a ``desired system''.
-   A difference of schemas complicates the migration of data between the existing system and the desired system.
+   This yields even simpler migrations, leveraging even more frequent releases.
+   
+   Differences of schemas of an existing system and a desired system complicate the migration of data.
    The purpose of incremental deployment poses specific requirements to data migration,
    which sets it apart from data migrations for other purposes.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers may deliberately exclude new functionality to avoid introducing new errors in an otherwise error-prone migration process.
-   In our work, however, introducing new functionality and removing obsolete functionality is the very purpose of an increment.
+   migration engineers may deliberately avoid schema differences and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
+   For the purpose of software updates, however, introducing new functionality, removing obsolete functionality, and schema differences are the very reason for deploying an increment.
    Data migration literature sometimes uses a different notion of increment.
    For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
-   This work, however, gets rid of the existing system without retaining the variations.
-   So this is clearly a different notion of increment.
+   In a software update, however, the variations are not preserved.
+   So this notion of increment in\cite{Ataei2021} is obviously different.
    Examples like these have convinced the authors to define a new method for data migration that is specifically meant for systems in production that are
    deployed incrementally.
    
@@ -114,10 +111,10 @@ generative software\sep incremental software development\sep data migration\sep 
    The purpose of our theory is to develop tools.
    These tools must satisfy such practical requirements as
    zero down-time updates and ways to cope with data pollution.
+   Zero down-time means that all human activity for the data migration can be done without taking the system out of production.
    In practice, more frequent updates require that updates come with zero down-time.
-   For our theory, zero down-time means that all human activity for the data migration can be done without taking the system out of production.
    Any delay caused by automatically switching from the existing system to the desired is considered negligible.
-   This assumes a modern deployment platform (such as Kubernetes) that updates applicatioins with zero down-time.
+   This assumes a modern deployment platform (such as Kubernetes) that updates applications with zero down-time.
    
    Our theory is based on the following assumptions and requirements:
 \begin{itemize}
@@ -132,12 +129,18 @@ generative software\sep incremental software development\sep data migration\sep 
    Efficiency of the migration is beyond the scope.
 
 \section{Analysis}
+\label{sct:Analysis}
    The purpose of an information system is to make data meaningful to its users.
+   The analysis of the problem starts with a formal definition of information systems,
+   in which the schema contains all information that makes data meaningful.
+   We then define a migration procedure from one information system to another,
+   which preserves the meaning of the data as much as possible.
+
    Users have their own tasks and responsibilities
    and may work from different locations and on different moments.
    This collective use by multiple users serves a purpose which we will loosely call ``the business''.
-   To preserve meaning, the business maintains semantic constraints on the data,
-   amidst of all changes that are going on around them.
+   It is this business that depends on the semantics of the data to draw the right conclusions and carry out their tasks.
+   This paper uses semantic constraints to represent this meaning.
    
    Information systems are typically used by actors (both users and computers) who are distributed and work with data all the time.
    As a consequence, the data in a system changes continually.

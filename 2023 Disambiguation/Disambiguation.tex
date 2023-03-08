@@ -27,6 +27,25 @@
 \maketitle
 
 \section{Introduction}
+% @Bas, jouw introduction poogt via een omweg bij het op te lossen probleem te komen.
+% Een meer directe inleiding zou zijn:
+
+% In a heterogeneous relation algebra~\cite{Hattensperger}, all relations have a type.
+% To refer to a relation, one must write $r_{[A\times B]}$ instead of just $r$.
+% When the heterogeneous relation algebra is used as a programming language, e.g.~Ampersand~\cite{Ampersand}, identifiers are involved.
+% This yields verbose expressions such as:
+% \begin{verbatim}
+%     account[Person*Bankaccount];creditline[Bankaccount*Amount]
+% \end{verbatim}
+% A programmer, however, might just want to write \verb-account;creditline-.
+
+% This paper proposes a way to derive the types in expressions of heterogeneous relation algebra,
+% to enable more compact references to relations.
+% The idea is that type information is only necessary if an expression would otherwise be ambiguous.
+% If the programmer already uses the notation $r_{[A\times B]}$, there is no ambiguity.
+% But if the programmer refers to a relation just by $r$, and there are multiple relations with that name, ambiguity lures.
+% This paper tries to resolve as many ambiguities as possible.
+
 Notations matter: They help communicate ideas by establishing expectations.
 When programming, it is recommended to choose function symbols, variable names, etcetera, in a way that it helps the reader of the program.
 Notations refer to a certain semantical notion, and choosing a good notation can help establish that.
@@ -108,7 +127,7 @@ We refer to the problem of determining which relation is intended as the disambi
 
 %
 %
-%Bas, ik lees dat als:
+% @Bas, ik lees dat als:
 %\begin{eqnarray}
 %    \pair{a}{b}\in r&\Rightarrow&a\in\mathrm{Time}\cup\mathrm{Task}\wedge b\in\mathrm{Time}\cup\mathrm{Task}\\
 %    \mathrm{before}_{\mathrm{Time * Time}}&=&r\cap (\mathrm{Time}\times\mathrm{Time})\\
@@ -146,6 +165,7 @@ If $p(E)$ is the empty set, then there is no solution to the disambiguation prob
 If $p(E)$ contains multiple elements, then there are multiple solutions to the disambiguation problem.
 We can arbitrarily select a single element from $p(E)$ to get an arbitrary solution\footnote{In practice, we might want to indicate that $E$ is ambiguous, which could require running the next step twice: once for two different elements in $p(E)$.}.
 
+% @Bas, deze paragraaf is wellicht leesbaarder als je gewoon de functie à la Haskell uitschrijft.
 For the top-down step, let $d(e,t)$ denote the disambiguated expression $e$ with the type $t$.
 For the top-level call of $d(e,t)$, let $e=E$ and $t\in p(E)$.
 Then $d(n,t) = n_{[t]}$, $d(e_1 \cup e_2, t) = d(e_1,t) \cup d(e_2,t)$ and $d(e_1 ; e_2, (x,y)) = d(e_1, (x,z)) ; d(e_2, (z,y))$ where $z$ is picked such that $(x,z)\in p(e_1)$ and $(z,y)\in p(e_2)$.
@@ -170,7 +190,8 @@ The types are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\
 This gives $p(E_2) = \{\mathrm{Task} * \mathrm{Time}\}$ and $d(\{\mathrm{Task} * \mathrm{Time}\},E_2) = \mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}};(\mathrm{before}_{\mathrm{Time} * \mathrm{Time}}\ \cup\ \mathbb{1}_{\mathrm{Time}})$, as desired.
 
 \section{Solving Disambiguation with Generalization}
-Before giving a solution to this problem, we first observe that the disambiguation algorithm discussed earlier fails for our running example.
+Before giving a solution to this % @Bas, een referentie over de grens van een paragraaf is taalkundig al niet fraai, maar over de grens van een section is niet slim. Als lezer wil ik iets meer duidelijkheid dan "this" als het gaat over welk probleem je naar verwijst.
+problem, we first observe that the disambiguation algorithm discussed earlier fails for our running example.
 Following the declarations of the script, we let $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Event}, \mathrm{Time})\}$.
 Now the above algorithm would conclude with an error on $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
 
@@ -179,6 +200,7 @@ It can be thought of as defined by $\epsilon_{A*B} = \{(a,a) \mid a\in A \wedge 
 
 This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as subtyping.
 Next, we define a language that is interpreted as a heterogeneous relation algebra with a typical set-interpretation.
+% @Bas, de volgende zin snap ik niet...
 The semantics of the language with subtyping will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
 %We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
 %In this paper, we relax that requirement.
