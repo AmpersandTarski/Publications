@@ -390,34 +390,40 @@ generative software\sep incremental software development\sep data migration\sep 
    For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
    This allows for static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
 
-\subsection{Changing data}
-\label{sct:Changing data}
-   Events can cause data to change.
-   For triples, we distinguish just two types of event: insert and delete events.
-   An event is a label (ins or del) with a dataset that is to be inserted in or deleted from another dataset.
-   So we shall write
-\begin{eqnarray}
-   \ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}\pair{\triples}{\inst}&=&\pair{\triples\cup\triples_{\id{ev}}}{\inst\cup\inst_{\id{ev}}}\\
-   \del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}\pair{\triples}{\inst}&=&\pair{\triples-\triples_{\id{ev}}}{\inst-\inst_{\id{ev}}}
-\end{eqnarray}
-   Insert events are represented as $\ins{\dataset}$ and delete events by $\del{\dataset}$.
-   Both are functions $\Dataset\rightarrow\Dataset$, which are defined as:
-   Since datasets are sets, we will use set union ($\cup$) and set difference ($-$) to make changes in datasets.
-
-
 \subsection{Schemas}
 \label{sct:Schemas}
    To design an information system, a developer defines a schema in which she defines concepts, specializations, relations, and rules.
    Together, these items capture the semantics of an information system~\cite{Spivak2012}.
+   A schema $\schema$ is a tuple $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
+   in which $\concepts$ is a finite set of concepts,
+   $\isa$ is a partial order of concepts,
+   $\rels$ is a finite set of relations,
+   and $\rules$ is a finite set of rules.
    Each rule in a schema serves to constrain the dataset, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$,
    which is disjoint from $\Atoms$, $\Concepts$, $\Rels$, and $\Dataset$.
    In this paper, variables $u$ and $v$ represent rules.
+   The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
+   Disambiguation sometimes requires to write $\concepts_{\schema}$, $\isa_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
+   rather than $\concepts$, $\isa$, $\rels$, and $\rules$ respectively.
+   For every rule $u$ in the schema, there is a predicate $\sat{u}{\dataset}$ that says whether or not dataset $\dataset$ satisfies rule $u$.
+%  Every schema is an element of an infinite set called $\Schema$.
 
-   A type system in Ampersand~\cite{vdWoude2011} identifies certain rules that are provably false.
-   It also ensures that all rules can be interpreted within the set of relations in the schema.
-   Due to this type system, the Ampersand compiler only generates code for scripts without type errors.
-   As a result, for every rule $u$ in the schema, there is a predicate $\sat{u}{\dataset}$ that says whether dataset $\dataset$ satisfies rule $u$.
+   A schema must ensure that triples ``make sense'' in the semantics defined by the schema.
+   This means that it must satisfy the following requirements.
+\begin{eqnarray}
+   \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:relationsIntroduceConcepts}\\
+   A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:isasIntroduceConcepts}\\
+   \isa&&\text{is a partial order on $\concepts$}
+   \label{eqn:isasPartialOrder}\\
+   \forall u\in\rules,\exists\dataset\in\Dataset-\emptyset&:&\sat{u}{\dataset}
+   \label{eqn:trueifyableRules}
+\end{eqnarray}
+   Note that these requirements do not depend on any particular dataset,
+   so they can be checked statically.
+   The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies these requirements.
 
 %    For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
 %    that represents the set of violations%
@@ -437,34 +443,6 @@ generative software\sep incremental software development\sep data migration\sep 
 % \end{eqnarray}
 %    Violations are used to produce meaningful error messages and to trigger changes in the dataset to restore satisfaction of that rule.
 
-   Rules serve as invariants,
-   i.e.\ constraints that the data in the database must satisfy at all times.
-   At times in which the dataset does not satisfy a rule, that rule is said to be {\em broken}.
-   In those cases, something or someone must take action to fix the situation and restore invariance of that rule.
-
-   A schema $\schema$ is a tuple $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
-   in which $\concepts$ is a finite set of concepts,
-   $\isa$ is a partial order of concepts,
-   $\rels$ is a finite set of relations,
-   and $\rules$ is a finite set of rules.
-   The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
-   Disambiguation sometimes requires to write $\concepts_{\schema}$, $\isa_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
-   rather than $\concepts$, $\isa$, $\rels$, and $\rules$ respectively.
-%  Every schema is an element of an infinite set called $\Schema$.
-
-   In order to do static type checking,
-   all concepts and relations must be ``known'' in the schema:
-\begin{eqnarray}
-   \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:relationsIntroduceConcepts}\\
-   A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:isasIntroduceConcepts}\\
-   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
-   \label{eqn:define R}
-\end{eqnarray}
-   If a triple $\triple{a}{r}{b}$ satisfies requirement~\ref{eqn:define R} and its relation $r$ satisfies requirement~\ref{eqn:relationsIntroduceConcepts},
-   this triple is said to {\em befit} schema $\quadruple{\concepts}{\isa}{\rels}{\rules}$.
-
 \subsection{Information Systems}
 \label{sct:Information Systems}
    This section defines the notion of information system.
@@ -483,9 +461,30 @@ generative software\sep incremental software development\sep data migration\sep 
    It serves as a placeholder for a person or a machine (i.e. an actor) that works with the dataset (i.e. create, read, update, or delete triples).
    The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
 
+   The information system enforces the semantics by ensuring that the following requirements remain true at all times:
+\begin{eqnarray}
+   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
+   \label{eqn:define R}\\
+   \forall u\in\rules&:&\sat{u}{\dataset}
+   \label{eqn:satisfaction}
+\end{eqnarray}
+   Requirement~\ref{eqn:define R} ensures that the information system only works with triples whose relation is defined in the schema.
+   Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules in the schema.
+
+   The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
+   For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
+   that represents the set of violations%
+   
+   The rules in the schema serve as invariants,
+   i.e.\ constraints that the data in the database must satisfy at all times.
+   At times in which the dataset does not satisfy a rule, that rule is said to be {\em broken}.
+   In those cases, something or someone must take action to fix the situation and restore invariance of that rule.
+
+   If a triple $\triple{a}{r}{b}$ satisfies requirement~\ref{eqn:define R} and its relation $r$ satisfies requirement~\ref{eqn:relationsIntroduceConcepts},
+   this triple is said to {\em befit} schema $\quadruple{\concepts}{\isa}{\rels}{\rules}$.
+
    The system is {\em at rest} when every rule in the schema is satisfied:
 \begin{equation}
-   \forall u\in\rules:\ \sat{u}{\dataset}\label{eqn:satisfaction}
 \end{equation}
    However, the system continually registers events that insert or delete triples in its dataset,
    which may cause rules to be broken.
@@ -516,7 +515,26 @@ generative software\sep incremental software development\sep data migration\sep 
    The system contains a dedicated role for the enforcement engine,
    so every rule has at least one role in the relation $\maintain$, means that all roles together are keeping all rules satisfied.
 
-\subsection{Example}
+   \subsection{Changing data}
+   \label{sct:Changing data}
+   @Bas, In het onderstaande heb ik mij er nog wat te makkelijk vanaf gemaakt.
+   Aandacht nodig.
+   
+      Events can cause data to change.
+      So, we model events as functions $\Dataset\rightarrow\Dataset$.
+      For triples, we distinguish just two types of event: insert and delete events.
+      An event is a label (ins or del) with a dataset that is to be inserted in or deleted from another dataset.
+      We denote events as $\ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}$ and $\del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}$.
+      They are defined by:
+   \begin{eqnarray}
+      \ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}(\dataset)&=&\pair{\triples_{\dataset}\cup\triples_{\id{ev}}}{\inst_{\dataset}\cup\inst_{\id{ev}}}\\
+      \del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}(\dataset)&=&\pair{\triples_{\dataset}-\triples_{\id{ev}}}{\inst_{\dataset}-\inst_{\id{ev}}}
+   \end{eqnarray}
+      Insert events are represented as $\ins{\dataset}$ and delete events by $\del{\dataset}$.
+      Both are functions $\Dataset\rightarrow\Dataset$, which are defined as:
+      Since datasets are sets, we will use set union ($\cup$) and set difference ($-$) to make changes in datasets.
+   
+   \subsection{Example}
 \label{sct:Example existing IS}
    Having defined an information system in mathematical terms, let us discuss a small example.
    It is written in the language Ampersand to make it more appealing to read.
