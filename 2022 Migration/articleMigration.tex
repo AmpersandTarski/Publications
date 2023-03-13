@@ -470,32 +470,52 @@ generative software\sep incremental software development\sep data migration\sep 
 \end{eqnarray}
    Requirement~\ref{eqn:define R} ensures that the information system only works with triples whose relation is defined in the schema.
    Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules in the schema.
-
-   The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
-   For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
-   that represents the set of violations%
-   
    The rules in the schema serve as invariants,
    i.e.\ constraints that the data in the database must satisfy at all times.
    At times in which the dataset does not satisfy a rule, that rule is said to be {\em broken}.
    In those cases, something or someone must take action to fix the situation and restore invariance of that rule.
+   The system is {\em at rest} when every rule in the schema is satisfied.
 
-   If a triple $\triple{a}{r}{b}$ satisfies requirement~\ref{eqn:define R} and its relation $r$ satisfies requirement~\ref{eqn:relationsIntroduceConcepts},
-   this triple is said to {\em befit} schema $\quadruple{\concepts}{\isa}{\rels}{\rules}$.
+   % The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
+   % For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
+   % that represents the set of violations.%
+   
+\subsection{Changing data}
+\label{sct:Changing data}
+   Events can cause a dataset to change.
+   So, we model events as functions $\Dataset\rightarrow\Dataset$.
+   We will use variable $e$, $e'$, $e''$, and so on to represent events.
+   We distinguish just two types of event: insert and delete events.
+   An event is a label (\id{ins} or \id{del}) with a dataset that is to be inserted or deleted.
+   If $\triples$ is the set of triples inserted or deleted by an event $e$,
+   we denote that event either by $\ins{\triples}$ or $\del{\triples}$.
+   They are defined by:
+\begin{eqnarray}
+   e(\dataset)&=&\id{case}\ e\ \id{of}\\
+   &&\begin{array}[t]{@{}rcl}
+      \ins{\triples}&=&\pair{\triples_{\dataset}\cup\triples}{\id{insInst}_{\triples}(\inst_{\dataset})}\\
+      \del{\triples}&=&\pair{\triples_{\dataset}-\triples}{\id{delInst}_{\triples}(\inst_{\dataset})}
+   \end{array}
+\end{eqnarray}
+   in which $\id{insInst}_{\triples}$ transforms $\inst_{\dataset}$ such that $\ins{\triples}(\dataset)$ complies with
+   equations~\ref{eqn:specialization} and~\ref{eqn:wellTypedEdge},
+   and likewise for $\id{delInst}_{\triples}$.
 
-   The system is {\em at rest} when every rule in the schema is satisfied:
+   As the system registers events, it inserts or deletes triples in its dataset.
+   This may violate requirement~\ref{eqn:satisfaction} when one or more rules are broken,
+   i.e.\ if there is a rule $u$ for which $\sat{u}{e(\dataset)}$ does not hold.
+   In that case, requirement~\ref{eqn:satisfaction} prohibits the system to be in state $e(\dataset)$,
+   so either the system stays in the state $\dataset$ or there is a reaction $e'$ that restores invariance of the broken rules:
 \begin{equation}
+   \sat{u}{\dataset}\Rightarrow\sat{u}{e'(e(\dataset))}
+   \label{eqn:restoring}
 \end{equation}
-   However, the system continually registers events that insert or delete triples in its dataset,
-   which may cause rules to be broken.
-   This requires a reaction to restore invariance.
-   Example: if a rule says that every request must be acknowledged, the receipt of a request (which is an event) will violate this rule.
-   Sending a message that acknowledges this receipt (another event) will cause the rule to be satisfied again.
-   During the time between the receipt of the request and sending the acknowledgment, the rule is (temporarily) not satisfied.
+   The combination of events $e$ and $e'$ is called a {\em transaction}.
 
-   This paper assumes two ways of enforcing satisfaction of rules: automatic or manual.
-   Manual enforcement is specified by the developer by assigning a rule $u$ to a role $o$.
-   Any actor with role $o$, whether person or machine,
+   In practice, there are different ways of enforcing satisfaction of rules.
+   One way is to let a user or a computer ``invent'' $e'$.
+   A developer can specify this by assigning a rule $u$ to a role $o$.
+   Any actor with role $o$
    can restore invariance of rule $u$ by inserting or deleting the right triples.
    For this reason, every rule is assigned to at least one role by means of the relation $\maintain$.
 \begin{equation}
@@ -503,6 +523,9 @@ generative software\sep incremental software development\sep data migration\sep 
 \end{equation}
    $o\maintain u$ means that role $o$ must keep rule $u$ satisfied, i.e.\ to keep $\sat{u}{\dataset}$ true.
    As long as rule $u$ is broken, the system should notify actors in the role(s) that are administered in $\maintain$ to do something about it.
+
+   If $\maintain$ specifies no role for a given rule $u$, the system can prevent $e$ from having any effect.
+   This implements blocking behaviour, and must be accompanied by an error message.
 
    Automatic enforcement is specified by the developer with a special syntax,
    the {\em enforce rule}.
@@ -515,24 +538,6 @@ generative software\sep incremental software development\sep data migration\sep 
    The system contains a dedicated role for the enforcement engine,
    so every rule has at least one role in the relation $\maintain$, means that all roles together are keeping all rules satisfied.
 
-   \subsection{Changing data}
-   \label{sct:Changing data}
-   @Bas, In het onderstaande heb ik mij er nog wat te makkelijk vanaf gemaakt.
-   Aandacht nodig.
-   
-      Events can cause data to change.
-      So, we model events as functions $\Dataset\rightarrow\Dataset$.
-      For triples, we distinguish just two types of event: insert and delete events.
-      An event is a label (ins or del) with a dataset that is to be inserted in or deleted from another dataset.
-      We denote events as $\ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}$ and $\del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}$.
-      They are defined by:
-   \begin{eqnarray}
-      \ins{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}(\dataset)&=&\pair{\triples_{\dataset}\cup\triples_{\id{ev}}}{\inst_{\dataset}\cup\inst_{\id{ev}}}\\
-      \del{\pair{\triples_{\id{ev}}}{\inst_{\id{ev}}}}(\dataset)&=&\pair{\triples_{\dataset}-\triples_{\id{ev}}}{\inst_{\dataset}-\inst_{\id{ev}}}
-   \end{eqnarray}
-      Insert events are represented as $\ins{\dataset}$ and delete events by $\del{\dataset}$.
-      Both are functions $\Dataset\rightarrow\Dataset$, which are defined as:
-      Since datasets are sets, we will use set union ($\cup$) and set difference ($-$) to make changes in datasets.
    
    \subsection{Example}
 \label{sct:Example existing IS}
@@ -1100,7 +1105,7 @@ $\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
 Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added%
 \footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
 The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
-The expressions $e$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
+The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
 
 \begin{definition}[]
    \begin{eqnarray}
