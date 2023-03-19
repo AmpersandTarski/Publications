@@ -7,6 +7,10 @@
 \def\amsbb{\use@mathgroup \M@U \symAMSb}
 \makeatother
 \usepackage[cal=boondoxo]{mathalfa}
+
+\DeclareMathAlphabet{\pazocal}{OMS}{zplm}{m}{n}
+\newcommand{\powerset}{\pazocal{P}}
+
 \newcommand{\typesemi}{\mathbin{\text{\textbb{;}}}}
 \newcommand{\typesubset}{\mathbin{\mathbbm{\sqsubseteq}}}
 \newcommand{\typeunion}{\mathbin{\mathbb{U}}}
@@ -227,15 +231,15 @@ We use the following grammar to describe the language $\mathcal{R}$ for that, wh
 
 The type of a term in $\mathcal{R}$ is given by a partial typing function, which we define inductively via the relation symbol $:$ as follows:
 \begin{align*}
-x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$ and $A,B\in \mathcal{T}$}\\
+x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$}\\
 1_{A} &: A * A&\\
 \varphi \odot \psi &: A * B &\quad\text{For $\odot \in \{\cup,\cap\}$, $\varphi : A * B$ and $\psi : A * B$}\\
 \varphi ; \psi &: A * B &\text{For $\varphi : A * C$ and $\psi : C * B$}\\
 \overline{\psi} &: A * B &\text{For $\psi : A * B$}\\
 \conv{\psi} &: A * B &\text{For $\psi : B * A$}
 \end{align*}
-We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for some $A$ and $B$.
-By induction on the inductive definition of $\mathcal{R}$, the relation $:$ is between $\mathcal{R}$ and types $\mathcal{T}\times\mathcal{T}$ and univalent.
+We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for $A,B\in \mathcal{T}$ and every sub-term is well-typed.
+By induction on the inductive definition of $\mathcal{R}$, the relation $:$ is univalent.
 In other words: well-typed terms in $\mathcal{R}$ have precisely one type, all of its sub-terms are well-typed, and $\bot$ does not occur as a pseudo-concept.
 
 \subsection{Translation process}
@@ -270,13 +274,43 @@ s(\typecomp{\varphi}) &= \overline{s(\varphi)}\\
 s(\typeconv{\varphi}) &= \conv{s(\varphi)}
 \end{align*}
 
-
-\paragraph{[Aside],} The Ampersand language also allows for \verb=CLASSIFY A IS B /\ C= statements, meaning that elements are in $A$ if and only if they are in $B$ and in $C$.
+\paragraph{[Aside]} The Ampersand language also allows for \verb=CLASSIFY A IS B /\ C= statements, meaning that elements are in $A$ if and only if they are in $B$ and in $C$.
 The information about this captured in $\preceq$ is just that $A \preceq B$ and $A\preceq C$, which means that information is lost.
 We can consider the lost information when dealing with the $\typesemi$ operation by changing the $\epsilon$ relations introduced there.
 However, it is an open problem to deal with this with the $\typeinter$ operation, so we give a simpler presentation that ignores this additional information in \verb=CLASSIFY _ IS _= statements for now.
 
+Translating a term from $\mathcal{D}$ to $\mathcal{R}$ proceeds by considering which choices are type correct.
+However, if we were to simply implement the simple algorithm proposed earlier, too many terms would be deemed ambiguous:
+the term $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typevee \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ with $\mathrm{Task}\preceq\mathrm{Event}$ would not disambiguate to the obvious term, since $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typetyped{\typevee}{\mathrm{Task}*\mathrm{Task}} \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ is also well-typed.
+To deal with this, we prefer terms in which the $\epsilon$ relations have the same source and target.
 
+Given a term $D\in\mathcal{D}$, the function $p(D)$ will return a set of types and a preference relation between those types.
+The preference relation is a pre-order.
+We will write a tree node as $t \mapsfrom \{c_1,\ldots,c_n\}$ where the child-nodes $c_i$ are themselves written as trees, and $t$ is a set of types that the corresponding term could have.
+For example, if $p(D) = t_1 \mapsfrom \{t_2 \mapsfrom \{t_3 \mapsfrom \{\}\},t_4 \mapsfrom \{\}\}$, then types of $t_1$ are preferred over those in $t_2$, $t_3$ and $t_4$, those of $t_2$ are preferred over $t_3$, and those types in $t_4$, are incomparable to those in $t_2$ and $t_3$.
+
+We define a binary operation $\times$ on such trees as follows:
+\[
+(a \mapsfrom A) \times (b \mapsfrom B)
+= a \cap b \mapsfrom 
+\]
+
+We define $p$ as follows:
+\begin{align*}
+p(\xi) &= \{{A*B} \mid \xi : (A,B)\}\mapsfrom\{\}\\
+p(\Xi) &= \{{A*A} \mid \xi = \epsilon_{A*A}\}\mapsfrom \{\{{A*B} \mid \xi : {A*B} \wedge (A\neq B \vee \xi \neq \epsilon_{A*B})\} \mapsfrom\{\}\}\\
+p(\typetyped{\varphi}{A*B}) &= \{A*B \mid A*B\in p(\varphi)[i] \text{ for some $i$}\}\mapsfrom\{\}\\
+p(\varphi \cup \psi) &= ..?\\
+p(\varphi \cap \psi) &= p(\varphi \cup \psi)\\
+p(\varphi ; \psi) &= ..?\\
+p(\overline{\varphi}) &= p(\varphi)\\
+p(\conv{\varphi}) &= [\{B*A\mid A*B\in p(\varphi)[i]\}]_i
+\end{align*}
+
+\paragraph{[Aside]}
+Without optimizations, the complexity of the algorithm for constructing these trees is exponential: the combination of two trees for $\cap$, $\cup$ and $;$ will be of a size that is the product of the two.
+However, we hope to be able to reduce the size of trees by looking for equivalent trees that express the same preferences.
+If trees can be reduced so that the number of nodes never exceeds the number of types in them, this should give the tree construction polynomial complexity.
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}
