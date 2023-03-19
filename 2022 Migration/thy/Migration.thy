@@ -204,11 +204,12 @@ lemma map_vertices_in_graphtype_inst[simp]:
   "inst (map_vertices_in_graphtype gt f) = (apfst f ` inst gt)"
   unfolding map_vertices_in_graphtype_def by auto
 
+lemma apfst_helper: "\<And> a b s. (a,b) \<in> s \<Longrightarrow> (f a, b) \<in> apfst f ` s" by force
+
 lemma map_graph_preserves_wellTypedness:
   assumes "typedGraph t G"
   shows "typedGraph (map_vertices_in_graphtype t f) (map_graph_fn G f)"
 proof
-  have [intro!]: "\<And> a b s. (a,b) \<in> s \<Longrightarrow> (f a, b) \<in> apfst f ` s" by force
   show "graph (map_graph_fn G f)" by auto
   { fix e
     assume e:"e \<in> edges (map_graph_fn G f)"
@@ -235,7 +236,7 @@ proof
     with assms
     have "typedVertex t v'" by auto
     thus "typedVertex (map_vertices_in_graphtype t f) v"
-      by (intro typedVertexI,cases t;auto simp:vprime(2))
+      by (intro typedVertexI,cases t;auto simp:vprime(2) intro:apfst_helper)
   }
 qed
 
@@ -256,10 +257,14 @@ proof
     unfolding map_labels_in_graph_def
     by fastforce
   fix e assume e:"e \<in> edges (map_labels_in_graph g f)"
-  then obtain e' where e2:"apfst f e' = e" unfolding map_labels_in_graph_def by auto
-  thus "wellTypedEdge (map_labels_in_graphtype gt f) e"
-    unfolding map_labels_in_graphtype_def using e assms(2)
-    apply(cases gt;cases e;auto) sorry
+  from e obtain l x y where e2:"apfst f (l,x,y) = e" "(l,x,y) \<in> edges g"
+    unfolding map_labels_in_graph_def by auto
+  hence wt:"wellTypedEdge gt (l,x,y)" using assms(1) by auto
+  from e2 have [simp]:"e = (f l,x,y)" by auto
+  from wellTypedEdgeE[OF wt] e2(1)
+  show "wellTypedEdge (map_labels_in_graphtype gt f) e"
+    unfolding map_labels_in_graphtype_def
+    by (auto intro:apfst_helper dest!:inj_onD[OF assms(2) _ DomainI DomainI])
 next
   fix v assume v:"v \<in> vertices (map_labels_in_graph g f)"
   hence "v \<in> vertices g"
