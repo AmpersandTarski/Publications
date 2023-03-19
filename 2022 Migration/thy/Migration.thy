@@ -22,7 +22,7 @@ fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<time
 
 lemma wellTypedEdgeI[intro]:
   assumes
-    "(fst e,x,y) \<in> decl gt"
+    "\<exists> x y. (fst e,x,y) \<in> decl gt"
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (fst (snd e),x) \<in> inst gt"
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (snd (snd e),y) \<in> inst gt"
   shows "wellTypedEdge gt e"
@@ -30,7 +30,7 @@ lemma wellTypedEdgeI[intro]:
 lemma wellTypedEdgeE[elim]:
   assumes "wellTypedEdge gt e"
   shows
-    "fst e \<in> Domain (decl gt)"
+    "\<exists> x y. (fst e,x,y) \<in> decl gt"
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (fst (snd e),x) \<in> inst gt"
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (snd (snd e),y) \<in> inst gt"
   using assms by ((cases gt;cases e);force)+
@@ -76,7 +76,7 @@ lemma trivialTyping :
 fun augmentTypeToVertex where
   "augmentTypeToVertex gt v = (v, inst gt `` {v})"
 fun augmentTypeToEdge where
-  "augmentTypeToEdge gt (l,x,y) = ((l,SOME x. x\<in>(l `` decl gt)), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
+  "augmentTypeToEdge gt (l,x,y) = ((l,{t.(l,t)\<in> decl gt}), augmentTypeToVertex gt x, augmentTypeToVertex gt y)"
 
 fun pairToRel where
   "pairToRel (v,ts) = (\<lambda> t. ((v,ts),t)) ` ts"
@@ -101,6 +101,8 @@ lemma pairABHelper[simp]:
   shows "(x, e) \<in> Pair c ` bs \<longleftrightarrow> e \<in> bs \<and> x=c"
   by auto
 
+export_code augmentTypes
+
 lemma augmentTypes_preserves_typed_vertex[intro]:
   assumes
         "a\<in>vertices lg \<longrightarrow> typedVertex gt a"
@@ -111,11 +113,25 @@ lemma augmentTypes_preserves_typed_vertex[intro]:
 
 lemma augmentTypes_preserves_typed_edge[intro]:
   assumes
-        "(e',fst l,fst r)\<in>edges lg \<longrightarrow> wellTypedEdge gt (e',fst l,fst r)"
-        "((e', etl,etr),l,r) \<in> edges (augmentTypes gt lg)"
-  shows "wellTypedEdge explicitTyping ((e', etl,etr),l,r)"
-  using assms unfolding explicitTyping_def
-  by (cases "gt";auto simp: augmentTypes_def)
+    "(e',fst l,fst r) \<in> edges lg \<longrightarrow> wellTypedEdge gt (e',fst l,fst r)"
+    "((e', s),l,r) \<in> edges (augmentTypes gt lg)"
+  shows "wellTypedEdge explicitTyping ((e', s),l,r)"
+proof
+  from assms(2) have "(e',fst l,fst r) \<in> edges lg" by (auto simp: augmentTypes_def )
+  with assms(1) have wt:"wellTypedEdge gt (e',fst l,fst r)" by simp
+  from wellTypedEdgeE(1)[OF wt] obtain c1 c2 where "(e', (c1,c2)) \<in> (decl gt)" by auto
+  with assms(2) have "(fst ((e', s), l, r), c1, c2) \<in> decl explicitTyping"
+    unfolding explicitTyping_def by (cases gt;auto simp:augmentTypes_def)
+  thus "\<exists>x y. (fst ((e', s), l, r), x, y) \<in> decl explicitTyping" by auto
+  show "\<And> x y. (fst ((e', s), l, r), x, y) \<in> decl explicitTyping \<Longrightarrow>
+           (fst (snd ((e', s), l, r)), x) \<in> inst explicitTyping"
+    using wellTypedEdgeE(2)[OF wt] assms(2)
+    by (auto simp: explicitTyping_def augmentTypes_def)
+  show "\<And> x y. (fst ((e', s), l, r), x, y) \<in> decl explicitTyping \<Longrightarrow>
+           (snd (snd ((e', s), l, r)), y) \<in> inst explicitTyping"
+    using wellTypedEdgeE(3)[OF wt] assms(2)
+    by (auto simp: explicitTyping_def augmentTypes_def)
+qed
 
 lemma augmentTypes_preserves_typedness:
   assumes "typedGraph gt lg"
@@ -144,7 +160,7 @@ lemma graph_union_wellTyped_if_parts_wellTyped:
 
 definition map_types_in_graphtype where
   "map_types_in_graphtype gt f
-    = GT (map_prod f f o decl gt) (apsnd f ` inst gt)"
+    = GT (apsnd (map_prod f f) ` decl gt) (apsnd f ` inst gt)"
 
 lemma map_types_in_graphtype_inst[simp]:
   "inst (map_types_in_graphtype gt f)
@@ -152,23 +168,21 @@ lemma map_types_in_graphtype_inst[simp]:
   unfolding map_types_in_graphtype_def by auto
 lemma map_types_in_graphtype_decl[simp]:
   "decl (map_types_in_graphtype gt f)
-    = map_prod f f o decl gt"
+    = apsnd (map_prod f f) ` decl gt"
   unfolding map_types_in_graphtype_def by auto
 
-lemma map_types_in_graphtype_preserves_typing:
+lemma map_types_in_graphtype_preserves_wellTypedness:
   assumes "typedGraph t G"
   shows "typedGraph (map_types_in_graphtype t f) G"
 proof(intro typedGraphI,goal_cases)
-  case 1
-  then show "graph G" using assms by auto
+  case 1 show "graph G" using assms by auto
 next
   case (2 e)
   have [intro!]: "\<And> a b s. (a,b) \<in> s \<Longrightarrow> (a, f b) \<in> apsnd f ` s" by force
   obtain l x y where e[simp]: "e = (l,x,y)" by (cases e;blast)
-  with assms 2 have "wellTypedEdge t (l,x,y)" by auto
-  from wellTypedEdgeE[OF this]
+  with assms 2 have wte:"wellTypedEdge t (l,x,y)" by auto
   show "wellTypedEdge (map_types_in_graphtype t f) e"
-    by auto
+    using  wellTypedEdgeE[OF wte] by (intro wellTypedEdgeI;force)
 next
   case (3 v)
   have [simp]:"\<And> x. Domain (apsnd f ` x) = Domain x" by force
@@ -209,7 +223,7 @@ proof
     have "wellTypedEdge t (l,x',y')" by auto
     from wellTypedEdgeE[OF this] 
     have "wellTypedEdge (map_vertices_in_graphtype t f) (l,x,y)"
-      by (auto simp:xyprime)
+      by (intro wellTypedEdgeI;force simp:xyprime)
     thus "wellTypedEdge (map_vertices_in_graphtype t f) e" unfolding lxy.
   }
   { fix v
@@ -227,28 +241,25 @@ qed
 
 definition map_labels_in_graphtype where
   "map_labels_in_graphtype gt f
-    = GT (decl gt \<circ> f) (inst gt)"
+    = GT (apfst f ` decl gt) (inst gt)"
 
 definition map_labels_in_graph where
   "map_labels_in_graph g f
-    = LG (apfst f -` edges g) (vertices g)"
+    = LG (apfst f ` edges g) (vertices g)"
 
 lemma map_labels_preserves_wellTypedness:
-  assumes "typedGraph gt g"
+  assumes "typedGraph gt g" "inj_on f (Domain (decl gt))"
   shows "typedGraph (map_labels_in_graphtype gt f) (map_labels_in_graph g f)"
 proof
   show "graph (map_labels_in_graph g f)"
-    using typedGraphE(1)[OF assms]
+    using typedGraphE(1)[OF assms(1)]
     unfolding map_labels_in_graph_def
     by fastforce
   fix e assume e:"e \<in> edges (map_labels_in_graph g f)"
-  hence "apfst f e \<in> edges g"
-    unfolding map_labels_in_graph_def by auto
-  hence "wellTypedEdge gt (apfst f e)"
-    using assms by auto
+  then obtain e' where e2:"apfst f e' = e" unfolding map_labels_in_graph_def by auto
   thus "wellTypedEdge (map_labels_in_graphtype gt f) e"
-    unfolding map_labels_in_graphtype_def
-    by(cases gt;cases e;auto)
+    unfolding map_labels_in_graphtype_def using e assms(2)
+    apply(cases gt;cases e;auto) sorry
 next
   fix v assume v:"v \<in> vertices (map_labels_in_graph g f)"
   hence "v \<in> vertices g"
@@ -261,34 +272,79 @@ qed
 
 definition union_typing where
   "union_typing gt1 gt2
-    = GT (\<lambda> l. case l of Inl v \<Rightarrow> (decl gt1 l) | Inr v \<Rightarrow> (decl gt2 l)) 
+    = GT (decl gt1 \<union> decl gt2) 
          (inst gt1 \<union> inst gt2)"
+
+lemma union_typing_sym: "union_typing a b = union_typing b a" using union_typing_def
+  by (metis sup_commute)
+
+lemma union_typing_preserves_welltyped_left:
+  assumes "typedGraph gt1 g" "\<And> l s. (l,s) \<in> edges g \<Longrightarrow> l \<notin> Domain (decl gt2)"
+  shows "typedGraph (union_typing gt1 gt2) g"
+proof
+  from assms(1) show "graph g" by auto
+  { fix e
+    assume e:"e \<in> edges g"
+    hence wt:"wellTypedEdge gt1 e" using assms(1) by auto
+    thus "wellTypedEdge (union_typing gt1 gt2) e"
+      unfolding union_typing_def using assms(2) e
+      by(cases gt1;cases e;auto)
+  }
+  { fix v
+    assume v:"v \<in> vertices g"
+    hence wt:"typedVertex gt1 v" using assms(1) by auto
+    thus "typedVertex (union_typing gt1 gt2) v"
+      unfolding union_typing_def by (cases gt1;auto)
+  }
+qed
+
+lemma union_typing_preserves_welltyped_right:
+  assumes "typedGraph gt2 g" "\<And> l s. (l,s) \<in> edges g \<Longrightarrow> l \<notin> Domain (decl gt1)"
+  shows "typedGraph (union_typing gt1 gt2) g"
+  using union_typing_preserves_welltyped_left assms union_typing_sym
+  by metis
 
 (* did not use 'map_types_in_graphtypes', checking if neccessary first... *)
 definition disjoint_union_typing where
   "disjoint_union_typing gt1 gt2
-     = union_typing (map_labels_in_graphtype (map_vertices_in_graphtype gt1 Inl) (inv Inl))
-                    (map_labels_in_graphtype (map_vertices_in_graphtype gt2 Inr) (inv Inr))"
+     = union_typing (map_labels_in_graphtype (map_types_in_graphtype (map_vertices_in_graphtype gt1 Inl) Inl) Inl)
+                    (map_labels_in_graphtype (map_types_in_graphtype (map_vertices_in_graphtype gt2 Inr) Inr) Inr)"
 
 lemma move_types_left:
   assumes "typedGraph gt1 g1"
   shows "typedGraph (disjoint_union_typing gt1 gt2)
-             (map_labels_in_graph (map_graph_fn g1 Inl) (inv Inl))"
+             (map_labels_in_graph (map_graph_fn g1 Inl) Inl)"
   unfolding disjoint_union_typing_def
+  apply(rule union_typing_preserves_welltyped_left[OF assms[THEN map_graph_preserves_wellTypedness,
+             THEN map_types_in_graphtype_preserves_wellTypedness,
+             THEN map_labels_preserves_wellTypedness]])
+  unfolding map_labels_in_graph_def map_labels_in_graphtype_def by auto
+
+lemma move_types_right:
+  assumes "typedGraph gt2 g2"
+  shows "typedGraph (disjoint_union_typing gt1 gt2)
+             (map_labels_in_graph (map_graph_fn g2 Inr) Inr)"
+  unfolding disjoint_union_typing_def
+  apply(rule union_typing_preserves_welltyped_right[OF assms[THEN map_graph_preserves_wellTypedness,
+             THEN map_types_in_graphtype_preserves_wellTypedness,
+             THEN map_labels_preserves_wellTypedness]])
+  unfolding map_labels_in_graph_def map_labels_in_graphtype_def by auto
+
 
 definition disjoint_union_graphs where
   "disjoint_union_graphs g1 g2
     = graph_union
-         (map_labels_in_graph (map_graph_fn g1 Inl) (inv Inl))
-         (map_labels_in_graph (map_graph_fn g2 Inr) (inv Inr))"
+         (map_labels_in_graph (map_graph_fn g1 Inl) Inl)
+         (map_labels_in_graph (map_graph_fn g2 Inr) Inr)"
 
 lemma disjoint_union_well_typed:
-assumes
-  "typedGraph gt1 g1"
-  "typedGraph gt2 g2"
-shows
-"typedGraph (disjoint_union_typing gt1 gt2) (disjoint_union_graphs g1 g2)"
+  assumes
+    "typedGraph gt1 g1"
+    "typedGraph gt2 g2"
+  shows
+    "typedGraph (disjoint_union_typing gt1 gt2) (disjoint_union_graphs g1 g2)"
   unfolding disjoint_union_graphs_def
-proof (rule graph_union_wellTyped_if_parts_wellTyped)
+  using graph_union_wellTyped_if_parts_wellTyped[OF move_types_left move_types_right]
+    assms by auto
 
 end
