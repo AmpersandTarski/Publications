@@ -332,7 +332,7 @@ generative software\sep incremental software development\sep data migration\sep 
    In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
    In the sequel, variables $A$, $B$, $C$, $D$ will represent concepts.
 
-   The relation $\inst:\Pair{\Atoms}{\Concepts}$ is the instance relation between atoms and concepts.
+   The relation $\inst:\Pair{\Atoms}{\Concepts}$ relates atoms to concepts.
    The expression $a\inst C$ means that atom $a$ is an \emph{instance} of concept $C$.
    This relation is used in the type system, in which $\inst$ assigns one or more concepts to every atom in the dataset.
 
@@ -358,11 +358,12 @@ generative software\sep incremental software development\sep data migration\sep 
    The notation $r=\declare{n}{A}{B}$ denotes that relation $r$ has name $n$, source concept $A$, and target concept $B$.
    The part $\pair{A}{B}$ is called the {\em signature} of the relation.
 
-   Specialization distributes in a straightforward way over signatures:
-\begin{equation}
-   \pair{A}{B}\isa\pair{C}{D}\ \Leftrightarrow\ A\isa C\ \wedge\ B\isa D
-\label{eqn:isa-signature}
-\end{equation}
+%    The following is for wide tables only
+%    Specialization distributes in a straightforward way over signatures:
+% \begin{equation}
+%    \pair{A}{B}\isa\pair{C}{D}\ \Leftrightarrow\ A\isa C\ \wedge\ B\isa D
+% \label{eqn:isa-signature}
+% \end{equation}
 
    Triples serve to represent data.
    A triple\footnote{Please note that this paper uses the word {\em triple} in a more restricted way than in natural language.}
@@ -378,7 +379,7 @@ generative software\sep incremental software development\sep data migration\sep 
    In practice, users can say that Peter has telephone number 074238991.
    So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    This ``meaning from practice'' has no consequences in the formal world.
-   Users are entirely free to attach a practical meaning to a triple.
+   Users are free to attach any practical meaning to a triple.
 
    The notations $\triples_{\dataset}$ and $\inst_{\dataset}$ are used to disambiguate $\triples$ and $\inst$ when necessary.
    Every dataset is an element of an infinite set called $\Dataset$,
@@ -405,14 +406,16 @@ generative software\sep incremental software development\sep data migration\sep 
 
 \subsection{Schemas}
 \label{sct:Schemas}
-   To design an information system, a developer defines a schema in which she defines concepts, specializations, relations, and rules.
-   Together, these items capture the semantics of an information system~\cite{Spivak2012}.
+   Schemas serve to capture the semantics of an information system~\cite{Spivak2012}.
+   A schema defines concepts, specializations, relations, and rules.
+   A software engineer defines a schema on design time, so that semantic checks can be implemented at compile time.
+
    A schema $\schema$ is a tuple $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
    in which $\concepts$ is a finite set of concepts,
    $\isa$ is a partial order of concepts,
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
-   Each rule in a schema serves to constrain the dataset, to ensure its semantic integrity.
+   Each rule in a schema serves to constrain the dataset at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$,
    which is disjoint from $\Atoms$, $\Concepts$, $\Rels$, and $\Dataset$.
    In this paper, variables $u$ and $v$ represent rules.
@@ -429,17 +432,21 @@ generative software\sep incremental software development\sep data migration\sep 
    \label{eqn:relationsIntroduceConcepts}\\
    A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
    \label{eqn:isasIntroduceConcepts}\\
-   \pair{A}{B}\isa\pair{C}{D}\ \wedge\ \declare{n}{C}{D}\in\rels&\Rightarrow&
-   \begin{array}[t]{@{}l}
-      \declare{n}{A}{B}\in\rels\ \wedge\\
-      \pop{\declare{n}{A}{B}}{\dataset}\subseteq\pop{\declare{n}{C}{D}}{\dataset}
-   \end{array}
-   \label{eqn:subrelations} \\
+%    The following is for wide tables only
+%    \pair{A}{B}\isa\pair{C}{D}\ \wedge\ \declare{n}{C}{D}\in\rels&\Rightarrow&\declare{n}{A}{B}\in\rels
+%    \label{eqn:subrelations}\\
    \isa\ \text{is a partial order}
    \label{eqn:isasPartialOrder}\\
    \exists\dataset\in\Dataset-\emptyset:\ \sat{u}{\dataset}
-   \label{eqn:trueifyableRules}
+   \label{eqn:consistentRules}
 \end{eqnarray}
+   Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
+   Requirement~\ref{eqn:isasIntroduceConcepts} ensures that the specialization relation works on concepts of $\concepts$.
+%    The following is for wide tables only
+%    Requirement~\ref{eqn:subrelations} ensures that all specializations of a relation exist.
+   Requirement~\ref{eqn:isasPartialOrder} ensures that the specialization relation contains no cycles.
+   Requirement~\ref{eqn:consistentRules} ensures that every rule is consistent.
+
    The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies these requirements.
    Note that these requirements do not depend on any particular dataset,
    so they can be checked at compile time.
@@ -488,10 +495,117 @@ generative software\sep incremental software development\sep data migration\sep 
    \label{eqn:define R}\\
    \forall u\in\rules&:&\sat{u}{\dataset}
    \label{eqn:satisfaction}
+%    The following is for wide tables only
+%    \pair{A}{B}\isa\pair{C}{D}\ \wedge\ \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\triple{a}{\declare{n}{C}{D}}{b}\in\triples
+%    \label{eqn:subpopulations}
 \end{eqnarray}
    Requirement~\ref{eqn:define R} ensures that the information system only works with triples whose relation is defined in the schema.
    Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules in the schema.
+%    The following is for wide tables only
+%    Requirement~\ref{eqn:subpopulations} ensures that specialization works across relations.
    Note that these requirements are enforced at runtime.
+
+\subsection{Example}
+\label{sct:Example existing IS}
+   Having defined an information system in mathematical terms, let us discuss a small example.
+   It is written in the language Ampersand to make it more appealing to read.
+   Let us first define a dataset of just a handful of triples and three relations.
+\begin{verbatim}
+RELATION takes[Student*Course] =
+[ ("Peter", "Management")
+; ("Susan", "Business IT")
+; ("John", "Business IT")
+]
+\end{verbatim}
+   This declaration introduces a relation with the name \verb#takes#,
+   source concept \verb#Student#, and
+   target concept \verb#Course#.
+   The informal meaning of this relation is that it states which students are taking which courses.
+
+   The example system also has a second relation that states which modules are part of which course.
+\begin{verbatim}
+RELATION isPartOf[Module*Course] =
+[ ("Finance", "Management")
+; ("Business Rules", "Business IT")
+; ("Business Analytics", "Business IT")
+; ("IT-Governance", "Management")
+]
+\end{verbatim}
+   The third and last relation states which students are enrolled for which module.
+   It is left without population for now.
+\begin{verbatim}
+RELATION isEnrolledFor[Student*Module]
+\end{verbatim}
+
+   A rule, {\tt EnrollRule} completes the script.
+   It states that a student can enroll for any module that is part of a course he or she takes.
+   In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
+   each rule has a name and each rule has a role to maintain its invariance:
+\begin{verbatim}
+RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+ROLE Administrator MAINTAINS EnrollRule
+\end{verbatim}
+   The semantics of this rule defines $\sat{\tt EnrollRule}{\dataset}$ as:
+\begin{equation}
+   \begin{array}{l}
+   \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}\ \exists c\in\text{\tt Course}:\\
+s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
+\end{array}
+\label{eqn:example isEnrolledFor}
+\end{equation}
+   Rule {\tt EnrollRule} is satisfied because relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty.
+
+   Now let us check the requirements to verify that this example defines an information system.
+   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
+   The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
+   It defines the set of triples $\triples$ as:
+\[\begin{array}[t]{l}
+   \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
+   \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "Finance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
+   \triple{\text{\tt "Business Rules"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "Business Analytics"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
+   \triple{\text{\tt "IT-Governance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}
+\end{array}\]
+The relation $\inst$ contains the pairs:
+\[\begin{array}{l}
+   \pair{\tt "Finance"}{\tt Module}\\
+   \pair{\tt "Business Rules"}{\tt Module}\\
+   \pair{\tt "Business Analytics"}{\tt Module}\\
+   \pair{\tt "IT-Governance"}{\tt Module}\\
+   \pair{\tt "Management"}{\tt Course}\\
+   \pair{\tt "Business IT"}{\tt Course}\\
+   \pair{\tt "Peter"}{\tt Student}\\
+   \pair{\tt "Susan"}{\tt Student}\\
+   \pair{\tt "John"}{\tt Student}
+\end{array}\]
+   The pair $\pair{\triples}{\inst}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a dataset $\dataset$ as introduced in section~\ref{sct:Datasets}.
+
+   The Ampersand compiler generates a schema $\schema$, which contains concepts, a specialization relation, relations, and rules.
+   It defines the sets of concepts and relations to satisfy requirement~\ref{eqn:relationsIntroduceConcepts}:
+\[\begin{array}{rcl}
+   \concepts&=&\{ {\tt Module}, {\tt Course}, {\tt Student}\}\\
+   \rels&=&\{\begin{array}[t]{l}
+               \declare{\tt takes}{\tt Student}{\tt Course},\\
+               \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
+               \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\ \}
+             \end{array}
+  \end{array}
+\]
+   The user has defined no specializations.
+   This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
+   The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
+   The (nonempty) dataset satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
+   So, the schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ satisfies all requirements from section~\ref{sct:Schemas}.
+
+   Now let us check the definition of information system.
+   Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
+   The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$,
+   instructing the run-time engine to forward all violations of {\tt EnrollRule} to an administrator so she can keep {\tt EnrollRule} satisfied.
+   Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
+   This completes the requirements for $\infsys=\quadruple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
+   This concludes the argument that $\infsys$ is an information system.
 
 \subsection{Changing data}
 \label{sct:Changing data}
@@ -553,118 +667,16 @@ generative software\sep incremental software development\sep data migration\sep 
    \label{eqn:satisfaction relaxed}
 \end{eqnarray}
    The purpose of this requirement is to allow the compiler to generate code for users with role $o$,
-   to restore invariance.
+   to restore invariance ``by hand''.
    In the Ampersand language, a developer explicitly assigns a rule $u$ to a role $o$,
-   to keep control over the type of persons that are allowed to ``break rules temporarily''.
-   An actor, who attempts an event that violates a rule, should receive notification of the system with an appropriate error message.
+   to keep control over the type of persons that are allowed to ``restore broken rules''.
+   As a consequence, a mechanism is needed to notify those persons of the work to be done.
 
    If a rule $u$ is not assigned to any role and it is not an enforce rule,
    the system must prevent any event $e$ from having any effect on the database.
    So, if $e$ would violate rule $u$, the system must reject $e$.
    This implements blocking behaviour, and must be accompanied by an error message.
    
-   \subsection{Example}
-\label{sct:Example existing IS}
-   Having defined an information system in mathematical terms, let us discuss a small example.
-   It is written in the language Ampersand to make it more appealing to read.
-   Let us first define a dataset of just a handful of triples and three relations.
-\begin{verbatim}
-RELATION takes[Student*Course] =
-[ ("Peter", "Management")
-; ("Susan", "Business IT")
-; ("John", "Business IT")
-]
-\end{verbatim}
-   This declaration introduces a relation with the name \verb#takes#,
-   source concept \verb#Student#, and
-   target concept \verb#Course#.
-   The informal meaning of this relation is that it states which students are taking which courses.
-
-   The example system also has a second relation that states which modules are part of which course.
-\begin{verbatim}
-RELATION isPartOf[Module*Course] =
-[ ("Finance", "Management")
-; ("Business Rules", "Business IT")
-; ("Business Analytics", "Business IT")
-; ("IT-Governance", "Management")
-]
-\end{verbatim}
-   The third and last relation states which students are enrolled for which module.
-   It is left empty for now.
-\begin{verbatim}
-RELATION isEnrolledFor[Student*Module]
-\end{verbatim}
-
-   A rule, {\tt EnrollRule} completes the semantics
-   It states that a student can enroll for any module that is part of a course he or she takes.
-   In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
-   each rule has a name and each rule has a role to maintain its invariance:
-\begin{verbatim}
-RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-ROLE Administrator MAINTAINS EnrollRule
-\end{verbatim}
-   The semantics of this rule defines $\sat{\tt EnrollRule}{\dataset}$ as:
-\begin{equation}
-   \begin{array}{l}
-   \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}\ \exists c\in\text{\tt Course}:\\
-s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
-\end{array}
-\label{eqn:example isEnrolledFor}
-\end{equation}
-   Rule {\tt EnrollRule} is satisfied because relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty.
-
-   Now let us check the requirements to verify that this example defines an information system.
-   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
-   The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
-   It defines the set of triples $\triples$ as:
-   \[\begin{array}[t]{l}
-         \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-         \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-         \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-         \triple{\text{\tt "Finance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-         \triple{\text{\tt "Business Rules"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-         \triple{\text{\tt "Business Analytics"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-         \triple{\text{\tt "IT-Governance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}
-   \end{array}\]
-   The relation $\inst$ contains the pairs:
-   \[\begin{array}{l}
-      \pair{\tt "Finance"}{\tt Module}\\
-      \pair{\tt "Business Rules"}{\tt Module}\\
-      \pair{\tt "Business Analytics"}{\tt Module}\\
-      \pair{\tt "IT-Governance"}{\tt Module}\\
-      \pair{\tt "Management"}{\tt Course}\\
-      \pair{\tt "Business IT"}{\tt Course}\\
-      \pair{\tt "Peter"}{\tt Student}\\
-      \pair{\tt "Susan"}{\tt Student}\\
-      \pair{\tt "John"}{\tt Student}
-   \end{array}\]
-   The pair $\pair{\triples}{\inst}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a dataset $\dataset$ as introduced in section~\ref{sct:Datasets}.
-
-   The Ampersand compiler generates a schema $\schema$, which contains concepts, a specialization relation, relations, and rules.
-   It defines the set of concepts to satisfy requirement~\ref{eqn:relationsIntroduceConcepts}:
-   \[\concepts=\{ {\tt Module}, {\tt Course}, {\tt Student}\}\]
-   The user has defined no specializations.
-   This means that $\isa$ equals the identity relation on $\concepts$ and requirement~\ref{eqn:isasIntroduceConcepts} is satisfied.
-   The set of relations, $\rels$, satisfies requirement~\ref{eqn:define R}:
-   \[\begin{array}{rcl}
-      \rels&=&\{\begin{array}[t]{l}
-                  \declare{\tt takes}{\tt Student}{\tt Course},\\
-                  \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
-                  \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\ \}
-                \end{array}
-     \end{array}
-   \]
-   And, it defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
-   So, the schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ satisfies the requirements from section~\ref{sct:Schemas}.
-
-   Now let us check the definition of information system.
-   Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
-   The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$,
-   instructing the run-time engine to forward all violations of {\tt EnrollRule} to an administrator so she can keep {\tt EnrollRule} satisfied.
-   Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
-   This completes the requirements for $\infsys=\quadruple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
-   This concludes the argument that $\infsys$ is an information system.
-
 \subsection{Process of Data Migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example existing IS} introduce a single information system.
    The transition from an existing system to the desired one is the topic of this section.
@@ -850,9 +862,10 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    &&\verb#ENFORCE copied_takes := new.takes#\label{fill copies with new.takes}\\
    &&\verb#ENFORCE copied_takes :< old.takes#\label{del copies from old.takes}
 \end{eqnarray}
+   Understanding what the engine does to satisfy these rules might help the reader, so let us look what happens at runtime.
    Initially, when {\tt copied\_takes} is still empty, the difference between {\tt old.takes} and {\tt copied\_takes} equals {\tt old.takes}.
    So, {\tt new.takes} will start filling up with the pairs of {\tt old.takes} by rule~\ref*{difference}.
-   Then, the engine will start filling {\tt copied\_takes} with pairs from {\tt new.takes} because of rule~\ref*{fill copies with new.takes}.
+   Then, the engine starts filling {\tt copied\_takes} with pairs from {\tt new.takes} because of rule~\ref*{fill copies with new.takes}.
    As a result, the difference between {\tt old.takes} and {\tt copied\_takes} gets smaller and smaller, until {\tt old.takes} and {\tt copied\_takes} are equal.
    While this copying process is going on, {\tt old.takes} may accumulate more pairs or lose pairs.
 \begin{itemize}
@@ -940,13 +953,17 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    ENFORCE copied_isPartOf >: new.isPartOf
 
    RELATION copied_isEnrolledFor[Student*Module]
-   ENFORCE new.isEnrolledFor >: old.isEnrolledFor - copied_isEnrolledFor
+   ENFORCE new.isEnrolledFor >:
+           old.isEnrolledFor - copied_isEnrolledFor
    ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
 
-   ROLE MigrationEngineer MAINTAINS migrating_takes, migrating_isPartOf, migrating_isEnrolledFor
+   ROLE MigrationEngineer MAINTAINS migrating_takes,
+                                    migrating_isPartOf,
+                                    migrating_isEnrolledFor
    RULE migrating_takes : old.takes-copied_takes = -V
    RULE migrating_isPartOf : old.isPartOf-copied_isPartOf = -V
-   RULE migrating_isEnrolledFor : old.isEnrolledFor-copied_isEnrolledFor = -V
+   RULE migrating_isEnrolledFor :
+        old.isEnrolledFor-copied_isEnrolledFor = -V
 \end{verbatim}
 
 \subsection{Preparing for the Moment of Transition}
