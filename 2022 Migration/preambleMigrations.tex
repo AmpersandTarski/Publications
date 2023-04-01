@@ -8,12 +8,13 @@
 \newcommand{\cod}[1]{\id{cod}(#1)}
 \renewcommand{\int}[2]{\id{inter}(#1,#2)}
 \newcommand{\relsIn}[1]{\id{relsIn}(#1)}    % maps a Term to a set of Relations
-\newcommand{\maintain}{\mathbin{\id{maint}}}
 \newcommand{\pop}[2]{\id{pop}_{#1}(#2)}
+\newcommand{\maintain}{\mathbin{\id{maint}}}
+\newcommand{\enf}{\mathbin{{\tt enforce}}}
+\newcommand{\enforce}[2]{{\tt enforce}_{#1}(#2)}
 \newcommand{\inst}{\mathbin{\id{inst}}}
 \newcommand{\relname}[1]{\id{relname}(#1)}
-\newcommand{\ins}[1]{\id{ins}_{#1}}
-\newcommand{\del}[1]{\id{del}_{#1}}
+\newcommand{\evt}[2]{\id{event}_{#1,#2}}
 \newcommand{\src}[1]{\id{src}(#1)}
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
 \newcommand{\sat}[2]{\id{sat}_{#1}(#2)}
@@ -30,6 +31,7 @@
 \newcommand{\ident}[1]{I_{\id{#1}}}
 \newcommand{\expr}[3]{(#1)_{#2\times #3}}
 \newcommand{\pair}[2]{\langle{#1},{#2}\rangle}
+\newcommand{\maprel}[2]{{\tt maprel}_{#1}({#2})}
 \newcommand{\Pair}[2]{#1\times#2}
 \newcommand{\pairs}[1]{\id{pairs}(#1)}
 \newcommand{\triple}[3]{\langle{#1},{#2},{#3}\rangle}
@@ -37,6 +39,8 @@
 \newcommand{\atom}[1]{{\tt\small #1}}
 \newcommand{\atoms}{\mathcal{A}}
 \newcommand{\Atoms}{\mathbb{A}}
+\newcommand{\events}{\mathcal{E}}
+\newcommand{\Events}{\mathbb{E}}
 \newcommand{\concept}[1]{{\tt\small #1}}
 \newcommand{\concepts}{\mathcal{C}}
 \newcommand{\Concepts}{\mathbb{C}}
@@ -52,7 +56,6 @@
 \newcommand{\Rules}{\mathbb{U}}
 \newcommand{\specrules}{\mathcal{S}}
 \newcommand{\roles}{\mathcal{O}}
-\newcommand{\Events}{{\mathit E}}
 \newcommand{\dataset}{\mathscr{D}}
 \newcommand{\Dataset}{\mathbb{D}}
 \newcommand{\schema}{\mathscr{Z}}

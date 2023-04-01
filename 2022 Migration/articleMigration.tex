@@ -289,19 +289,19 @@ generative software\sep incremental software development\sep data migration\sep 
    The expression $a\inst C$ means that atom $a$ is an \emph{instance} of concept $C$.
    This relation is used in the type system, in which $\inst$ assigns one or more concepts to every atom in the dataset.
 
-   Specialization, also known as {\em generalization} or {\em subtyping}, is a relation between concepts.
-   The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-\begin{equation}
-   \label{eqn:specialization}
-   A\isa B\ \Leftrightarrow\ \forall a: a\inst A\rightarrow a\inst B
-\end{equation}
-   Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
-   In her script, a user can declare a specialization as a pair of concepts in the relation $\isa$.
-   A compiler can construct $\isa$ as the transitive, reflexive closure of all user-defined specializations.
-   It must make sure that $\isa$ is antisymmetric, so that $\isa$ is a partial order of concepts.
-   Specialization causes atoms to have multiple concepts of which they can be an instance.
-   As a result, if an atom is an instance of concept $A$ and $A\isa B$,
-   this atom has all properties that atoms of type $B$ have.
+%    Specialization, also known as {\em generalization} or {\em subtyping}, is a relation between concepts.
+%    The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
+% \begin{equation}
+%    \label{eqn:specialization}
+%    A\isa B\ \Leftrightarrow\ \forall a: a\inst A\rightarrow a\inst B
+% \end{equation}
+%    Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
+%    In her script, a user can declare a specialization as a pair of concepts in the relation $\isa$.
+%    A compiler can construct $\isa$ as the transitive, reflexive closure of all user-defined specializations.
+%    It must make sure that $\isa$ is antisymmetric, so that $\isa$ is a partial order of concepts.
+%    Specialization causes atoms to have multiple concepts of which they can be an instance.
+%    As a result, if an atom is an instance of concept $A$ and $A\isa B$,
+%    this atom has all properties that atoms of type $B$ have.
 
    Relations serve to organize and store data, to allow a developer to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations.
@@ -321,22 +321,23 @@ generative software\sep incremental software development\sep data migration\sep 
    Triples serve to represent data.
    A triple\footnote{Please note that this paper uses the word {\em triple} in a more restricted way than in natural language.}
    is an element of $\Triple{\Atoms}{\Rels}{\Atoms}$.
+   For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
 
+   Let $\Dataset$ be the set of all pairs $\pair{\triples}{\inst}$, so
+   $\Dataset$ is $\Pair{(\Triple{\Atoms}{\Rels}{\Atoms})}{(\Pair{\Atoms}{\Concepts})}$.
    A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\inst A\ \wedge\ b\inst B
    \label{eqn:wellTypedEdge}
 \end{eqnarray}
-   For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
-   Equation~\ref{eqn:wellTypedEdge} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
+   Looking at the example,
+   equation~\ref{eqn:wellTypedEdge} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
    In practice, users can say that Peter has telephone number 074238991.
    So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    This ``meaning from practice'' has no consequences in the formal world.
    Users are free to attach any practical meaning to a triple.
 
    The notations $\triples_{\dataset}$ and $\inst_{\dataset}$ are used to disambiguate $\triples$ and $\inst$ when necessary.
-   Every dataset is an element of an infinite set called $\Dataset$,
-   which is disjoint from $\Rels$, $\Concepts$ and $\Atoms$.
    To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
 
    A relation $r$ can serve as a container of pairs,
@@ -363,9 +364,8 @@ generative software\sep incremental software development\sep data migration\sep 
    A schema defines concepts, specializations, relations, and rules.
    A software engineer defines a schema on design time, so that semantic checks can be implemented at compile time.
 
-   A schema $\schema$ is a tuple $\quadruple{\concepts}{\isa}{\rels}{\rules}$,
+   A schema $\schema$ is a tuple $\triple{\concepts}{\rels}{\rules}$,
    in which $\concepts$ is a finite set of concepts,
-   $\isa$ is a partial order of concepts,
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
    Each rule in a schema serves to constrain the dataset at runtime, to ensure its semantic integrity.
@@ -373,34 +373,34 @@ generative software\sep incremental software development\sep data migration\sep 
    which is disjoint from $\Atoms$, $\Concepts$, $\Rels$, and $\Dataset$.
    In this paper, variables $u$ and $v$ represent rules.
    The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
-   Disambiguation sometimes requires to write $\concepts_{\schema}$, $\isa_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
-   rather than $\concepts$, $\isa$, $\rels$, and $\rules$ respectively.
+   Disambiguation sometimes requires to write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
+   rather than $\concepts$, $\rels$, and $\rules$ respectively.
    For every rule $u$ in the schema, there is a predicate $\sat{u}{\dataset}$ that constrains dataset $\dataset$.
 %  Every schema is an element of an infinite set called $\Schema$.
 
    A schema must ensure that triples ``make sense'' in the semantics defined by the schema.
-   This means that it must satisfy the following requirements.
+   This means that it must satisfy:
 \begin{eqnarray}
    \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:relationsIntroduceConcepts}\\
-   A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:isasIntroduceConcepts}\\
+   \label{eqn:relationsIntroduceConcepts}
+%    A\ \isa\ B&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
+%    \label{eqn:isasIntroduceConcepts}\\
 %    The following is for wide tables only
 %    \pair{A}{B}\isa\pair{C}{D}\ \wedge\ \declare{n}{C}{D}\in\rels&\Rightarrow&\declare{n}{A}{B}\in\rels
 %    \label{eqn:subrelations}\\
-   \isa\ \text{is a partial order}
-   \label{eqn:isasPartialOrder}\\
-   \exists\dataset\in\Dataset-\emptyset:\ \sat{u}{\dataset}
-   \label{eqn:consistentRules}
+%    \isa\ \text{is a partial order}
+%    \label{eqn:isasPartialOrder}\\
+%    \exists\dataset\in\Dataset-\emptyset:\ \sat{u}{\dataset}
+%    \label{eqn:consistentRules}
 \end{eqnarray}
    Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
-   Requirement~\ref{eqn:isasIntroduceConcepts} ensures that the specialization relation works on concepts of $\concepts$.
+%    Requirement~\ref{eqn:isasIntroduceConcepts} ensures that the specialization relation works on concepts of $\concepts$.
 %    The following is for wide tables only
 %    Requirement~\ref{eqn:subrelations} ensures that all specializations of a relation exist.
-   Requirement~\ref{eqn:isasPartialOrder} ensures that the specialization relation contains no cycles.
-   Requirement~\ref{eqn:consistentRules} ensures that every rule is consistent.
+%    Requirement~\ref{eqn:isasPartialOrder} ensures that the specialization relation contains no cycles.
+%    Requirement~\ref{eqn:consistentRules} ensures that every rule is consistent.
 
-   The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies these requirements.
+   The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies this requirement.
    Note that these requirements do not depend on any particular dataset,
    so they can be checked at compile time.
    This is also known as static typing,
@@ -424,41 +424,105 @@ generative software\sep incremental software development\sep data migration\sep 
 % \end{eqnarray}
 %    Violations are used to produce meaningful error messages and to trigger changes in the dataset to restore invariance of that rule.
 
+   % The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
+   % For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
+   % that represents the set of violations.%
+   
+   % In practice, there are different ways of enforcing rules: automatic enforcement and manual enforcement.
+
+   % Automatic enforcement is specified by the developer with a special syntax:
+   % the {\em enforce rule}.
+   % An enforce rule specifies not only the rule,
+   % but it implicitly defines event $e'$ to restore the invariance.
+   % The system must have an engine that restores invariance of all enforce rules,
+   % so users will experience that these rules are always satisfied.
+
+   % Manual enforcement means that the system (temporarily) allows violations,
+   % to let a user ``invent'' a reaction $e'$ that restores invariance.
+   % That is why the term $(\exists o\in\roles:\ o\maintain u)$ is added to requirement~\ref{eqn:satisfaction}.
+   % It allows the compiler to generate code for users with role $o$,
+   % so they can restore the invariant manually.
+   % In the Ampersand language, a developer explicitly assigns a rule $u$ to a role $o$,
+   % to keep control over the type of persons that are allowed to ``restore broken rules''.
+   % As a consequence, a mechanism is needed to notify those persons of the work to be done.
+
+   % If a rule $u$ is not assigned to any role and it is not an enforce rule,
+   % the system must prevent any event $e$ from having any effect on the database.
+   % So, if $e$ would violate rule $u$, the system must reject $e$.
+   % This implements blocking behaviour, and must be accompanied by an error message.
+
 \subsection{Information Systems}
 \label{sct:Information Systems}
-   This section defines the notion of information system.
-   As before, a suffix disambiguates the elements of this definition when needed.
+   An information system has a changing dataset because of events that occur.
+   When the system ``observes'' an event, it attempts to change its dataset to reflect that event.
+   However, every rule in the schema represents a constraint,
+   which the dataset must invariably satisfy.
+   That is why rules are also known as ``invariants''.
+
+   Events are taken from an infinite set, $\Events$.
+   An event is denoted as $\evt{d^-}{d^+}$, in which $d^-$ and $d^+$ are datasets.
+   Every event is a function $\Dataset\rightarrow\Dataset$, so $\evt{d^-}{d^+}(\dataset)$ is a dataset.
+   Equation~\ref{eqn:event} defines the effect of an event on a dataset.
+\begin{eqnarray}
+      \evt{d^-}{d^+}(\dataset)&=&\la(\triples_{\dataset}-\triples_{d^-})\cup\triples_{d^+},(\inst_{\dataset}-\inst_{d^-})\cup\inst_{d^+}\ra
+\label{eqn:event}
+\end{eqnarray}
+   In the sequel, variables $e$, $e'$, $e''$, etc. represent events.
+   As soon as a system $\infsys$ observes an event $e$,
+   it applies $e$ to its dataset $\dataset$.
+   Yet, if $e(\dataset)$ does not satisfy a rule $u$ from schema $\schema_\infsys$,
+   another event, $e'$, is needed so that $\sat{u}{e'(e(\dataset))}$.
+   The phrase ``restore an invariant'' or ``restore invariance of a rule''
+   means that the system will change $e(\dataset)$ by applying another event $e'$ to satisfy requirement~\ref{eqn:enforce}.
+   The notation $\enf_{u,e}$ represents this combination of events $e$ and $e'$.
+   So, $\enf_{u,e}$ must satisfy:
+\begin{eqnarray}
+   \sat{u}{\dataset}&\Rightarrow&\sat{u}{\enforce{u,e}{\dataset}}
+\label{eqn:enforce}
+\end{eqnarray}
+
+   Let us now define the notion of an information system.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\quadruple{\dataset}{\schema}{\roles}{\maintain}$, in which
+\item An information system $\infsys$ is a tuple $\triple{\dataset}{\schema}{\enf}$, in which
 \begin{itemize}
    \item dataset $\dataset=\pair{\triples}{\inst}$ is defined as in section~\ref{sct:Datasets};
-   \item schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ is defined as in section~\ref{sct:Schemas};
-   \item $\roles$ is a set of roles;
-   \item ${\maintain} : \roles\times\rules$ is the maintainance relation between roles and rules.
+   \item schema $\schema=\triple{\concepts}{\rels}{\rules}$ is defined as in section~\ref{sct:Schemas};
+   \item enforce function ${\enf}:\Rules\rightarrow\Events\rightarrow\Dataset$ satisfies requirement~\ref{eqn:enforce}.
 \end{itemize}
 \end{definition}
-   A \define{role} is a name that identifies a group of users.
-   It serves as a placeholder for a person or a machine (i.e. an actor) that works with the dataset (i.e. create, read, update, or delete triples).
-   The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
-   The expression $o\ \maintain\ u$ means that role $o$ is responsible for maintaining rule $u$, i.e. that rule $u$ is kept satisfied at all times.
+   % A \define{role} is a name that identifies a group of users.
+   % It serves as a placeholder for a person or a machine (i.e. an actor) that works with the dataset (i.e. create, read, update, or delete triples).
+   % The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
 
    The information system itself enforces the semantics by ensuring that the following requirements remain true at all times:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}\\
-   \forall u\in\rules&:&(\exists o\in\roles: o\ \maintain\ u)\ \vee\ \sat{u}{\dataset}
+   \forall u\in\rules&:&\sat{u}{\dataset}
    \label{eqn:satisfaction}
+% TODO:
+% De engine heeft een eigen rol. Alle regels die aan de engine zijn gekoppeld, worden automatisch onderhouden.
 %    The following is for wide tables only
 %    \pair{A}{B}\isa\pair{C}{D}\ \wedge\ \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\triple{a}{\declare{n}{C}{D}}{b}\in\triples
 %    \label{eqn:subpopulations}
 \end{eqnarray}
    Requirement~\ref{eqn:define R} ensures that the information system only works with triples whose relation is defined in the schema.
-   Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules that are not maintained by a role.
+   Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules.
 %    The following is for wide tables only
 %    Requirement~\ref{eqn:subpopulations} ensures that specialization works across relations.
    Note that these requirements apply at runtime.
    So, as long as a rule $u$ ``lives'' in an information system, the dataset will satisfy that rule.
+
+   As the system registers events, it inserts or deletes triples in its dataset.
+   If such an event would violate requirement~\ref{eqn:satisfaction},
+   either the system stays in the state $\dataset$ or there is a reaction $e'$ that restores the affected invariants:
+\begin{equation}
+   \sat{u}{\dataset}\Rightarrow\sat{u}{e'_{d'}(e_{d}(\dataset))}
+   \label{eqn:restoring}
+\end{equation}
+   In this way, the system can restore invariants and keep requirement~\ref{eqn:satisfaction} satisfied.
+   The combination of events $e$ and $e'$ is called a {\em transaction}.
 
 \subsection{Example}
 \label{sct:Example existing IS}
@@ -510,7 +574,7 @@ RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
    As relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty, rule {\tt EnrollRule} is satisfied in this example.
 
    Now let us check the requirements to verify that this example defines an information system.
-   Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
+   % Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
    The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
    It defines the set of triples $\triples$ as:
 \[\begin{array}[t]{l}
@@ -547,16 +611,16 @@ The relation $\inst$ contains the pairs:
              \end{array}
   \end{array}
 \]
-   The user has defined no specializations.
-   This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
-   The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
-   The (nonempty) dataset satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
-   So, the schema $\schema=\quadruple{\concepts}{\isa}{\rels}{\rules}$ satisfies all requirements from section~\ref{sct:Schemas}.
+   % The user has defined no specializations.
+   % This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
+   % The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
+   % The (nonempty) dataset satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
+   So, the schema $\schema=\triple{\concepts}{\rels}{\rules}$ satisfies all requirements from section~\ref{sct:Schemas}.
 
    Now let us check the definition of information system.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
    The set of roles is empty and so is the relation $\maintain$.
-   This meets all requirements for $\infsys=\quadruple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
+   This meets all requirements for $\infsys=\triple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
    This concludes the argument that $\infsys$ is an information system.
 
    Now suppose that the script also contains the following line:
@@ -568,75 +632,6 @@ ROLE Administrator MAINTAINS EnrollRule
    Requirement~\ref{eqn:satisfaction} is still satisfied because now there is a role to maintain rule {\tt EnrollRule}.
    The run-time engine will no longer enforce satisfaction of rule {\tt EnrollRule}, but leave it up to an administrator.
 
-\subsection{Changing data}
-\label{sct:Changing data}
-   Every rule in the schema represents a constraint on the dataset.
-   The rule serves as invariant,
-   which means that the data in the database must satisfy the rule at all times.
-   If an actor tries to change the dataset in a way that violates this rule,
-   the system will either reject that change or help the actor to find additional changes to keep it satisfied.
-   The phrase ``restore an invariant'' or ``restore invariance of a rule''
-   means that an actor changes the dataset to satisfy the constraint that rule represents.
-
-   % The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
-   % For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
-   % that represents the set of violations.%
-   
-   Events can cause a dataset to change.
-   So, we model events as functions $\Dataset\rightarrow\Dataset$.
-   We will use variables $e$, $e'$, $e''$, and so on to represent events.
-   We distinguish just two types of event: insert and delete events.
-   An event is a label (\id{ins} or \id{del}) with a dataset that is to be inserted or deleted.
-   If $\triples$ is the set of triples inserted or deleted by an event $e$,
-   we denote that event either by $\ins{\triples}$ or $\del{\triples}$.
-   Equation~\ref{eqn:event} defines the effect of an event on a dataset.
-\begin{equation}
-   \begin{array}{rcl}
-      e(\dataset)&=&\text{case}\ e\ \text{of}\\
-      &&\begin{array}[t]{@{}rcl}
-         \ins{\triples}&=&\pair{\triples_{\dataset}\cup\triples}{\id{insInst}_{\triples}(\inst_{\dataset})}\\
-         \del{\triples}&=&\pair{\triples_{\dataset}-\triples}{\id{delInst}_{\triples}(\inst_{\dataset})}
-      \end{array}
-   \end{array}
-   \label{eqn:event}
-\end{equation}
-   in which $\id{insInst}_{\triples}$ transforms $\inst_{\dataset}$ such that $\ins{\triples}(\dataset)$ complies with
-   equations~\ref{eqn:specialization} and~\ref{eqn:wellTypedEdge},
-   and likewise for $\id{delInst}_{\triples}$.
-
-   As the system registers events, it inserts or deletes triples in its dataset.
-   If such an event would violate requirement~\ref{eqn:satisfaction},
-   either the system stays in the state $\dataset$ or there is a reaction $e'$ that restores the affected invariants:
-\begin{equation}
-   \sat{u}{\dataset}\Rightarrow\sat{u}{e'(e(\dataset))}
-   \label{eqn:restoring}
-\end{equation}
-   In this way, the system can restore invariants and keep requirement~\ref{eqn:satisfaction} satisfied.
-   The combination of events $e$ and $e'$ is called a {\em transaction}.
-
-   In practice, there are different ways of enforcing rules: automatic enforcement and manual enforcement.
-
-   Automatic enforcement is specified by the developer with a special syntax:
-   the {\em enforce rule}.
-   An enforce rule specifies not only the rule,
-   but it implicitly defines event $e'$ to restore the invariance.
-   The system must have an engine that restores invariance of all enforce rules,
-   so users will experience that these rules are always satisfied.
-
-   Manual enforcement means that the system (temporarily) allows violations,
-   to let a user ``invent'' a reaction $e'$ that restores invariance.
-   That is why the term $(\exists o\in\roles:\ o\maintain u)$ is added to requirement~\ref{eqn:satisfaction}.
-   It allows the compiler to generate code for users with role $o$,
-   so they can restore the invariant manually.
-   In the Ampersand language, a developer explicitly assigns a rule $u$ to a role $o$,
-   to keep control over the type of persons that are allowed to ``restore broken rules''.
-   As a consequence, a mechanism is needed to notify those persons of the work to be done.
-
-   If a rule $u$ is not assigned to any role and it is not an enforce rule,
-   the system must prevent any event $e$ from having any effect on the database.
-   So, if $e$ would violate rule $u$, the system must reject $e$.
-   This implements blocking behaviour, and must be accompanied by an error message.
-   
 \subsection{Process of Data Migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example existing IS} introduce a single information system.
    The transition from an existing system to the desired one is the topic of this section.
@@ -689,12 +684,36 @@ ROLE Administrator MAINTAINS EnrollRule
 
 \subsection{Formalization}
    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
+\begin{definition}[union of datasets]
+\label{def:graph_union_wellTyped_if_parts_wellTyped}
+    \[\pair{\triples_1}{\inst_1}\cup\pair{\triples_2}{\inst_2}\ =\ \pair{\triples_1\cup\triples_2}{\inst_1\cup\inst_2}\]
+\end{definition}
+
+\begin{lemma}
+\label{lemma:graph_union_wellTyped_if_parts_wellTyped}
+   If $\dataset_1$ and $\dataset_2$ are datasets, then $\dataset_1\cup\dataset_2$ is a dataset.
+\end{lemma}
+
+\begin{definition}[map relation names in datasets]
+\label{def:map_labels_preserves_wellTypedness}
+   Let $h:\Rels\rightarrow\Rels$, then
+   \[\begin{array}{rcl}
+      \maprel{h}{\pair{\triples}{\inst}}&=&\pair{\maprel{h}{\triples}}{\inst}\\
+      \maprel{h}{\triple{a}{r}{b}}&=&\triple{a}{h(r)}{b}
+   \end{array}\]
+\end{definition}
+
+\begin{lemma}
+\label{lemma:map_labels_preserves_wellTypedness}
+   If $\dataset$ is a dataset and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a dataset.
+\end{lemma}
+
 \begin{definition}[disjoint union of datasets]
 \begin{eqnarray}
    \rlap{$\pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}$}\notag\\
    &=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\notag\\
       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
-      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
+      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}
 \end{eqnarray}
 \end{definition}
 
@@ -705,7 +724,7 @@ ROLE Administrator MAINTAINS EnrollRule
 
 \begin{definition}[disjoint union of schemas]
 \begin{eqnarray}
-   \quadruple{\concepts}{\isa}{\rels}{\rules}\sqcup\quadruple{\concepts'}{\isa'}{\rels'}{\rules'}&=&\quadruple{\concepts\uplus\concepts}{\isa\uplus\isa'}{\rels\uplus\rels'}{\rules\uplus\rules'}
+   \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
 \end{eqnarray}
 \end{definition}
 % \begin{definition}[disjoint union of datasets]
@@ -748,7 +767,7 @@ To implement the disjoint union, the following relabelling functions are needed:
 \end{equation}
 \begin{definition}[relabel concepts in schemas]
    \begin{eqnarray}
-      \rlap{$\subst{C}{D}{\quadruple{\concepts}{\isa}{\rels}{\rules}}$}\notag\\
+      \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
       &=&\begin{array}[t]{l@{}l}
          \la&\{\subst{C}{D}{c}\mid c\in\concepts\}\\
          ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
@@ -774,8 +793,8 @@ To implement the disjoint union, the following relabelling functions are needed:
 \end{equation}
 \begin{definition}[relabel relations in schemas]
    \begin{eqnarray}
-      \rlap{$\subst{r'}{m'}{\quadruple{\concepts}{\isa}{\rels}{\rules}}$}\notag\\
-      &=&\quadruple{\concepts}{\isa}{\{\subst{r'}{m'}{r} \mid r\in\rels\}}{\{\subst{r'}{m'}{u} \mid u\in\rules\}}\notag
+      \rlap{$\subst{r'}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+      &=&\triple{\concepts}{\{\subst{r'}{m'}{r} \mid r\in\rels\}}{\{\subst{r'}{m'}{u} \mid u\in\rules\}}\notag
    \end{eqnarray}
 \end{definition}
    
@@ -1105,7 +1124,7 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
 
 \begin{definition}[]
    \begin{eqnarray}
-      \infsys\sqcup\infsys'&=&\quadruple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
+      \infsys\sqcup\infsys'&=&\triple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
    \end{eqnarray}
 \end{definition}
 
