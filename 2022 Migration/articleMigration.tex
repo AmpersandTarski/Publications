@@ -51,19 +51,22 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-   To support incremental software development with a software generator bears the potential of saving work and decreasing the time to deploy changes.
-   However, increments that change the database schema cause nontrivial data migration issues.
-   The problem is how to preserve the semantics of the data as much as possible and satisfy elementary business requirements at the same time.
-
-   To generate an information system in a non-incremental manner is already
-   provided for by the Ampersand project.
-   This paper is about changing an already generated system in production.
-   It develops a theory for deploying an incremental change,
-   making Ampersand more useful for agile software development.
-   This paper proposes a migration method that features zero down-time,
-   and features an undo after deployment.
-   It also leaves room for the business to finish ongoing work
-   after the moment the change has been deployed.
+   Incremental software development with a software generator can save work and reduce the time to deploy changes,
+   but data migrations that change the database schema can be challenging.
+   The problem is how to preserve the semantics of the data under a changing schema.
+   
+   This paper proposes a theory for deploying an incremental change in an already generated system in production using the Ampersand project.
+   Our approach aims to preserve data semantics and satisfy elementary business requirements
+   while featuring zero down-time and an undo option after deployment.
+   We derive a migration schema from both the existing system and a changed schema that specifies the desired system.
+   This work is based on the assumptions that
+   the migration is meant to deploy a software increment in production,
+   the existing data set may be polluted,
+   human interaction may be required,
+   data meaning must be preserved,
+   the business continues during the migration without interruption,
+   and there is a compiler to generate an information system from a given schema.
+   The correctness of the migration is the focus of this paper, while efficiency is beyond its scope.
 \end{abstract}
 
 \begin{keyword}
@@ -168,9 +171,10 @@ generative software\sep incremental software development\sep data migration\sep 
    which most database management systems refer to as integrity rules.
    The purpose of integrity rules is to keep the constraints they represent satisfied.
 
-   This work uses the Ampersand compiler~\cite{Joosten-JLAMP2018} to validate the theory.
-   Ampersand is a tool to generate information systems.
-   It works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
+   This work uses the Ampersand compiler~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017} to validate the theory.
+   Ampersand is a language to generate information systems.
+   It uses a syntactically sugared form of heterogeneous relation algebra,
+   which works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
    Each rule in Ampersand is a constraint (aka invariant), which are kept satisfied as long as that rule lives%
 \footnote{The dotted lines in the diagrams show which set of rules is enforced.}.
@@ -454,7 +458,7 @@ generative software\sep incremental software development\sep data migration\sep 
 \subsection{Information Systems}
 \label{sct:Information Systems}
    An information system has a changing dataset because of events that occur.
-   When the system ``observes'' an event, it attempts to change its dataset to reflect that event.
+   Whenever the system ``observes'' an event, it attempts to change its dataset accordingly.
    However, every rule in the schema represents a constraint,
    which the dataset must invariably satisfy.
    That is why rules are also known as ``invariants''.
@@ -471,8 +475,8 @@ generative software\sep incremental software development\sep data migration\sep 
    As soon as a system $\infsys$ observes an event $e$,
    it applies $e$ to its dataset $\dataset$.
    Yet, if $e(\dataset)$ does not satisfy a rule $u$ from schema $\schema_\infsys$,
-   another event, $e'$, is needed so that $\sat{u}{e'(e(\dataset))}$.
-   The phrase ``restore an invariant'' or ``restore invariance of a rule''
+   another event is needed, say $e'$, to ensure that $\sat{u}{e'(e(\dataset))}$.
+   The phrase ``to restore an invariant'' or ``to restore invariance of a rule''
    means that the system will change $e(\dataset)$ by applying another event $e'$ to satisfy requirement~\ref{eqn:enforce}.
    The notation $\enf_{u,e}$ represents this combination of events $e$ and $e'$.
    So, $\enf_{u,e}$ must satisfy:
@@ -550,7 +554,7 @@ RELATION isPartOf[Module*Course] =
 ; ("IT-Governance", "Management")
 ]
 \end{verbatim}
-   The third and last relation states which students are enrolled for which module.
+   The third relation states which students are enrolled for which module.
    It is left without population for now.
 \begin{verbatim}
 RELATION isEnrolledFor[Student*Module]
@@ -558,12 +562,12 @@ RELATION isEnrolledFor[Student*Module]
 
    A rule, {\tt EnrollRule} completes the script.
    It states that a student can enroll for any module that is part of a course he or she takes.
-   In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
-   each rule has a name and each rule has a role to maintain its invariance:
+   % In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
+   % each rule has a name and each rule has a role to maintain its invariance:
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 \end{verbatim}
-   The semantics of this rule defines $\sat{\tt EnrollRule}{\dataset}$ as:
+   The Ampersand compiler defines $\sat{\tt EnrollRule}{\dataset}$ as:
 \begin{equation}
    \begin{array}{l}
    \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}\ \exists c\in\text{\tt Course}:\\
@@ -619,18 +623,19 @@ The relation $\inst$ contains the pairs:
 
    Now let us check the definition of information system.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
-   The set of roles is empty and so is the relation $\maintain$.
-   This meets all requirements for $\infsys=\triple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
-   This concludes the argument that $\infsys$ is an information system.
+   This satisfies definition~\ref{def:information system}, which establishes that $\infsys$ is an information system.
+   % The set of roles is empty and so is the relation $\maintain$.
+   % This meets all requirements for $\infsys=\triple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
+   % This concludes the argument that $\infsys$ is an information system.
 
-   Now suppose that the script also contains the following line:
-\begin{verbatim}
-ROLE Administrator MAINTAINS EnrollRule
-\end{verbatim}
-   Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
-   The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
-   Requirement~\ref{eqn:satisfaction} is still satisfied because now there is a role to maintain rule {\tt EnrollRule}.
-   The run-time engine will no longer enforce satisfaction of rule {\tt EnrollRule}, but leave it up to an administrator.
+%    Now suppose that the script also contains the following line:
+% \begin{verbatim}
+% ROLE Administrator MAINTAINS EnrollRule
+% \end{verbatim}
+%    Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
+%    The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
+%    Requirement~\ref{eqn:satisfaction} is still satisfied because now there is a role to maintain rule {\tt EnrollRule}.
+%    The run-time engine will no longer enforce satisfaction of rule {\tt EnrollRule}, but leave it up to an administrator.
 
 \subsection{Process of Data Migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example existing IS} introduce a single information system.
@@ -640,7 +645,7 @@ ROLE Administrator MAINTAINS EnrollRule
    \item Let the existing system $\infsys$ have state $\dataset$ and schema $\schema$.
          A developer defines a desired system $\infsys'$, which contains a dataset of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
          After the migration, the system will contain the triples from $\dataset$ that satisfy $\schema'$,
-         except if the migration engineer decides otherwise (see step~\ref{item3}).
+         with additional changes made by the migration engineer (see step~\ref{item3}).
          $\dataset'$ may contain some new data,
          for instance to initialize new features on the moment of transition (MoT).
          If schemas $\schema$ equals $\schema'$, the data migration is unnecessary, so in the sequel we assume they are different.
@@ -870,7 +875,6 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    RELATION isPartOf[Module*Course] [UNI]
    RELATION isEnrolledFor[Student*Module]
    RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-   ROLE Administrator MAINTAINS EnrollRule
    
    RELATION course[ExamReg*Course] [UNI] =
       [ ("ER1", "Management")
@@ -881,7 +885,6 @@ The prefix {\tt new.} refers to items from the desired information system.}:
       [ ("ER1", "Peter")
       ; ("ER2", "Susan")
       ]
-   ROLE Student MAINTAINS ExamRule1, ExamRule2
    RULE ExamRule1: student~;course |- takes
    RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
 \end{verbatim}
@@ -993,7 +996,6 @@ The prefix {\tt new.} refers to items from the desired information system.}:
       ]
    
    RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-   ROLE Administrator MAINTAINS EnrollRule
    
    RELATION course[ExamReg*Course] [UNI] =
       [ ("ER1", "Management")
