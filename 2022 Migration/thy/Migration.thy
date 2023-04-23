@@ -13,13 +13,13 @@ datatype ('l,'v,'c) graphTyping (* 'l=\<real> (\Rels), 'v=\<bbbA> (\Atoms), 'c=\
  = GT (decl : "('l \<times> ('c \<times> 'c)) set")
       (inst : "('v \<times> 'c) set")
 
-(* This function corresponds to \ref{eqn:wellTypedEdge} in the article.  *)
 fun wellTypedEdge :: "('l,'v,'c) graphTyping \<Rightarrow> 'l \<times> 'v \<times> 'v \<Rightarrow> bool" where
 "wellTypedEdge (GT lt vt) (l, x, y)
   \<longleftrightarrow> l \<in> Domain lt \<and>
       {b. \<exists> e. (l, (b,e)) \<in> lt} \<subseteq> {b. (x, b) \<in> vt} \<and>
       {b. \<exists> e. (l, (e,b)) \<in> lt} \<subseteq> {b. (y, b) \<in> vt}"
 
+(* This lemma shows that wellTypedEdge corresponds to \ref{eqn:wellTypedEdge} in the article.  *)
 lemma wellTypedEdgeI[intro]:
   assumes
     "\<exists> x y. (fst e,x,y) \<in> decl gt"
@@ -34,6 +34,10 @@ lemma wellTypedEdgeE[elim]:
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (fst (snd e),x) \<in> inst gt"
     "\<And> x y. (fst e,x,y) \<in> decl gt \<Longrightarrow> (snd (snd e),y) \<in> inst gt"
   using assms by ((cases gt;cases e);force)+
+
+(* Relations can have multiple types, and wellTypedEdge requires that
+   the population satisfies each of those types.
+   This allows us to give a nice (i.e. symmetrical) definition of a type union later on. *)
 
 fun typedVertex :: "('l,'v,'c) graphTyping \<Rightarrow> 'v \<Rightarrow> bool" where
 "typedVertex (GT lt vt) x
@@ -309,38 +313,34 @@ lemma union_typing_preserves_welltyped_right:
   using union_typing_preserves_welltyped_left assms union_typing_sym
   by metis
 
-(* did not use 'map_types_in_graphtypes', checking if neccessary first... *)
+(* did not use 'map_types_in_graphtypes', since those aren't necessary *)
 definition disjoint_union_typing where
   "disjoint_union_typing gt1 gt2
-     = union_typing (map_labels_in_graphtype (map_types_in_graphtype (map_vertices_in_graphtype gt1 Inl) Inl) Inl)
-                    (map_labels_in_graphtype (map_types_in_graphtype (map_vertices_in_graphtype gt2 Inr) Inr) Inr)"
+     = union_typing (map_labels_in_graphtype gt1 Inl)
+                    (map_labels_in_graphtype gt2 Inr)"
 
 lemma move_types_left:
   assumes "typedGraph gt1 g1"
   shows "typedGraph (disjoint_union_typing gt1 gt2)
-             (map_labels_in_graph (map_graph_fn g1 Inl) Inl)"
+             (map_labels_in_graph g1 Inl)"
   unfolding disjoint_union_typing_def
-  apply(rule union_typing_preserves_welltyped_left[OF assms[THEN map_graph_preserves_wellTypedness,
-             THEN map_types_in_graphtype_preserves_wellTypedness,
-             THEN map_labels_preserves_wellTypedness]])
+  apply(rule union_typing_preserves_welltyped_left[OF assms[THEN map_labels_preserves_wellTypedness]])
   unfolding map_labels_in_graph_def map_labels_in_graphtype_def by auto
 
 lemma move_types_right:
   assumes "typedGraph gt2 g2"
   shows "typedGraph (disjoint_union_typing gt1 gt2)
-             (map_labels_in_graph (map_graph_fn g2 Inr) Inr)"
+             (map_labels_in_graph g2 Inr)"
   unfolding disjoint_union_typing_def
-  apply(rule union_typing_preserves_welltyped_right[OF assms[THEN map_graph_preserves_wellTypedness,
-             THEN map_types_in_graphtype_preserves_wellTypedness,
-             THEN map_labels_preserves_wellTypedness]])
+  apply(rule union_typing_preserves_welltyped_right[OF assms[THEN map_labels_preserves_wellTypedness]])
   unfolding map_labels_in_graph_def map_labels_in_graphtype_def by auto
 
 
 definition disjoint_union_graphs where
   "disjoint_union_graphs g1 g2
     = graph_union
-         (map_labels_in_graph (map_graph_fn g1 Inl) Inl)
-         (map_labels_in_graph (map_graph_fn g2 Inr) Inr)"
+         (map_labels_in_graph g1 Inl)
+         (map_labels_in_graph g2 Inr)"
 
 lemma disjoint_union_well_typed:
   assumes
@@ -351,5 +351,104 @@ lemma disjoint_union_well_typed:
   unfolding disjoint_union_graphs_def
   using graph_union_wellTyped_if_parts_wellTyped[OF move_types_left move_types_right]
     assms by auto
+
+datatype ('l,'v,'c) pre_dataset
+  = DS (tripleset: "('l,'v) labeled_graph") (dsTyping : "('l,'v,'c) graphTyping")
+
+
+fun disjoint_union_pre_dataset where
+  "disjoint_union_pre_dataset (DS g1 gt1) (DS g2 gt2)
+    = DS (disjoint_union_graphs g1 g2) (disjoint_union_typing gt1 gt2)"
+
+abbreviation dataset where "dataset y \<equiv> y \<in> {ds. typedGraph (dsTyping ds) (tripleset ds)}"
+
+(* This lemma shows that the disjoint union of two datasets is again a dataset *)
+lemma disjoint_union_pre_dataset:
+  assumes "dataset ds1" "dataset ds2"
+  shows "dataset (disjoint_union_pre_dataset ds1 ds2)"
+  using assms disjoint_union_well_typed
+  by(cases ds1;cases ds2;auto)
+
+(* Isabelle documentation on typedef is found in the 'datatypes' tutorial *)
+typedef ('l,'v,'c) dataset = "{ds :: ('l,'v,'c) pre_dataset. typedGraph (dsTyping ds) (tripleset ds)}"
+proof
+  let ?emptyset = "DS (LG {} {}) (GT {} {})::('l,'v,'c) pre_dataset"
+  show "?emptyset \<in> {ds. typedGraph (dsTyping ds) (tripleset ds)}" by auto
+qed
+
+definition disjoint_union_dataset where
+"disjoint_union_dataset ds1 ds2 =
+  Abs_dataset (disjoint_union_pre_dataset (Rep_dataset ds1) (Rep_dataset ds2))"
+
+lemma disjoint_union_dataset_Rep[simp]:
+  "Rep_dataset (disjoint_union_dataset a b)
+  = disjoint_union_pre_dataset (Rep_dataset a) (Rep_dataset b)"
+  unfolding disjoint_union_dataset_def 
+  Abs_dataset_inverse[OF disjoint_union_pre_dataset[OF Rep_dataset Rep_dataset]]..
+
+
+fun filter_edges where "filter_edges f (LG es v) = LG {e\<in> es. f e} v"
+
+lemma filter_edges_graph:
+  assumes "graph g"
+  shows "graph (filter_edges f g)"
+  using assms by(cases g, force simp:restrict_def)
+
+lemma filter_edges_vertices[simp]:
+  shows "vertices (filter_edges f g) = vertices g"
+  by(cases g,auto)
+
+lemma filter_edges_edge[simp]:
+  shows "e \<in> edges (filter_edges f g) \<longleftrightarrow> e \<in> edges g \<and> f e"
+  by(cases g,auto)
+
+lemma filter_edges_subgraph:
+  assumes "graph g"
+  shows "subgraph (filter_edges f g) g"
+  by(rule graph_homomorphismI[OF _ _ _ _ filter_edges_graph[OF assms] assms],auto)
+   
+abbreviation filter_labels_graph where
+  "filter_labels_graph L \<equiv> filter_edges (\<lambda>(l,_,_). l\<in> L)"
+
+fun filter_labels_type where
+  "filter_labels_type L (GT d i) = GT {(l,v)\<in>d. l\<in>L} i"
+
+fun filter_with_labelset where
+  "filter_with_labelset L (DS lg tg) = (DS (filter_labels_graph L lg) (filter_labels_type L tg))"
+
+locale rule_implementation =
+  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) pre_dataset \<Rightarrow> ('a,'v) labeled_graph"
+  and   relevant_labels :: "'u \<Rightarrow> 'l set"
+assumes "\<And> u. violation u (filter_with_labelset (relevant_labels u) g) = violation u  g"
+begin
+fun satisfies where
+  "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+
+end
+
+(*
+
+\<rightarrow> Regels uitdrukken zodat we kunnen zeggen dat gaandeweg aan regels voldaan wordt:
+\<longrightarrow> sat_u(D): de dataset D voldoet aan u.
+\<longrightarrow> viol_u(D): de set overtredingen van D.
+     dwz: viol_u(D)=ø \<longleftrightarrow> sat_u(D)
+\<longrightarrow> labels_u: de set relatie-namen waar u een uitspraak over doet.
+\<longrightarrow> map f labels_u: hernoemen van die relatie-namen.
+\<longrightarrow> als twee populaties overeenkomen voor zover u naar ze kijkt, dan heeft u ook dezelfde violations:
+     dwz: D[labels_u] = E[labels_u] \<Longrightarrow> viol_u(D) = viol_u(E)
+\<longrightarrow> vergelijkbaar thm over het re-labelen van een systeem.
+
+\<longrightarrow> Thm: als ik een deel van het informatiesysteem laat vallen (regels en relaties),
+         blijft aan de regels die daar niet over gingen voldaan.
+
+*)
+
+(*
+
+\<rightarrow> Syntax van regels uitdrukken zodat we het over goed-getypeerde regels kunnen hebben
+\<rightarrow> Rollen uitdrukken zodat we regels aan en uit kunnen zetten
+\<rightarrow> Er is een informatie-systeem rol die zorgt dat sommige regels (invariant) waar blijven
+
+*)
 
 end
