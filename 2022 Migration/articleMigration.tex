@@ -51,13 +51,15 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-   Incremental software development with a software generator can save work and reduce the time to deploy changes,
-   but data migrations that change the database schema can be challenging.
-   The problem is how to preserve the semantics of the data under a changing schema.
+   Incremental software deployment is meant to reduce the time to deploy changes.
+   However, an increment might involve a change in the database schema.
+   This poses the challenge to preserve already deployed data.
+   The problem is how to preserve the semantics of that data under a changing schema.
+   This paper proposes a theory for deploying an incremental change,
+   meant to be implemented in a software generator called Ampersand.
    
-   This paper proposes a theory for deploying an incremental change in an already generated system in production using the Ampersand project.
-   Our approach aims to preserve data semantics and satisfy elementary business requirements
-   while featuring zero down-time and an undo option after deployment.
+   This paper aims to preserve the semantics of data, satisfy elementary business requirements,
+   and featuring a zero down-time option after deployment.
    We derive a migration schema from both the existing system and a changed schema that specifies the desired system.
    This work is based on the assumptions that
    the migration is meant to deploy a software increment in production,
@@ -70,7 +72,7 @@
 \end{abstract}
 
 \begin{keyword}
-generative software\sep incremental software development\sep data migration\sep relation algebra\sep Ampersand\sep schema change
+generative software\sep incremental software deployment\sep data migration\sep relation algebra\sep Ampersand\sep schema change
 \end{keyword}
 \maketitle
 
@@ -87,30 +89,30 @@ generative software\sep incremental software development\sep data migration\sep 
    deployment frequency,
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
-   By installing upgrades automatically, frequently, in small increments, and without down-time,
-   the users experience a system that evolves organically, without even noticing the updates.
-   By automating data migrations correctly and reliably, migration engineers save effort and errors.
-   As a result, they can release smaller increments more frequently, which contributes to a more agile software development process.
-   Smaller and faster releases also mean a smaller difference between the existing system and the desired system.
-   This yields even simpler migrations, leveraging even more frequent releases.
+   By deploying frequently, in small increments, and without down-time,
+   users get a system that evolves organically.
+   This requires a robust data migration process in which the deployment succeeds without failure.
+   Automation is required too, to prevent human errors in the process.
+   As a result, we expect that migration engineers can deploy smaller increments more frequently, which contributes to a more agile software development process.
    
-   Differences of schemas of an existing system and a desired system complicate the migration of data.
-   The purpose of incremental deployment poses specific requirements to data migration,
-   which sets it apart from data migrations for other purposes.
+   This paper assumes the the existing system and the desired system have different schemas,
+   which occurs in incremental software deployment.
+   The existing system is the system that is already deployed in production,
+   which makes it necessary to preserve the existing data.
+
+   Data migration for other purposes has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
    migration engineers may deliberately avoid schema differences and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
-   For the purpose of software updates, however, introducing new functionality, removing obsolete functionality, and schema differences are the very reason for deploying an increment.
-   Data migration literature sometimes uses a different notion of increment.
    For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
-   In a software update, however, the variations are not preserved.
-   So this notion of increment in\cite{Ataei2021} is obviously different.
+   Obviously, such data migrations are not suitable for incremental software deployment,
+   if the schema changes and the old functionality has to be replaced.
    Examples like these have convinced the authors to define a new method for data migration that is specifically meant for systems in production that are
    deployed incrementally.
    
    The contribution of this paper is to derive a migration schema from two artifacts: an existing system
-   (which has its own schema and dataset) and a new schema (which specifies the desired system).
+   (which has its own schema and data set) and a new schema (which specifies the desired system).
    The purpose of our theory is to develop tools.
    These tools must satisfy such practical requirements as
    zero down-time updates and ways to cope with data pollution.
@@ -152,35 +154,34 @@ generative software\sep incremental software development\sep data migration\sep 
    Also, every service runs independent of other services,
    meaning that each service can be stopped, (re)started and substituted without disrupting the other services.
 
-   Every system contains a dataset, which represents the state of the system.
+   Every system contains a data set, which represents the state of the system.
    Every service produces and consumes events that may change the state of the system.
    This state is represented in a persistent store, aka the database%
 \footnote{Whether the database is local, remote, or globally distributed is immaterial for the theory in this paper.}.
    Events that the system detects may cause the state to change.
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.45]{datamigration-Pre-migration.drawio.png}
+     \includegraphics[scale=.45]{figures/datamigration-Pre-migration.drawio.png}
    \end{center}
 \caption{Anatomy of an information system}
 \label{fig:pre-migration}
 \end{figure}
-   To keep our theory technology independent, datasets are assumed to contains triples.
+   To keep our theory technology independent, data sets are assumed to contains triples.
    This makes our theory valid for any kind of database that triples can represent,
    such as SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
    The system's semantics is represented as constraints,
    which most database management systems refer to as integrity rules.
-   The purpose of integrity rules is to keep the constraints they represent satisfied.
+   The purpose of these rules is to keep all constraints satisfied.
 
-   This work uses the Ampersand compiler~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017} to validate the theory.
-   Ampersand is a language to generate information systems.
+   This work uses the Ampersand compiler~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017} to generate information systems.
    It uses a syntactically sugared form of heterogeneous relation algebra,
    which works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
-   Each rule in Ampersand is a constraint (aka invariant), which are kept satisfied as long as that rule lives%
+   Each rule in Ampersand is a constraint (aka invariant), which the system keeps satisfied as long as that rule lives%
 \footnote{The dotted lines in the diagrams show which set of rules is enforced.}.
    So, the user spends no effort to extract constraints from specifications or (even more laborious) from code
    because all constraints are explicitly available as rules in the code.
-   This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform to validate the theory.
+   This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
    It also allows us to be explicit about ``preserving the meaning as much as possible''.
    An Ampersand script contains just enough information to generate a complete system,
    which means that a classical database schema (i.e.\ data structure plus semantics) can be extracted from the Ampersand script.
@@ -196,13 +197,13 @@ generative software\sep incremental software development\sep data migration\sep 
 \begin{itemize}
    \item data pollution that violates a constraint in the schema.
    \item data pollution that violates a constraint that is not in the schema.
-   \item data pollution that cannot be captured in constraints on the dataset,
+   \item data pollution that cannot be captured in constraints on the data set,
    such as a street address that has become obsolete because someone has moved without notification.
    \item data pollution that is a consequence of an erroneous constraint in the schema.
 \end{itemize}
    The first category is about violations of constraints from the schema.
    Such violations do not occur in our theory because the existing system was generated by Ampersand,
-   so the dataset satisfies all constraints in the schema.
+   so the data set satisfies all constraints in the schema.
    This sets our approach apart from other approaches to formalize data migration, e.g.~\cite{Thalheim2013}.
    The second category, data pollution that is not captured by any of the constraints mentioned in the schema,
    can be dealt with by adding constraints in the desired system.
@@ -220,15 +221,15 @@ generative software\sep incremental software development\sep data migration\sep 
    defining two distinct moments:
 \begin{enumerate}
    \item the moment of transition (the MoT), i.e. the moment the desired system is made available to users;
-   \item the moment of no return (the MoN), i.e. the moment that the migration cannot be undone other than by a backup-procedure%
+   \item the moment of cleanup (the MoC), i.e. the moment that the old software and data are removed.%
 \footnote{Backup mechanisms are outside the scope of this paper.}.
 \end{enumerate}
 
-   During the time between the MoT and MoN,
+   During the time between the MoT and MoC,
    the existing system and the desired system are kept alive, side by side, as shown in figure~\ref{fig:migration phase}.
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.35]{datamigration-Migration phase.drawio.png}
+     \includegraphics[scale=.35]{figures/datamigration-Migration phase.drawio.png}
    \end{center}
 \caption{Migration phase}
 \label{fig:migration phase}
@@ -237,7 +238,7 @@ generative software\sep incremental software development\sep data migration\sep 
    The migration requires a third schema, which specifies the migration itself.
    The migration schema comprises the schemas of both the existing system and the desired system.
    The rules of the migration schema will cause the right data to be copied correctly into the desired system.
-   This migration schema preserves data from the existing system, it may introduce new data automatically (generated from the existing dataset),
+   This migration schema preserves data from the existing system, it may introduce new data automatically (generated from the existing data set),
    and it may require users to introduce new data (which will take time). 
    So the idea of a migration schema is to compute the disjoint union of the existing and the desired schemas
    and to present it to the migration engineer in the form of source code,
@@ -248,11 +249,11 @@ generative software\sep incremental software development\sep data migration\sep 
    Similarly, the existing system must execute transactions from the desired system, just in case the business calls off the migration.
    Rules in the migration system that require user interaction are given time by requiring that the migration phase ends
    only after all migration rules are at rest.
-   At the MoN, the migration engineer takes down everything but the desired system,
+   At the MoC, the migration engineer takes down everything but the desired system,
    leaving the business with a successful migration.
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.35]{datamigration-Post-migration.drawio.png}
+     \includegraphics[scale=.35]{figures/datamigration-Post-migration.drawio.png}
    \end{center}
 \caption{The system after the data migration}
 \label{fig:post-migration}
@@ -262,17 +263,17 @@ generative software\sep incremental software development\sep data migration\sep 
 
 \section{Terminology}
 \label{sct:Terminology}
-   An {\em information system} is a combination of dataset, schema, and functionality.
+   An {\em information system} is a combination of data set, schema, and functionality.
    For the purpose of this paper, the functionality is ignored because it does not impact the migration.
-   Section~\ref{sct:Datasets} desribes datasets. Schemas are treated in section~\ref{sct:Schemas}.
+   Section~\ref{sct:Data sets} desribes data sets. Schemas are treated in section~\ref{sct:Schemas}.
    Then section~\ref{sct:Information Systems} defines information systems.
 
-\subsection{Datasets}
-\label{sct:Datasets}
-   A dataset $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
-   The notation $\dataset_{\infsys}$ refers to the dataset of a particular information system $\infsys$.
-   The purpose of a dataset is to describe the data of a system at one point in time. 
-   Before defining datasets, let us first define the constituent notions of atom, concept, specialization, relation, and triple.
+\subsection{Data sets}
+\label{sct:Data sets}
+   A data set $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
+   The notation $\dataset_{\infsys}$ refers to the data set of a particular information system $\infsys$.
+   The purpose of a data set is to describe the data of a system at one point in time. 
+   Before defining data sets, let us first define the constituent notions of atom, concept, specialization, relation, and triple.
    
    Atoms serve as data elements.
    Atoms are values without internal structure of interest, meant to represent atomic data elements (e.g. dates, strings, numbers, etc.) in a database.
@@ -291,7 +292,9 @@ generative software\sep incremental software development\sep data migration\sep 
 
    The relation $\inst:\Pair{\Atoms}{\Concepts}$ relates atoms to concepts.
    The expression $a\inst C$ means that atom $a$ is an \emph{instance} of concept $C$.
-   This relation is used in the type system, in which $\inst$ assigns one or more concepts to every atom in the dataset.
+   This relation is used in the type system, in which $\inst$ assigns one or more concepts to every atom in the data set.
+   Since $\inst$ is a relation and every relation is a set of pairs,
+   set operators $\cup$, $\cap$, and $-$ can be used on $\inst$.
 
 %    Specialization, also known as {\em generalization} or {\em subtyping}, is a relation between concepts.
 %    The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
@@ -329,7 +332,7 @@ generative software\sep incremental software development\sep data migration\sep 
 
    Let $\Dataset$ be the set of all pairs $\pair{\triples}{\inst}$, so
    $\Dataset$ is $\Pair{(\Triple{\Atoms}{\Rels}{\Atoms})}{(\Pair{\Atoms}{\Concepts})}$.
-   A dataset $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
+   A data set $\dataset$ is a tuple $\pair{\triples}{\inst}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\inst A\ \wedge\ b\inst B
    \label{eqn:wellTypedEdge}
@@ -351,7 +354,7 @@ generative software\sep incremental software development\sep data migration\sep 
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
 \label{eqn:pop-rel}
 \end{equation}
-   Equation~\ref{eqn:wellTypedEdge} implies that for every dataset $\dataset$:
+   Equation~\ref{eqn:wellTypedEdge} implies that for every data set $\dataset$:
 \[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\inst_{\dataset}A\ \wedge\ b\inst_{\dataset}B\]
    For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 
@@ -372,14 +375,14 @@ generative software\sep incremental software development\sep data migration\sep 
    in which $\concepts$ is a finite set of concepts,
    $\rels$ is a finite set of relations,
    and $\rules$ is a finite set of rules.
-   Each rule in a schema serves to constrain the dataset at runtime, to ensure its semantic integrity.
+   Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$,
    which is disjoint from $\Atoms$, $\Concepts$, $\Rels$, and $\Dataset$.
    In this paper, variables $u$ and $v$ represent rules.
    The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
    Disambiguation sometimes requires to write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
    rather than $\concepts$, $\rels$, and $\rules$ respectively.
-   For every rule $u$ in the schema, there is a predicate $\sat{u}{\dataset}$ that constrains dataset $\dataset$.
+   For every rule $u$ in the schema, there is a predicate $\sat{u}{\dataset}$ that constrains data set $\dataset$.
 %  Every schema is an element of an infinite set called $\Schema$.
 
    A schema must ensure that triples ``make sense'' in the semantics defined by the schema.
@@ -405,7 +408,7 @@ generative software\sep incremental software development\sep data migration\sep 
 %    Requirement~\ref{eqn:consistentRules} ensures that every rule is consistent.
 
    The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies this requirement.
-   Note that these requirements do not depend on any particular dataset,
+   Note that these requirements do not depend on any particular data set,
    so they can be checked at compile time.
    This is also known as static typing,
    which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
@@ -413,22 +416,22 @@ generative software\sep incremental software development\sep data migration\sep 
 %    For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
 %    that represents the set of violations%
 % \footnote{The definition of ``violation'' is not needed in this paper. We only use the absence of violations to show satisfaction of a constraint.}
-%    of rule $u$ in any dataset.
+%    of rule $u$ in any data set.
 %    We also assume a function $\id{sign} : \Rules\rightarrow\Pair{\Concepts}{\Concepts}$
 %    that represents the signature of a rule, i.e. the type of atoms in violations:
 % \begin{eqnarray}
 %    \sign{u}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\inst A\wedge b\inst B
 %    \label{eqn:wellTypedEdged violations}
 % \end{eqnarray}
-%    To determine whether rule $u$ satisfies dataset $\dataset$,
+%    To determine whether rule $u$ satisfies data set $\dataset$,
 %    we define $\sat{u}{\Dataset}$:
 % \begin{eqnarray}
 %    \sat{u}{\dataset}&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
 %    \label{eqn:sat}
 % \end{eqnarray}
-%    Violations are used to produce meaningful error messages and to trigger changes in the dataset to restore invariance of that rule.
+%    Violations are used to produce meaningful error messages and to trigger changes in the data set to restore invariance of that rule.
 
-   % The maintainance relation between roles and rules is used to determine who is allowed to change the dataset.
+   % The maintainance relation between roles and rules is used to determine who is allowed to change the data set.
    % For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
    % that represents the set of violations.%
    
@@ -457,23 +460,23 @@ generative software\sep incremental software development\sep data migration\sep 
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
-   An information system has a changing dataset because of events that occur.
-   Whenever the system ``observes'' an event, it attempts to change its dataset accordingly.
+   An information system has a changing data set because of events that occur.
+   Whenever the system ``observes'' an event, it attempts to change its data set accordingly.
    However, every rule in the schema represents a constraint,
-   which the dataset must invariably satisfy.
+   which the data set must invariably satisfy.
    That is why rules are also known as ``invariants''.
 
    Events are taken from an infinite set, $\Events$.
-   An event is denoted as $\evt{d^-}{d^+}$, in which $d^-$ and $d^+$ are datasets.
-   Every event is a function $\Dataset\rightarrow\Dataset$, so $\evt{d^-}{d^+}(\dataset)$ is a dataset.
-   Equation~\ref{eqn:event} defines the effect of an event on a dataset.
+   An event is denoted as $\evt{d^-}{d^+}$, in which $d^-$ and $d^+$ are data sets.
+   Every event is a function $\Dataset\rightarrow\Dataset$, so $\evt{d^-}{d^+}(\dataset)$ is a data set.
+   Equation~\ref{eqn:event} defines the effect of an event on a data set.
 \begin{eqnarray}
       \evt{d^-}{d^+}(\dataset)&=&\la(\triples_{\dataset}-\triples_{d^-})\cup\triples_{d^+},(\inst_{\dataset}-\inst_{d^-})\cup\inst_{d^+}\ra
 \label{eqn:event}
 \end{eqnarray}
    In the sequel, variables $e$, $e'$, $e''$, etc. represent events.
    As soon as a system $\infsys$ observes an event $e$,
-   it applies $e$ to its dataset $\dataset$.
+   it applies $e$ to its data set $\dataset$.
    Yet, if $e(\dataset)$ does not satisfy a rule $u$ from schema $\schema_\infsys$,
    another event is needed, say $e'$, to ensure that $\sat{u}{e'(e(\dataset))}$.
    The phrase ``to restore an invariant'' or ``to restore invariance of a rule''
@@ -490,13 +493,13 @@ generative software\sep incremental software development\sep data migration\sep 
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\triple{\dataset}{\schema}{\enf}$, in which
 \begin{itemize}
-   \item dataset $\dataset=\pair{\triples}{\inst}$ is defined as in section~\ref{sct:Datasets};
+   \item data set $\dataset=\pair{\triples}{\inst}$ is defined as in section~\ref{sct:Data sets};
    \item schema $\schema=\triple{\concepts}{\rels}{\rules}$ is defined as in section~\ref{sct:Schemas};
    \item enforce function ${\enf}:\Rules\rightarrow\Events\rightarrow\Dataset$ satisfies requirement~\ref{eqn:enforce}.
 \end{itemize}
 \end{definition}
    % A \define{role} is a name that identifies a group of users.
-   % It serves as a placeholder for a person or a machine (i.e. an actor) that works with the dataset (i.e. create, read, update, or delete triples).
+   % It serves as a placeholder for a person or a machine (i.e. an actor) that works with the data set (i.e. create, read, update, or delete triples).
    % The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
 
    The information system itself enforces the semantics by ensuring that the following requirements remain true at all times:
@@ -512,13 +515,13 @@ generative software\sep incremental software development\sep data migration\sep 
 %    \label{eqn:subpopulations}
 \end{eqnarray}
    Requirement~\ref{eqn:define R} ensures that the information system only works with triples whose relation is defined in the schema.
-   Requirement~\ref{eqn:satisfaction} ensures that the dataset satisfies all rules.
+   Requirement~\ref{eqn:satisfaction} ensures that the data set satisfies all rules.
 %    The following is for wide tables only
 %    Requirement~\ref{eqn:subpopulations} ensures that specialization works across relations.
    Note that these requirements apply at runtime.
-   So, as long as a rule $u$ ``lives'' in an information system, the dataset will satisfy that rule.
+   So, as long as a rule $u$ ``lives'' in an information system, the data set will satisfy that rule.
 
-   As the system registers events, it inserts or deletes triples in its dataset.
+   As the system registers events, it inserts or deletes triples in its data set.
    If such an event would violate requirement~\ref{eqn:satisfaction},
    either the system stays in the state $\dataset$ or there is a reaction $e'$ that restores the affected invariants:
 \begin{equation}
@@ -532,7 +535,7 @@ generative software\sep incremental software development\sep data migration\sep 
 \label{sct:Example existing IS}
    Having defined an information system in mathematical terms, let us discuss a small example.
    It is written in the language Ampersand to make it more appealing to read.
-   Let us first define a dataset of just a handful of triples and three relations.
+   Let us first define a data set of just a handful of triples and three relations.
 \begin{verbatim}
 RELATION takes[Student*Course] =
 [ ("Peter", "Management")
@@ -579,7 +582,7 @@ RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 
    Now let us check the requirements to verify that this example defines an information system.
    % Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
-   The Ampersand compiler generates a dataset $\dataset$, which contains a set of triples and a relation $\inst$.
+   The Ampersand compiler generates a data set $\dataset$, which contains a set of triples and a relation $\inst$.
    It defines the set of triples $\triples$ as:
 \[\begin{array}[t]{l}
    \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
@@ -602,23 +605,24 @@ The relation $\inst$ contains the pairs:
    \pair{\tt "Susan"}{\tt Student}\\
    \pair{\tt "John"}{\tt Student}
 \end{array}\]
-   The pair $\pair{\triples}{\inst}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a dataset $\dataset$ as introduced in section~\ref{sct:Datasets}.
+   The pair $\pair{\triples}{\inst}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a data set $\dataset$ as introduced in section~\ref{sct:Data sets}.
 
    The Ampersand compiler generates a schema $\schema$, which contains concepts, a specialization relation, relations, and rules.
-   It defines the sets of concepts and relations to satisfy requirement~\ref{eqn:relationsIntroduceConcepts}:
+   It defines the sets of concepts, relations, and rules to obtain a schema $\schema$:
 \[\begin{array}{rcl}
    \concepts&=&\{ {\tt Module}, {\tt Course}, {\tt Student}\}\\
    \rels&=&\{\begin{array}[t]{@{}l@{}}
                \declare{\tt takes}{\tt Student}{\tt Course},\\
                \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
                \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\}
-             \end{array}
+             \end{array}\\
+   \rules&=&\{ {\tt EnrollRule}\}
   \end{array}
 \]
    % The user has defined no specializations.
    % This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
    % The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
-   % The (nonempty) dataset satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
+   % The (nonempty) data set satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
    So, the schema $\schema=\triple{\concepts}{\rels}{\rules}$ satisfies all requirements from section~\ref{sct:Schemas}.
 
    Now let us check the definition of information system.
@@ -639,21 +643,22 @@ The relation $\inst$ contains the pairs:
 
 \subsection{Process of Data Migration}
    Sections~\ref{sct:Information Systems} and~\ref{sct:Example existing IS} introduce a single information system.
-   The transition from an existing system to the desired one is the topic of this section.
+   The transition from an existing system $\infsys$ to the desired one $\infsys'$ is the topic of this section.
    Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
 \begin{enumerate}
-   \item Let the existing system $\infsys$ have state $\dataset$ and schema $\schema$.
-         A developer defines a desired system $\infsys'$, which contains a dataset of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
-         After the migration, the system will contain the triples from $\dataset$ that satisfy $\schema'$,
-         with additional changes made by the migration engineer (see step~\ref{item3}).
+   \item Let $\infsys$ have state $\dataset$ and schema $\schema$.
+         A developer defines $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
+         After the migration, the resulting system will be $\infsys'$, enhanced with the triples from $\dataset$ that satisfy $\schema'$,
+         and with additional changes made by the migration engineer (see step~\ref{item3}) and by users who have been using the system during the migration.
          $\dataset'$ may contain some new data,
          for instance to initialize new features on the moment of transition (MoT).
          If schemas $\schema$ equals $\schema'$, the data migration is unnecessary, so in the sequel we assume they are different.
-   \item The generator generates a migration script, $\migrsys$,
-         to migrate the data and define the semantics during the migration phase as far as a generator can reasonably predict.
-         It contains the enforce rules that migrate existing data to the desired dataset.
+   \item The migration engineer uses a software generator to generate a migration script, $\migrsys$,
+         This is a system that includes both $\infsys$ and $\infsys'$.
+         $\migrsys$ is meant to migrate the data and define the semantics during the migration phase.
+         It contains enforce rules that migrate existing data to the desired data set.
          It also contains data structures and rules that are needed for the duration of the migration phase.
-         The generated script must be free of type errors, to ensure that $\sat{u}{\Dataset}$ exists for every rule $u$ and dataset $\dataset$.
+         The generated script must be free of type errors, to ensure that $\sat{u}{\Dataset}$ exists for every rule $u$ and data set $\dataset$.
          The proof is available \href{https://www.isa-afp.org/}{here}
    \item\label{item3}
          In many cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration.
@@ -663,8 +668,7 @@ The relation $\inst$ contains the pairs:
          This can be necessary, for example to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
          She can either implement enforce rules or use the business to resolve the issues.
          She can test the resulting migration script, $\migrsys'$ separately before taking the desired system to production.
-         The migration engineer does not alter the schemas of the existing system or the desired system.
-         All migration functionality is concentrated in $\migrsys'$.
+         The migration engineer does not alter $\schema$ equals $\schema'$ while adapting $\migrsys'$ to the specific needs of the current migration.
    \item Then, the migration engineer deploys system $\migrsys'$.
          This event starts the copying of data from $\dataset$ to $\dataset'$ (figure~\ref{fig:migration phase}).
          During this phase, the ingress is still referring users to the existing system,
@@ -672,34 +676,28 @@ The relation $\inst$ contains the pairs:
          Users are still changing $\dataset$ (both inserts and deletes),
          but these changes are being transferred to $\dataset'$ as well.
          This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and
-         both datasets are in sync with respect to the ongoing transactions.
+         both data sets are in sync with respect to the ongoing transactions.
    \item At this point, the ingress switches the traffic from $\infsys$ to $\migrsys'$,
          so users will now experience the new functionality.
          This event marks the MoT.
-         From this point onward, users work with the desired functionality in dataset $\dataset'$.
-   \item To give the business an opportunity to evaluate the change,
-         there is room for a go/no-go decision before the the migration engineer makes the migration irreversible.
-         This event marks the moment of no return (MoN).
-         In case of a go-decision, the migration engineer can take down the existing system, which by this time has become unreachable for users.
-         The resulting dataset must satisfy every constraint from $\rules_{\migrsys'}$ before the migration engineer takes down the migration system.
-         In case of a no-go, the migration engineer restores the existing system by letting the ingress switch traffic back to $\infsys$.
+         From this point onward, users work with the desired functionality in data set $\dataset'$.
    \item After taking down the existing system and the migration system, the desired system remains in production and the migration is finished.
          This establishes the post-migration situation (figure~\ref{fig:post-migration}).
 \end{enumerate}
 
 \subsection{Formalization}
    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
-\begin{definition}[union of datasets]
+\begin{definition}[union of data sets]
 \label{def:graph_union_wellTyped_if_parts_wellTyped}
     \[\pair{\triples_1}{\inst_1}\cup\pair{\triples_2}{\inst_2}\ =\ \pair{\triples_1\cup\triples_2}{\inst_1\cup\inst_2}\]
 \end{definition}
 
 \begin{lemma}
 \label{lemma:graph_union_wellTyped_if_parts_wellTyped}
-   If $\dataset_1$ and $\dataset_2$ are datasets, then $\dataset_1\cup\dataset_2$ is a dataset.
+   If $\dataset_1$ and $\dataset_2$ are data sets, then $\dataset_1\cup\dataset_2$ is a data set.
 \end{lemma}
 
-\begin{definition}[map relation names in datasets]
+\begin{definition}[map relation names in data sets]
 \label{def:map_labels_preserves_wellTypedness}
    Let $h:\Rels\rightarrow\Rels$, then
    \[\begin{array}{rcl}
@@ -710,20 +708,21 @@ The relation $\inst$ contains the pairs:
 
 \begin{lemma}
 \label{lemma:map_labels_preserves_wellTypedness}
-   If $\dataset$ is a dataset and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a dataset.
+   If $\dataset$ is a data set and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a data set.
 \end{lemma}
 
-\begin{definition}[disjoint union of datasets]
+\begin{definition}[disjoint union of data sets]
 \begin{eqnarray}
-   \rlap{$\pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}$}\notag\\
-   &=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\notag\\
+   \pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}&=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\\
       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}
 \end{eqnarray}
 \end{definition}
-
+   In a disjoint union, the instances of the two data sets are relabeled to avoid name clashes.
+   In practice, we will not use 0 and 1 as labels for $x$ and $y$, but rather extend their names by prefixing.
+   For example, \texttt{old.Person} and \texttt{new.Address} might be the names of concepts \texttt{Person} and \texttt{Address} from contexts \texttt{old} and \texttt{new}, respectively.
 \begin{lemma}
-   If $\dataset$ and $\dataset'$ are datasets, then so is $\dataset\sqcup\dataset'$.
+   If $\dataset$ and $\dataset'$ are data sets, then so is $\dataset\sqcup\dataset'$.
 \end{lemma}
    This lemma is being proven in Isabelle/HOL~\cite{Isabelle}. The proof is published \href{location.domain}{here}
 
@@ -732,7 +731,7 @@ The relation $\inst$ contains the pairs:
    \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
 \end{eqnarray}
 \end{definition}
-% \begin{definition}[disjoint union of datasets]
+% \begin{definition}[disjoint union of data sets]
 % \begin{eqnarray}
 %    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
 %    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\instuplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
@@ -760,7 +759,7 @@ To implement the disjoint union, the following relabelling functions are needed:
 \begin{definition}[relabel concepts in $\inst$]
    \[a\ \subst{C}{D}{\inst}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\inst A\]
 \end{definition}
-\begin{definition}[relabel concepts in datasets]
+\begin{definition}[relabel concepts in data sets]
    \[\begin{array}{rcl}
       \rlap{$\subst{C}{D}{\pair{\triples}{\inst}}$}\\
       &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\inst}}
@@ -786,7 +785,7 @@ To implement the disjoint union, the following relabelling functions are needed:
 \begin{definition}[relabel relations in triples]
    \[\subst{r'}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{r'}{m'}{r}}{b}\]
 \end{definition}
-\begin{definition}[relabel relations in datasets]
+\begin{definition}[relabel relations in data sets]
    \[\begin{array}{rcl}
       \rlap{$\subst{r'}{m'}{\pair{\triples}{\inst}}$}\\
       &=&\pair{\{\subst{r'}{m'}{t}\mid t\in\triples\}}{\inst}
@@ -810,8 +809,9 @@ To implement the disjoint union, the following relabelling functions are needed:
    all atoms that represent hotels might suddenly be expected to have parking lots.
    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 
+\section*{Generating a Migration Script}
 \subsection{Loading Data}
-   Enforce rules can load the data in the desired database.
+   Before explaining how to migrate data from $\dataset$ to $\dataset'$, we need to explain {\tt ENFORCE} rules.
    In Ampersand, an enforce rule comes in three flavors:
 \begin{eqnarray}
    \text{\tt ENFORCE}\ r\ \text{\tt :<}\ \id{expression}\label{enforce del}\\
@@ -827,6 +827,7 @@ To implement the disjoint union, the following relabelling functions are needed:
    It does so by inserting and deleting pairs in $r$ to keep it equal to \id{expression}.
    Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
 
+   Now, let us study how to migrate data from $\dataset$ to $\dataset'$.
    It would be tempting to state that a relation from the example system, say {\tt takes}, could be copied by the following code fragment%
 \footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
 The prefix {\tt new.} refers to items from the desired information system.}:
@@ -1102,7 +1103,7 @@ Once a pair is in \verb=isPartOf=, the pair is copied over to \verb=isPartOf_ign
 Of course, since this solution starts with fewer pairs in the \verb=isPartOf= relation, other rules could be violated as a result of choosing this solution.
 Indeed, ExamRule2 initially has more violations in this scenario.
 
-\begin{definition}[migration dataset]
+\begin{definition}[migration data set]
    \begin{eqnarray}
       &&\begin{array}[t]{@{}l}
          \{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
@@ -1119,10 +1120,10 @@ Indeed, ExamRule2 initially has more violations in this scenario.
 
 The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statement adds two pairs to the $\isa$ relation:
 $\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
-Note that if $\dataset$ is a dataset, and $\dataset'$ is that dataset with pairs added%
-\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a dataset.
+Note that if $\dataset$ is a data set, and $\dataset'$ is that data set with pairs added%
+\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a data set.
 The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
-The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a dataset.
+The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a data set.
 
 \begin{definition}[]
    \begin{eqnarray}
@@ -1131,13 +1132,13 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
 \end{definition}
 
 \subsection{Changes}
-% The purpose of this section is to explain why a dataset is structured the way it is.
-   In the migration of a dataset we deal with changes to the elements that are not data:
+% The purpose of this section is to explain why a data set is structured the way it is.
+   In the migration of a data set we deal with changes to the elements that are not data:
    $\inst$, $\concepts$, and $\rels$.
    Such changes have further reaching consequences, however.
-   Changes to $\inst$, $\concepts$, $\rels$ change the data structure in a dataset.
-   We define a \define{migration of a dataset} $\la\atoms,\concepts,\inst,\rels,\dataset\ra$ as a change in which one or more of $\inst$, $\concepts$, or $\rels$ change.
-   To satisfy the definition of datasets, $\dataset$ must change too,
+   Changes to $\inst$, $\concepts$, $\rels$ change the data structure in a data set.
+   We define a \define{migration of a data set} $\la\atoms,\concepts,\inst,\rels,\dataset\ra$ as a change in which one or more of $\inst$, $\concepts$, or $\rels$ change.
+   To satisfy the definition of data sets, $\dataset$ must change too,
    but the migration should try to preserve the maximal amount of data.
 
 \section{Validation}
@@ -1149,17 +1150,65 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
    \item the migration system $\migrsys$ is an information system (definition~\ref{def:information system}),
          which implies that its population yields no violations.
    % -> het migratie-systeem bevat alle oude data, ihb nog steeds na het toepassen van de enforce regels
-   \item $\migrsys$ contains the existing data, insofar its enforce rules have not deleted it.
+   \item $\migrsys$ contains all data of the existing system. So, $\dataset_\infsys\subseteq\dataset_\migrsys$.
    % -> er is een pad naar ingebruikname van het nieuwe systeem (vanaf de initiële toestand van het migratie-systeem)
-   \item there is a path to releasing the desired system, starting with the initial state of the $\migrsys$.
+   \item there is a well-founded progress measure towards releasing the desired system.
    % -> corollary: op het moment van ingebruikname van het nieuwe systeem, is het migratie-systeem vrij van overtredingen op regels die het nieuwe systeem moet bewaken
-   \item As a result, the desired system $\infsys'$ is void of violations at the start of its production life.
+   \item When the progress measure indicates that further steps are not possible, the desired system $\infsys'$ is void of violations.
+   The invariants of $\infsys'$ are cork rules in $\migrsys$.
+   So, once all these rules are satisfied (and secured with a cork),
+   all invariants in $\infsys'$ are satisfied and ready for deployment.
    % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
-   \item Optionally, the desired system can be used in production after a limited number of steps.
-   % -> optioneel: er bestaat een migratie-systeem dat de oude functionaliteit behoudt (mogelijk uitbreidt) totdat het nieuwe systeem in gebruik genomen is?
-   \item Optionally, there is a migration systen that preserves the functionality of the existing system until the desired system has been put in production.
 \end{itemize}
 % Bewijsverplichtingen:
+
+\section{Software architecture}
+   Since functionality is excluded from this paper, we discuss the software architecture of the back-end of the migration system.
+   For this research, we have used the Ampersand compiler to generate the system(s).
+   Figure~\ref{fig:initial} shows the starting point of the migration.
+\begin{figure}
+   \centering
+   \includegraphics[width=0.8\textwidth]{figures/Before migration.png}
+   \caption{Initial state of the migration}
+   \label{fig:initial}
+\end{figure}
+   For the purpose of data migration, the existing system must make its schema available through its API.
+   For this purpose, the back-end offers a service ``retrieve schema'', which provides the schema as Ampersand source-code.
+   As a result, the migration engineer can rely on the schema of any generated application to be accurate.
+   For this reason, we can safely assume that the schema this service provides has not been changed since it was deployed.
+   Its presence allows the generator to build various front-ends and migration scripts during the lifetime of the existing system%
+
+   After the migration engineer has produced and tested a migration script, the Ampersand compiler produces a migration system.
+   It includes the schemas of both the existing system and the desired system, besides having a schema of its own.
+   This is implemented by Ampersand's INCLUDE mechanism, which boils down to taking the disjoint union of the schemas.
+\begin{figure}
+   \centering
+   \includegraphics[width=0.8\textwidth]{figures/During migration.png}
+   \caption{During the migration}
+   \label{fig:during}
+\end{figure}
+   Deployment of the migration system (figure~\ref{fig:during}) leaves the existing system intact.
+   It enhances the system with the data set needed by the migration system, which includes the data set needed by the new system.
+   So, users will notice no difference in the existing system when the migration system is deployed.
+
+   When all rules in the migration script have been satisfied, the migration system is ready to be deployed.
+   At this point, the ingress switches traffic from the existing system to the migration system.
+   Until this moment, users have been updating data in the existing system, which is continuously being migrated to the new system.
+   After the ingress switch is made, users have the new functionality at their disposal and make their changes in the new system.
+   If for some reason, there is remaining migration work, the migration system will execute this.
+   Since there is no more input in the existing system, the migration system will eventually be consistent.
+   At this point, the existing system can be removed, which leaves the migration system in place.
+
+
+   The main purpose of the migration script is to define the migration rules that are used to migrate data from the existing system to the desired system.
+   During this process, users continu to use the existing system.
+
+\begin{figure}
+   \centering
+   \includegraphics[width=0.8\textwidth]{figures/After migration.png}
+   \caption{After the migration}
+   \label{fig:after}
+\end{figure}
 
 \section{Conclusions}
 \begin{itemize}
