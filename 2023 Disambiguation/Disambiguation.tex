@@ -75,11 +75,18 @@ before : Time * Time
 scheduled : Event * Time
 \end{verbatim}
 
-An invariant in this system is:
+Note that `type' can refer to both a single concept, like \verb=Task=, \verb=Time= and \verb=Event=, and pairs thereof.
+To avoid ambiguity, we refer to pairs of concepts (such as \verb=Task * Task=, \verb=Time * Time= and \verb=Even * Time=) as signatures.
+We use `type' to refer to both.
 
-\[
-\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}} \typesubset \mathrm{scheduled}_\mathrm{Event * Time}\typesemi\mathrm{before}_{\mathrm{Time * Time}}
-\]
+Some invariants in this system are:
+
+\begin{align}
+\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}} &\typesubset \mathrm{scheduled}_\mathrm{Event * Time}\typesemi\mathrm{before}_{\mathrm{Time * Time}} \\
+\mathrm{before}_{\mathrm{Task * Task}} \typeinter \typeident_\mathrm{Task} &\typesubset \typenil_\mathrm{Task * Task}
+\end{align}
+
+The intended meaning behind these invariants is: 1) The set of tasks that needs to be performed before some task $x$, all need to be scheduled at times before the time at which $x$ itself is scheduled. 2) It makes no sense to require a task to be performed before itself.
 
 In heterogeneous relation algebra, where composition is partial, such an invariant would not be well-defined: A Task cannot be compared to an Event, so there is a type error in $\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}}$.
 However, Ampersand allows sub-typing.
@@ -91,10 +98,16 @@ In Ampersand Syntax:
 CLASSIFY Task ISA Event
 \end{verbatim}
 
-In Ampersand's implementation, Ampersand does not require writing the types when writing Invariants.
+In Ampersand's implementation, Ampersand does not require writing types when writing Invariants.
 We can consider expressing the same invariant as earlier without writing types: $\mathrm{before}\typesemi \mathrm{scheduled} \typesubset \mathrm{scheduled}\typesemi \mathrm{before}$.
-If we require that invariants are well-typed, there is only one way of annotating such expressions with types.
+If we require that invariants are well-typed, there is only one possible intended meaning.
 The use of the possibly ambiguous relation name $\mathrm{before}$ is allowed as long as it is clear which relation is intended, as is the case here.
+
+For the other expression, we cannot omit writing all types: $\mathrm{before} \typeinter \typeident \typesubset \typenil$ could be interpreted as:
+$\mathrm{before}_{\mathrm{Time * Time}} \typeinter \typeident_{\mathrm{Time}} \typesubset \typenil_{\mathrm{Time * Time}}$.
+To avoid this issue, one might write \emph{some} type information: $\mathrm{before} \typeinter \typeident \typesubset \typenil_{\mathrm{Task * Task}}$.
+From this, it should become clear which relations were intended (namely $\mathrm{before}_\mathrm{Task * Task}$ and $\typeident_\mathrm{Task}$), even though they appear elsewhere.
+
 We refer to the problem of determining which relation is intended as the disambiguation problem.%, which we investigate more closely in a separate section.
 %
 %\subsection{Generalization}
@@ -155,7 +168,7 @@ As an aside, we ask whether a compiler can be expected to figure out which relat
 
 We can define the disambiguation problem as follows:
 
-A disambiguation problem is given by an expression $E$ using the operations $\cup$ and $;$, and relation names from a set of names $\mathcal{N}$, and a set of possible types of each name: $\mathcal{t}(n) \subseteq \mathcal{T}\times \mathcal{T}$ for $n\in \mathcal{N}$.
+A disambiguation problem is given by an expression $E$ using the operations $\cup$ and $;$, and relation names from a set of names $\mathcal{N}$, and a set of possible signatures of each name: $\mathcal{t}(n) \subseteq \mathcal{T}\times \mathcal{T}$ for $n\in \mathcal{N}$.
 A solution to the disambiguation problem is a well-typed expression $S$ in which the annotations to relation names corresponds to an element in $\mathcal{t}(n)$, such that dropping the types from the expression yields $E$.
 
 As an example, $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$ with types $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$, is a disambiguation problem.
@@ -170,6 +183,7 @@ If $p(E)$ contains multiple elements, then there are multiple solutions to the d
 We can arbitrarily select a single element from $p(E)$ to get an arbitrary solution\footnote{In practice, we might want to indicate that $E$ is ambiguous, which could require running the next step twice: once for two different elements in $p(E)$.}.
 
 % @Bas, deze paragraaf is wellicht leesbaarder als je gewoon de functie à la Haskell uitschrijft.
+% @Stef, zo staat het er al.
 For the top-down step, let $d(e,t)$ denote the disambiguated expression $e$ with the type $t$.
 For the top-level call of $d(e,t)$, let $e=E$ and $t\in p(E)$.
 Then $d(n,t) = n_{[t]}$, $d(e_1 \cup e_2, t) = d(e_1,t) \cup d(e_2,t)$ and $d(e_1 ; e_2, (x,y)) = d(e_1, (x,z)) ; d(e_2, (z,y))$ where $z$ is picked such that $(x,z)\in p(e_1)$ and $(z,y)\in p(e_2)$.
@@ -190,24 +204,25 @@ d(\mathrm{scheduled};\mathrm{before},t) &=  d(\mathrm{scheduled},(\mathrm{Task},
 The disambiguation problem and the corresponding algorithm can be extended over all operations in relation algebra.
 It can even be used to disambiguate special relations like the identity relation.
 Let's take $E_2 = \mathrm{scheduled};(\mathrm{before} \cup \mathbb{1})$ as an expression.
-The types are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\{(t,t)\mid t\in \mathcal{T}\right\}$.
+The signatures are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\{(t,t)\mid t\in \mathcal{T}\right\}$.
 This gives $p(E_2) = \{\mathrm{Task} * \mathrm{Time}\}$ and $d(\{\mathrm{Task} * \mathrm{Time}\},E_2) = \mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}};(\mathrm{before}_{\mathrm{Time} * \mathrm{Time}}\ \cup\ \mathbb{1}_{\mathrm{Time}})$, as desired.
 
 \section{Solving Disambiguation with Generalization}
-Before giving a solution to this % @Bas, een referentie over de grens van een paragraaf is taalkundig al niet fraai, maar over de grens van een section is niet slim. Als lezer wil ik iets meer duidelijkheid dan "this" als het gaat over welk probleem je naar verwijst.
-problem, we first observe that the disambiguation algorithm discussed earlier fails for our running example.
+We first observe that the disambiguation algorithm discussed above fails for our running example.
 Following the declarations of the script, we let $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Event}, \mathrm{Time})\}$.
-Now the above algorithm would conclude with an error on $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
+Now the apply the algorithm on $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
+Since the disambiguation algorithm does not consider sub-typing, it would conclude there are is no way to well-type this expression.
+In this section we address this shortcoming.
 
 The paper by van der Woude and Joosten~\cite{Woude11} introduced an embedding relation $\epsilon_{A*B} : A \times B$ to write sentences in heterogeneous relation algebra with sub-typing in terms of heterogeneous relation algebra without it.
 It can be thought of as defined by $\epsilon_{A*B} = \{(a,a) \mid a\in A \wedge a\in B\}$: it is the largest subset of the identity relation that fits the type $A\times B$.
 
-This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as subtyping.
-Next, we define a language that is interpreted as a heterogeneous relation algebra with a typical set-interpretation.
-% @Bas, de volgende zin snap ik niet...
-The semantics of the language with subtyping will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
-%We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
-%In this paper, we relax that requirement.
+%This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as subtyping.
+%Next, we define a language that is interpreted as a heterogeneous relation algebra with a typical set-interpretation.
+%% @Bas, de volgende zin snap ik niet...
+%The semantics of the language with subtyping will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
+%%We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
+%%In this paper, we relax that requirement.
 
 \subsection{Language definitions}
 In this section, we introduce the language in which an Ampersand programmer can write terms, as well as the language for which the disambiguation problem is considered `solved'.
@@ -274,43 +289,36 @@ s(\typecomp{\varphi}) &= \overline{s(\varphi)}\\
 s(\typeconv{\varphi}) &= \conv{s(\varphi)}
 \end{align*}
 
-\paragraph{[Aside]} The Ampersand language also allows for \verb=CLASSIFY A IS B /\ C= statements, meaning that elements are in $A$ if and only if they are in $B$ and in $C$.
-The information about this captured in $\preceq$ is just that $A \preceq B$ and $A\preceq C$, which means that information is lost.
-We can consider the lost information when dealing with the $\typesemi$ operation by changing the $\epsilon$ relations introduced there.
-However, it is an open problem to deal with this with the $\typeinter$ operation, so we give a simpler presentation that ignores this additional information in \verb=CLASSIFY _ IS _= statements for now.
+%\paragraph{[Aside]} The Ampersand language also allows for \verb=CLASSIFY A IS B /\ C= statements, meaning that elements are in $A$ if and only if they are in $B$ and in $C$.
+%The information about this captured in $\preceq$ is just that $A \preceq B$ and $A\preceq C$, which means that information is lost.
+%We can consider the lost information when dealing with the $\typesemi$ operation by changing the $\epsilon$ relations introduced there.
+%However, it is an open problem to deal with this with the $\typeinter$ operation, so we give a simpler presentation that ignores this additional information in \verb=CLASSIFY _ IS _= statements for now.
 
-Translating a term from $\mathcal{D}$ to $\mathcal{R}$ proceeds by considering which choices are type correct.
-However, if we were to simply implement the simple algorithm proposed earlier, too many terms would be deemed ambiguous:
+Translating a term from $\mathcal{D}$ to $\mathcal{R}$ can be thought of as a search problem:
+For each $\Xi$-term in $\mathcal{D}$, we can substitute it for an element in $\Xi$ to get a term in $\mathcal{R}$.
+Our choice should satisfy the following conditions:
+\begin{itemize}
+\item The chosen term should be well-typed.
+\item Depending on the choices that remain after applying these criteria, we need to decide to pick an arbitrary one or raise an error to the user.
+\item We prefer some terms over others. In particular, we prefer to use $\epsilon_{A*B}$ relations where $A = B$ over those where $A\neq B$.
+\end{itemize}
+
+We illustrate these conditions one by one.
+The first condition is per design: we aim to disambiguate terms by using that they are well-typed.
+The second and third condition are best illustrated by giving an example of what could go wrong without them.
+
+To illustrate why we prefer to use $\varepsilon_{A*B}$ relations where $A=B$, consider the expression: $(\mathrm{before} \typeinter \typeident) \typeunion \typetyped{\typenil}{\mathrm{Task * Task}}$. This expression is similar to one of the terms from our running example, but written as a proper $\mathcal{S}$-term.
+Possible disambiguated terms include:
+\begin{itemize}
+\item $\varepsilon_T;(\varepsilon_T;\mathrm{before}_T;\varepsilon_T \cap \varepsilon_T;\typeident_\mathrm{Task};\varepsilon_T);\varepsilon_T \cup \varepsilon_T;F_T;\varepsilon_T$ with $T = \mathrm{Task*Task}$
+\item
+\item
+\end{itemize}
+
 the term $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typevee \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ with $\mathrm{Task}\preceq\mathrm{Event}$ would not disambiguate to the obvious term, since $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typetyped{\typevee}{\mathrm{Task}*\mathrm{Task}} \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ is also well-typed.
 To deal with this, we prefer terms in which the $\epsilon$ relations have the same source and target.
 
-Given a term $D\in\mathcal{D}$, the function $p(D)$ will return a set of types and a preference relation between those types.
-The preference relation is a pre-order.
-We will write a tree node as $t \mapsfrom \{c_1,\ldots,c_n\}$ where the child-nodes $c_i$ are themselves written as trees, and $t$ is a set of types that the corresponding term could have.
-For example, if $p(D) = t_1 \mapsfrom \{t_2 \mapsfrom \{t_3 \mapsfrom \{\}\},t_4 \mapsfrom \{\}\}$, then types of $t_1$ are preferred over those in $t_2$, $t_3$ and $t_4$, those of $t_2$ are preferred over $t_3$, and those types in $t_4$, are incomparable to those in $t_2$ and $t_3$.
 
-We define a binary operation $\times$ on such trees as follows:
-\[
-(a \mapsfrom A) \times (b \mapsfrom B)
-= a \cap b \mapsfrom 
-\]
-
-We define $p$ as follows:
-\begin{align*}
-p(\xi) &= \{{A*B} \mid \xi : (A,B)\}\mapsfrom\{\}\\
-p(\Xi) &= \{{A*A} \mid \xi = \epsilon_{A*A}\}\mapsfrom \{\{{A*B} \mid \xi : {A*B} \wedge (A\neq B \vee \xi \neq \epsilon_{A*B})\} \mapsfrom\{\}\}\\
-p(\typetyped{\varphi}{A*B}) &= \{A*B \mid A*B\in p(\varphi)[i] \text{ for some $i$}\}\mapsfrom\{\}\\
-p(\varphi \cup \psi) &= ..?\\
-p(\varphi \cap \psi) &= p(\varphi \cup \psi)\\
-p(\varphi ; \psi) &= ..?\\
-p(\overline{\varphi}) &= p(\varphi)\\
-p(\conv{\varphi}) &= [\{B*A\mid A*B\in p(\varphi)[i]\}]_i
-\end{align*}
-
-\paragraph{[Aside]}
-Without optimizations, the complexity of the algorithm for constructing these trees is exponential: the combination of two trees for $\cap$, $\cup$ and $;$ will be of a size that is the product of the two.
-However, we hope to be able to reduce the size of trees by looking for equivalent trees that express the same preferences.
-If trees can be reduced so that the number of nodes never exceeds the number of types in them, this should give the tree construction polynomial complexity.
 
 \section{Bibliography}
 \bibliographystyle{elsarticle-harv}

@@ -360,7 +360,8 @@ fun disjoint_union_pre_dataset where
   "disjoint_union_pre_dataset (DS g1 gt1) (DS g2 gt2)
     = DS (disjoint_union_graphs g1 g2) (disjoint_union_typing gt1 gt2)"
 
-abbreviation dataset where "dataset y \<equiv> y \<in> {ds. typedGraph (dsTyping ds) (tripleset ds)}"
+abbreviation dataset where
+ "dataset y \<equiv> y \<in> {ds. typedGraph (dsTyping ds) (tripleset ds)}"
 
 (* This lemma shows that the disjoint union of two datasets is again a dataset *)
 lemma disjoint_union_pre_dataset:
@@ -386,10 +387,9 @@ lemma disjoint_union_dataset_Rep[simp]:
   unfolding disjoint_union_dataset_def 
   Abs_dataset_inverse[OF disjoint_union_pre_dataset[OF Rep_dataset Rep_dataset]]..
 
-
 fun filter_edges where "filter_edges f (LG es v) = LG {e\<in> es. f e} v"
 
-lemma filter_edges_graph:
+lemma filter_edges_graph[intro]:
   assumes "graph g"
   shows "graph (filter_edges f g)"
   using assms by(cases g, force simp:restrict_def)
@@ -413,16 +413,46 @@ abbreviation filter_labels_graph where
 fun filter_labels_type where
   "filter_labels_type L (GT d i) = GT {(l,v)\<in>d. l\<in>L} i"
 
-fun filter_with_labelset where
-  "filter_with_labelset L (DS lg tg) = (DS (filter_labels_graph L lg) (filter_labels_type L tg))"
+fun filter_with_labelset_pre where
+  "filter_with_labelset_pre L (DS lg tg) = (DS (filter_labels_graph L lg) (filter_labels_type L tg))"
+
+definition filter_with_labelset where
+  "filter_with_labelset L ds = Abs_dataset (filter_with_labelset_pre L (Rep_dataset ds))"
+
+lemma filter_with_labelset_pre_welltyped:
+  assumes "dataset ds"
+  shows "dataset (filter_with_labelset_pre L ds)"
+proof(standard,standard)
+  obtain lg tg where ds[simp]: "ds = DS lg tg" by (cases ds,blast)
+  have tg:"typedGraph tg lg" using assms by auto
+  show " graph (tripleset (filter_with_labelset_pre L ds))"
+    using assms by auto
+  { fix e assume e:"e \<in> edges (tripleset (filter_with_labelset_pre L ds))"
+    obtain x y z where [simp]:"e=(x,y,z)" by (cases e, blast)
+    from e have wte:"wellTypedEdge tg (x,y,z)" and [simp]:"x\<in> L \<longleftrightarrow> True"
+          using tg by auto
+    show "wellTypedEdge (dsTyping (filter_with_labelset_pre L ds)) e"
+      using wte by(cases tg;intro wellTypedEdgeI;auto dest!:wellTypedEdgeE)
+  }
+  { fix v assume v:"v \<in> vertices (tripleset (filter_with_labelset_pre L ds))"
+    thus " typedVertex (dsTyping (filter_with_labelset_pre L ds)) v"
+      using tg by(cases tg;cases lg;auto simp:typedGraph_def)
+  }
+qed
+
+lemma filter_with_labelset[simp]:
+  "Rep_dataset (filter_with_labelset L ds)
+   = filter_with_labelset_pre L (Rep_dataset ds)" (is "?lhs=?rhs")
+  unfolding filter_with_labelset_def
+  using Abs_dataset_inverse[of ?rhs, OF filter_with_labelset_pre_welltyped[OF Rep_dataset]].
 
 locale rule_implementation =
-  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) pre_dataset \<Rightarrow> ('a,'v) labeled_graph"
+  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> ('a,'v) labeled_graph"
   and   relevant_labels :: "'u \<Rightarrow> 'l set"
 assumes "\<And> u. violation u (filter_with_labelset (relevant_labels u) g) = violation u  g"
 begin
-fun satisfies where
-  "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+  fun satisfies where
+    "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
 
 end
 
