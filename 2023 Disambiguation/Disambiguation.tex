@@ -1,7 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx,stmaryrd}
-\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsmath,amsfonts,amssymb,mathtools}
 \usepackage{bbold,bbm}
 \makeatletter
 \def\amsbb{\use@mathgroup \M@U \symAMSb}
@@ -82,11 +82,17 @@ We use `type' to refer to both.
 Some invariants in this system are:
 
 \begin{align}
-\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}} &\typesubset \mathrm{scheduled}_\mathrm{Event * Time}\typesemi\mathrm{before}_{\mathrm{Time * Time}} \\
-\mathrm{before}_{\mathrm{Task * Task}} \typeinter \typeident_\mathrm{Task} &\typesubset \typenil_\mathrm{Task * Task}
+\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}} &\typesubset \mathrm{scheduled}_\mathrm{Event * Time}\typesemi\mathrm{before}_{\mathrm{Time * Time}} \label{eqn:schedule_sync}
+ \\
+\typecomp{\typeident_\mathrm{Task}} &\typesubset \typecomp{\left(\mathrm{before}_{\mathrm{Task * Task}} \typeinter \typeconv{{\mathrm{before}_{\mathrm{Task * Task}}}}\right)}
+\label{eqn:before_antisym}
 \end{align}
 
-The intended meaning behind these invariants is: 1) The set of tasks that needs to be performed before some task $x$, all need to be scheduled at times before the time at which $x$ itself is scheduled. 2) It makes no sense to require a task to be performed before itself.
+The operations used to describe these invariants have their typical set-theoretic interpretation.
+Invariant~\ref{eqn:schedule_sync} intends to express: The set of tasks that needs to be performed before some task $x$, all need to be scheduled at times before the time at which $x$ itself is scheduled.
+Invariant~\ref{eqn:before_antisym} intends to express: A task cannot be scheduled both before and after some other task.
+It is the contrapositive of the antisymmetry property: ${\mathrm{before}_{\mathrm{Task * Task}}} \typeinter {\typeconv{{\mathrm{before}_{\mathrm{Task * Task}}}}} \typesubset \typeident_\mathrm{Task}$.
+We focus on this somewhat clumsy formulation of this property to help explain the choices we can make in disambiguation algorithms.
 
 In heterogeneous relation algebra, where composition is partial, such an invariant would not be well-defined: A Task cannot be compared to an Event, so there is a type error in $\mathrm{before}_{\mathrm{Task * Task}}\typesemi\mathrm{scheduled}_{\mathrm{Event * Time}}$.
 However, Ampersand allows sub-typing.
@@ -103,10 +109,10 @@ We can consider expressing the same invariant as earlier without writing types: 
 If we require that invariants are well-typed, there is only one possible intended meaning.
 The use of the possibly ambiguous relation name $\mathrm{before}$ is allowed as long as it is clear which relation is intended, as is the case here.
 
-For the other expression, we cannot omit writing all types: $\mathrm{before} \typeinter \typeident \typesubset \typenil$ could be interpreted as:
-$\mathrm{before}_{\mathrm{Time * Time}} \typeinter \typeident_{\mathrm{Time}} \typesubset \typenil_{\mathrm{Time * Time}}$.
-To avoid this issue, one might write \emph{some} type information: $\mathrm{before} \typeinter \typeident \typesubset \typenil_{\mathrm{Task * Task}}$.
-From this, it should become clear which relations were intended (namely $\mathrm{before}_\mathrm{Task * Task}$ and $\typeident_\mathrm{Task}$), even though they appear elsewhere.
+For the other expression, we cannot omit writing types. The expression $\typecomp\typeident \typesubset \typecomp{\left(\mathrm{before} \typeinter \typeconv{{\mathrm{before}}}\right)}$ is truly ambiguous, as it could be interpreted as:
+$\typecomp{\typeident_{\mathrm{Time}}} \typesubset \typecomp{\left(\mathrm{before}_{\mathrm{Time * Time}} \typeinter \typeconv{\mathrm{before}_{\mathrm{Time * Time}}}\right)}$.
+To avoid this issue, one might write \emph{some} type information: $\typecomp\typeident_\mathrm{Task} \typesubset \typecomp{\left(\mathrm{before} \typeinter \typeconv{{\mathrm{before}}}\right)}$.
+From this, it should become clear which relations were intended (namely $\mathrm{before}_\mathrm{Task * Task}$), even though these appear elsewhere.
 
 We refer to the problem of determining which relation is intended as the disambiguation problem.%, which we investigate more closely in a separate section.
 %
@@ -162,52 +168,7 @@ We refer to the problem of determining which relation is intended as the disambi
 %    \mathrm{before}_{\mathrm{Task * Task}}&=&r'
 %\end{eqnarray}
 
-
-\section{Solving the disambiguation problem without generalization}
-As an aside, we ask whether a compiler can be expected to figure out which relations are intended in reasonable time. In this section, we answer this question for a very simple setting in the affirmative by giving a simple efficient algorithm.
-
-We can define the disambiguation problem as follows:
-
-A disambiguation problem is given by an expression $E$ using the operations $\cup$ and $;$, and relation names from a set of names $\mathcal{N}$, and a set of possible signatures of each name: $\mathcal{t}(n) \subseteq \mathcal{T}\times \mathcal{T}$ for $n\in \mathcal{N}$.
-A solution to the disambiguation problem is a well-typed expression $S$ in which the annotations to relation names corresponds to an element in $\mathcal{t}(n)$, such that dropping the types from the expression yields $E$.
-
-As an example, $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$ with types $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$, is a disambiguation problem.
-It's (here unique) solution would be:
-\[\left(\mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}}\right) \cup \left(\mathrm{scheduled}_{\mathrm{Task * Time}};\mathrm{before}_{\mathrm{Time * Time}}\right)\]
-
-We can solve the disambiguation problem using two passes through $E$.
-In the first pass, we decorate the expression tree for $E$ with all the possible types for each sub-expression bottom up.
-Let $p(e)$ denote the possible types, then $p(n) = \mathcal{t}(n)$, and $p(e_1;e_2) = \{(x,y) \mid \exists z. (x,z) \in p(e_1) \wedge (z,y) \in p(e_2))\}$, and $p(e_1 \cup e_2) = p(e_1) \cap p(e_2)$.
-If $p(E)$ is the empty set, then there is no solution to the disambiguation problem, and we are done.
-If $p(E)$ contains multiple elements, then there are multiple solutions to the disambiguation problem.
-We can arbitrarily select a single element from $p(E)$ to get an arbitrary solution\footnote{In practice, we might want to indicate that $E$ is ambiguous, which could require running the next step twice: once for two different elements in $p(E)$.}.
-
-% @Bas, deze paragraaf is wellicht leesbaarder als je gewoon de functie à la Haskell uitschrijft.
-% @Stef, zo staat het er al.
-For the top-down step, let $d(e,t)$ denote the disambiguated expression $e$ with the type $t$.
-For the top-level call of $d(e,t)$, let $e=E$ and $t\in p(E)$.
-Then $d(n,t) = n_{[t]}$, $d(e_1 \cup e_2, t) = d(e_1,t) \cup d(e_2,t)$ and $d(e_1 ; e_2, (x,y)) = d(e_1, (x,z)) ; d(e_2, (z,y))$ where $z$ is picked such that $(x,z)\in p(e_1)$ and $(z,y)\in p(e_2)$.
-Such a $z$ is guaranteed to exist by how $p$ is defined.
-
-As an example, let's look at $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
-Then $p(\mathrm{before}) =  \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ following $\mathcal{t}$ and similarly $p(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$.
-This gives subterms $p(\mathrm{before};\mathrm{scheduled}) = p(\mathrm{scheduled};\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Time})\}$ so $p(E) = \{(\mathrm{Task}, \mathrm{Time})\}$.
-
-Top-down, $d(E,t) = d(\mathrm{before};\mathrm{scheduled},t) \cup d(\mathrm{scheduled};\mathrm{before},t)$ with $t=(\mathrm{Task}, \mathrm{Time})$.
-Since $E$ is not ambiguous, we have only one possible way to continue as we solve the disambiguation problem:
-\begin{align*}d(\mathrm{before};\mathrm{scheduled},t) &= d(\mathrm{before},(\mathrm{Task}, \mathrm{Task})) ;  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time})) \\
-&=\mathrm{before}_{\mathrm{Task} * \mathrm{Task}}; \mathrm{scheduled}_{\mathrm{Task}* \mathrm{Time}}\\
-d(\mathrm{scheduled};\mathrm{before},t) &=  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time}));d(\mathrm{before},(\mathrm{Time}, \mathrm{Time}))\\
-&=\mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}}; \mathrm{before}_{\mathrm{Time}* \mathrm{Time}}\\
-\end{align*}
-
-The disambiguation problem and the corresponding algorithm can be extended over all operations in relation algebra.
-It can even be used to disambiguate special relations like the identity relation.
-Let's take $E_2 = \mathrm{scheduled};(\mathrm{before} \cup \mathbb{1})$ as an expression.
-The signatures are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\{(t,t)\mid t\in \mathcal{T}\right\}$.
-This gives $p(E_2) = \{\mathrm{Task} * \mathrm{Time}\}$ and $d(\{\mathrm{Task} * \mathrm{Time}\},E_2) = \mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}};(\mathrm{before}_{\mathrm{Time} * \mathrm{Time}}\ \cup\ \mathbb{1}_{\mathrm{Time}})$, as desired.
-
-\section{Solving Disambiguation with Generalization}
+\section{Solving Disambiguation}
 We first observe that the disambiguation algorithm discussed above fails for our running example.
 Following the declarations of the script, we let $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Event}, \mathrm{Time})\}$.
 Now the apply the algorithm on $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
@@ -217,18 +178,18 @@ In this section we address this shortcoming.
 The paper by van der Woude and Joosten~\cite{Woude11} introduced an embedding relation $\epsilon_{A*B} : A \times B$ to write sentences in heterogeneous relation algebra with sub-typing in terms of heterogeneous relation algebra without it.
 It can be thought of as defined by $\epsilon_{A*B} = \{(a,a) \mid a\in A \wedge a\in B\}$: it is the largest subset of the identity relation that fits the type $A\times B$.
 
-%This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as subtyping.
+%This paper follows a similar approach: We define a language to be used by the Ampersand programmer that allows writing relations without their types as well as sub-typing.
 %Next, we define a language that is interpreted as a heterogeneous relation algebra with a typical set-interpretation.
 %% @Bas, de volgende zin snap ik niet...
-%The semantics of the language with subtyping will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
-%%We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a subtyping relation, so $\epsilon_{A*B}$ would exist only if $A$ is a subtype of $B$.
+%The semantics of the language with sub-typing will be determined by what the translation process gives us, but we validate the translation by inspecting certain examples and examining the validity of Tarski's axioms for this language under the resulting interpretation.
+%%We deviate slightly from the ideas by van der Woude and Joosten: Their $\epsilon$ relation is a sub-typing relation, so $\epsilon_{A*B}$ would exist only if $A$ is a sub-type of $B$.
 %%In this paper, we relax that requirement.
 
 \subsection{Language definitions}
 In this section, we introduce the language in which an Ampersand programmer can write terms, as well as the language for which the disambiguation problem is considered `solved'.
 The intended interpretation of these symbols is that of the regular relation algebraic operations, but we delay talking about semantics until later in this paper.
 
-Let $\mathcal{S}$ be the language of heterogeneous relation algebra with subtyping.
+Let $\mathcal{S}$ be the language of heterogeneous relation algebra with sub-typing.
 It is defined by the following grammar, where $n\in\mathcal{N}$ and $A,B\in\mathcal{T}$:
 \[
 \varphi,\psi\in\mathcal{S} \mathbin{:=} n \mid \typetyped{\varphi}{A*B} \mid \typevee \mid \typeident \mid \typenil \mid \varphi \typeunion \psi \mid \varphi \typeinter \psi \mid \varphi \typesemi \psi \mid \typecomp{\psi}\mid \typeconv{\psi}
@@ -236,10 +197,11 @@ It is defined by the following grammar, where $n\in\mathcal{N}$ and $A,B\in\math
 The grammar $\mathcal{S}$ allows the programmer to write relations with their type, $\typetyped{n}{A*B}$ and $\typetyped{\typevee}{A*B}$, as usual.
 However, the grammar is slightly more general, allowing type annotations for arbitrary terms $\typetyped{\varphi}{A*B}$.
 
-Our aim is to disambiguate expressions written in this language into `normal' heterogeneous relation algebra, that is: without subtyping.
-To signal certain type errors, we add an additional element $\bot$ to the set of concepts, that we will assume is different from every element in $\mathcal{T}$.
-Since $\mathcal{T}$ is referred to as the set of concepts, we will refer to $\mathcal{T}\cup\{\bot\}$ as the set of pseudo-concepts.
-We use the following grammar to describe the language $\mathcal{R}$ for that, where $n_{A*B}$ satisfies $(A,B)\in \mathcal{t}(n)$, and $A,B\in\mathcal{T}\cup\{\bot\}$ for all other occurrences of $A$ and $B$:
+Our aim is to disambiguate expressions written in this language into `normal' heterogeneous relation algebra, that is: without sub-typing.
+%To signal certain type errors, we add an additional element $\bot$ to the set of concepts, that we will assume is different from every element in $\mathcal{T}$.
+%Since $\mathcal{T}$ is referred to as the set of concepts, we will refer to $\mathcal{T}\cup\{\bot\}$ as the set of pseudo-concepts.
+We use the following grammar to describe the language $\mathcal{R}$ for that, where $n_{A*B}$ satisfies $(A,B)\in \mathcal{t}(n)$, and $A,B\in\mathcal{T}%\cup\{\bot\}
+$ for all other occurrences of $A$ and $B$:
 \[
 \varphi,\psi\in\mathcal{R} \mathbin{:=} n_{A*B} \mid \epsilon_{A*B} \mid T_{A*B} \mid 1_{A} \mid F_{A*B} \mid \varphi \cup \psi \mid \varphi \cap \psi \mid \varphi ; \psi \mid \overline{\psi}\mid \conv{\psi}
 \]
@@ -253,16 +215,16 @@ x_{A*B} &: A * B & \text{For $x \in \mathcal{N} \cup \{\epsilon, T, F\}$}\\
 \overline{\psi} &: A * B &\text{For $\psi : A * B$}\\
 \conv{\psi} &: A * B &\text{For $\psi : B * A$}
 \end{align*}
-We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for $A,B\in \mathcal{T}$ and every sub-term is well-typed.
-By induction on the inductive definition of $\mathcal{R}$, the relation $:$ is univalent.
-In other words: well-typed terms in $\mathcal{R}$ have precisely one type, all of its sub-terms are well-typed, and $\bot$ does not occur as a pseudo-concept.
+We say that a term $r\in \mathcal{R}$ is \emph{well-typed} if $r : A*B$ for $A,B\in \mathcal{T}$.
+As a consequence of this definition all sub-terms of a well-typed term are well-typed.
+Moreover, the relation $:$ is univalent (that is: well-typed terms in $\mathcal{R}$ have precisely one type).%, and $\bot$ does not occur as a pseudo-concept.
 
 \subsection{Translation process}
-Rather than translating terms in $\mathcal{S}$ into $\mathcal{R}$ directly, we create an intermediate language $\mathcal{D}$, which contains $\mathcal{R}$ (that is: $\mathcal{R} \subseteq \mathcal{D}$).
+Rather than translating terms in $\mathcal{S}$ into $\mathcal{R}$ directly, we create an intermediate language $\mathcal{D}$.
 This will allow us to use a purely syntactic translation from $\mathcal{S}$ to $\mathcal{D}$, after which we run a disambiguation algorithm to turn it into a term in $\mathcal{R}$.
-The language $\mathcal{D}$ is defined as follows, where $\xi \in \mathcal{R}$, $\Xi \subseteq \mathcal{R}$, and $A,B\in\mathcal{T}$:
+The language $\mathcal{D}$ is defined as follows, where $\Xi \subseteq \mathcal{R}$, and $A,B\in\mathcal{T}$:
 \[
-\varphi,\psi\in\mathcal{D} \mathbin{:=} \xi \mid \varphi \cup \psi \mid \varphi \cap \psi \mid \varphi ; \psi \mid \overline{\psi}\mid \conv{\psi} \mid \typetyped{\varphi}{A*B} \mid \Xi
+\varphi,\psi\in\mathcal{D} \mathbin{:=} \varphi \cup \psi \mid \varphi \cap \psi \mid \varphi ; \psi \mid \overline{\psi}\mid \conv{\psi} \mid \typetyped{\varphi}{A*B} \mid \Xi
 \]
 
 The term $\Xi$ is used to indicate that elements in $\Xi$ are terms that might be filled in on this position.
@@ -272,8 +234,8 @@ Type annotations from $\mathcal{S}$ are kept in $\mathcal{D}$, but the structure
 
 The translation from $\mathcal{S}$ to $\mathcal{D}$ will depend on the users's \verb=CLASSIFY= statements.
 We write $A\preceq B$ to indicate that the pair $A,B$ is in the transitive closure of the pairs written \verb=CLASSIFY _ ISA _=, meaning that all elements in $A$ must occur in $B$ whenever $A\preceq B$.
-Moreover, we let $\bot$ be a least element in this preorder: $\bot \preceq A$ for all $A$.
-Since there are no classify statements containing $\bot$ (the user cannot write them), the least element in $\preceq$ is unique.
+%Moreover, we let $\bot$ be a least element in this preorder: $\bot \preceq A$ for all $A$.
+%Since there are no classify statements containing $\bot$ (the user cannot write them), the least element in $\preceq$ is unique.
 
 The translation $s : \mathcal{S} \to \mathcal{D}$ is as follows:
 \begin{align*}
@@ -283,7 +245,7 @@ s(\typevee) &= \{T_{A*B} \mid A,B\in\mathcal{T}\}\\
 s(\typenil) &= \{F_{A*B} \mid A,B\in\mathcal{T}\}\\
 s(\typeident) &= \{1_{A} \mid A\in\mathcal{T}\}\\
 s(\varphi \typeunion \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cup\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid A\preceq B \}$} \\
-s(\varphi \typeinter \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cap\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \}$}\\
+s(\varphi \typeinter \psi) &= \conv{\varepsilon};s(\varphi);\varepsilon\ \cap\ \conv{\varepsilon};s(\psi);\varepsilon&\quad\text{with $\varepsilon = \{\epsilon_{A*B} \mid A\preceq B \}$}\\
 s(\varphi \typesemi \psi) &= s(\varphi);\varepsilon;s(\psi)&\text{with $\varepsilon = \{\epsilon_{A*B} \mid B\preceq A \vee A\preceq B \}$}\\
 s(\typecomp{\varphi}) &= \overline{s(\varphi)}\\
 s(\typeconv{\varphi}) &= \conv{s(\varphi)}
@@ -294,30 +256,128 @@ s(\typeconv{\varphi}) &= \conv{s(\varphi)}
 %We can consider the lost information when dealing with the $\typesemi$ operation by changing the $\epsilon$ relations introduced there.
 %However, it is an open problem to deal with this with the $\typeinter$ operation, so we give a simpler presentation that ignores this additional information in \verb=CLASSIFY _ IS _= statements for now.
 
+
+\section{Solving the disambiguation problem}
 Translating a term from $\mathcal{D}$ to $\mathcal{R}$ can be thought of as a search problem:
 For each $\Xi$-term in $\mathcal{D}$, we can substitute it for an element in $\Xi$ to get a term in $\mathcal{R}$.
 Our choice should satisfy the following conditions:
 \begin{itemize}
 \item The chosen term should be well-typed.
-\item Depending on the choices that remain after applying these criteria, we need to decide to pick an arbitrary one or raise an error to the user.
 \item We prefer some terms over others. In particular, we prefer to use $\epsilon_{A*B}$ relations where $A = B$ over those where $A\neq B$.
+\item Depending on the choices that remain after applying these criteria, we need to decide to pick an arbitrary one or raise an error to the user.
 \end{itemize}
 
 We illustrate these conditions one by one.
 The first condition is per design: we aim to disambiguate terms by using that they are well-typed.
 The second and third condition are best illustrated by giving an example of what could go wrong without them.
 
-To illustrate why we prefer to use $\varepsilon_{A*B}$ relations where $A=B$, consider the expression: $(\mathrm{before} \typeinter \typeident) \typeunion \typetyped{\typenil}{\mathrm{Task * Task}}$. This expression is similar to one of the terms from our running example, but written as a proper $\mathcal{S}$-term.
+To illustrate why we prefer to use $\epsilon_{A*B}$ relations where $A=B$, consider the expression: $\typecomp{\typeident} \typeunion \typecomp{\left(\typetyped{\mathrm{before}}{Task*Task} \typeinter \typeconv{\mathrm{before}}\right)}$. This expression is similar to Invariant~\ref{eqn:before_antisym} from our running example, but written as a proper $\mathcal{S}$-term.
 Possible disambiguated terms include:
+\begin{align}
+\epsilon_{t_0};\overline{1_{\mathrm{Task}}};\epsilon_{t_0} &\cup \epsilon_{t_0};\overline{\left(\epsilon_{t_0};\typetyped{\mathrm{before}_{t_0}}{t_0};\epsilon_{t_0} \cap \epsilon_{t_0};\conv{\mathrm{before}_{t_0}};\epsilon_{t_0} \right)};\epsilon_{t_0}\label{eqn:disambGood}\\
+\epsilon_{t_3};\overline{1_{\mathrm{Event}}};\epsilon_{t_3} &\cup \epsilon_{t_1};\overline{\left(\epsilon_{t_0};\typetyped{\mathrm{before}_{t_0}}{t_0};\epsilon_{t_0} \cap \epsilon_{t_0};\conv{\mathrm{before}_{t_0}};\epsilon_{t_0} \right)};\epsilon_{t_2}\label{eqn:disambBad}\\
+\shortintertext{\flushright{ with ${t_0} = \mathrm{Task*Task}$, ${t_1} = \mathrm{Event*Task}$, ${t_2} = \mathrm{Task*Event}$, and ${t_3} = \mathrm{Event*Event}$}}\nonumber{}
+\end{align}
+
+The intended term is Term~\ref{eqn:disambGood} here.
+Its meaning is different from that of Term~\ref{eqn:disambBad}, since the term $\epsilon_{t_3};\typecomp{1_{\mathrm{Event}}};\epsilon_{t_3}$ can contain pairs in $\mathrm{Event}$ that $\epsilon_{t_0};\typecomp{1_{\mathrm{Task}}};\epsilon_{t_0}$ does not.
+We could argue that the user must specify more type information here, since the meanings for these terms differ.
+However, the term can be interpreted as one that does not use sub-typing in any meaningful way.
+Since the purpose of a disambiguation system is to reduce verbosity, we should prefer the intended term over Term~\ref{eqn:disambBad}.
+A criterium that distinguishes the two terms is that the intended disambiguation uses $\epsilon_{t_0}$ throughout, which will be the preferred term if we prefer $\epsilon_{A*B}$'s that do not employ sub-typing (that is: those where $A=B$).
+
+What if the user writes $\typecomp{\typetyped{\typeident}{\mathrm{Event*Event}}} \typeunion \typecomp{\left(\mathrm{before} \typeinter \typeconv{\mathrm{before}}\right)}$, a term forces the use of sub-typing? Now possible disambiguated terms include:
+\begin{align}
+\epsilon_{t_3};\overline{\typetyped{1_{\mathrm{Event}}}{t_3}};\epsilon_{t_3} &\cup \epsilon_{t_3};\overline{\left(\epsilon_{t_1};\mathrm{before}_{t_0};\epsilon_{t_2} \cap \epsilon_{t_1};\conv{\mathrm{before}_{t_0}};\epsilon_{t_2} \right)};\epsilon_{t_3}\label{eqn:disambOption}\\
+\epsilon_{t_3};\overline{\typetyped{1_{\mathrm{Event}}}{t_3}};\epsilon_{t_3} &\cup \epsilon_{t_1};\overline{\left(\epsilon_{t_0};\mathrm{before}_{t_0};\epsilon_{t_0} \cap \epsilon_{t_0};\conv{\mathrm{before}_{t_0}};\epsilon_{t_0} \right)};\epsilon_{t_2}\label{eqn:disambOld}\\
+\shortintertext{\flushright{ with ${t_0} = \mathrm{Task*Task}$, ${t_1} = \mathrm{Event*Task}$, ${t_2} = \mathrm{Task*Event}$, and ${t_3} = \mathrm{Event*Event}$}}\nonumber{}
+\end{align}
+
+Observe that again, the two terms have different semantics, due to the complement being computed over a different type.
+In previous publications on the Ampersand type system, where sub-typing did not play a role, Term~\ref{eqn:disambOld} would be chosen over Term~\ref{eqn:disambOption}.
+The rational here is that types are computed bottom up.
+However, we have observed that sub-typing around complements can be error-prone, and the Term~\ref{eqn:disambOption} might well have been intended.
+We therefore argue that an error should be raised here.
+The algorithm presented can be configured either way: accepting the term as Term~\ref{eqn:disambOld}, or throwing an error.
+%As a consequence, we argue that it is desirable to require more information from the user here.
+%terms like $\typecomp{\typetyped{\typeident}{\mathrm{Event*Event}}} \typeunion \typecomp{\left(\mathrm{before} \typeinter \typeconv{\mathrm{before}}\right)}$ are 
+
+
+
+\section{Solving the disambiguation problem}
+%We define the disambiguation problem as follows:
+%
+%A disambiguation problem is given by an expression $E$ using the operations $\cup$ and $;$, and relation names from a set of names $\mathcal{N}$, and a set of possible signatures of each name: $\mathcal{t}(n) \subseteq \mathcal{T}\times \mathcal{T}$ for $n\in \mathcal{N}$.
+%A solution to the disambiguation problem is a well-typed expression $S$ in which the annotations to relation names corresponds to an element in $\mathcal{t}(n)$, such that dropping the types from the expression yields $E$.
+%
+%As an example, $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$ with types $\mathcal{t}(\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ and $\mathcal{t}(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$, is a disambiguation problem.
+%It's (here unique) solution would be:
+%\[\left(\mathrm{before}_{\mathrm{Task * Task}};\mathrm{scheduled}_{\mathrm{Task * Time}}\right) \cup \left(\mathrm{scheduled}_{\mathrm{Task * Time}};\mathrm{before}_{\mathrm{Time * Time}}\right)\]
+
+The question of whether a type-correct version of a term exists can be answered by a simple bottom-up calculation of the possible types for that term.
+We define $p : \mathcal{D} \rightarrow \powerset{\left(\mathcal{T}\times \mathcal{T}\right)}$, for `possible types' by:
+\begin{align*}
+p(\Xi) &= \{t \mid r : t \text{ for $r\in\Xi$}\}\\
+p(e_1; e_2) &= \{(x,y) \mid \exists z. (x,z) \in p(e_1) \wedge (z,y) \in p(e_2))\}\\
+p(e_1\cup e_2) = p(e_1\cap e_2) &= \{(x,y) \mid (x,y) \in p(e_1) \wedge (x,y)\in p(e_2)\}\\
+p(\overline{e}) &= p(e)\\
+p(\typetyped{e}{t}) &= \begin{cases}\{t\}\quad\text{if $t\in p(e_1)$}\\\emptyset\quad\text{otherwise}\end{cases}\\
+p(\conv{e}) &= \{(y,x) \mid (x,y)\in p(e)\}
+\end{align*}
+
+If $p(e) = \emptyset$ then $e$ has a type error, and a smallest sub-term $s$ of $e$ for which $p(s)=\emptyset$ can be used to give a meaningful type error.
+We can compute $p(e)$ in time that is at most quadratic in terms of $\left|\mathcal{T}\times \mathcal{T}\right|$, so computing $p$ can be done in polynomial time in $\left|\mathcal{T}\right|$.
+For Ampersand, $\left|\mathcal{T}\right|$ is at most linear in the size of the user's script.
+
+Aside from type errors, we can use $p$ to find ambiguous terms:
+If there is a sub-term $\Xi$ of $e$ that can be replaced by both $x\in \Xi$ and $y\in Xi$ for some $x \neq y$, then $p(e')$ and $p(e'')$ are nonempty for $e'$ and $e''$ equal to $e$ under the substitution of $\Xi$ for $\{x\}$ and $\{y\}$ respectively.
+Furthermore, we can use $p$ to find out whether a negation can have multiple types.
+
+A second operation at our disposal is one that selects preferred $\mathcal{R}$-terms for each $\Xi$ as a way to avoid ambiguous terms.
+This operation fulfils our requirement that we should prefer some terms over others.
+Let $f : \powerset{\mathcal{R}}\to\powerset{\mathcal{R}}$ be an idempotent function (a function such that $f(f(x))=f(x)$ for all $x$) that returns a subset of its argument, indicating which elements would be preferred.
+In particular, choosing $f(\Xi) = \left\{\epsilon_{A*B} \mid \epsilon_{A*B}\in \Xi \wedge A=B\right\}$ would have us pick $\epsilon_{A*B}$ relations with $A=B$.
+Given such a function $f$, we say that $e'$ is more preferable to $e$ if $p(e')\neq \emptyset$ and $e'$ can be obtained from $e$ by substituting some $\Xi$ terms for $f(\Xi)$.
+We say that $e$ is {\emph maximally preferable} if $p(e)\neq \emptyset$ and for every occurrence of a $\Xi$-term in $e$, substituting it for $f(\Xi)$ would either leave $e$ unchanged (as $\Xi=f(\Xi)$ or result in a term $e'$ such that $p(e')=\emptyset$.
+Terms that are more preferable to $e$ form a lattice\footnote{Proof: `more preferable' is the subset relation for the set of $\Xi$-term occurrences that have been changed wrt $e$.}, and we call the least upper bound to all maximally preferable terms the term that is generally preferred to $e$ under $f$.
+We believe\footnote{Sketch: Create a maximally preferable term using an eager algorithm, then mark all the $\Xi$-terms that are not in such maximally preferable terms as not in the generally preferred term. Keep going starting from $\Xi$-terms that are known not to be in the generally preferred term. Each iteration a new term that is not in the generally preferred term should be discovered: if not, we are done and the remaining terms are those that can be replaced in the generally preferred term.} we can find the generally preferred term in polynomial time.
+
+With these operations, we can create several strategies for disambiguating terms:
 \begin{itemize}
-\item $\varepsilon_T;(\varepsilon_T;\mathrm{before}_T;\varepsilon_T \cap \varepsilon_T;\typeident_\mathrm{Task};\varepsilon_T);\varepsilon_T \cup \varepsilon_T;F_T;\varepsilon_T$ with $T = \mathrm{Task*Task}$
-\item
-\item
+\item Find all potential ambiguities: declared relations, full relations, identity relations and complements should only have one legal type. (Don't use the generally preferred term.)
+\item Find all declared relations that are ambiguous first, then pick the generally preferred term, and then check that full relations, identity relations and complements can only have one type.
+\item Find the generally preferred term, and check for ambiguities: declared relations, full relations, identity relations and complements should only have one legal type.
+\item Find the generally preferred term, and while ambiguities remain, repeat with different functions for generally preferred terms.
 \end{itemize}
 
-the term $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typevee \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ with $\mathrm{Task}\preceq\mathrm{Event}$ would not disambiguate to the obvious term, since $\typetyped{\typeident}{\mathrm{Event}} \typesemi \typetyped{\typevee}{\mathrm{Task}*\mathrm{Task}} \typesemi \typetyped{\mathrm{scheduled}}{\mathrm{Event}*\mathrm{Time}}$ is also well-typed.
-To deal with this, we prefer terms in which the $\epsilon$ relations have the same source and target.
-
+%
+%
+%
+%%TODO: hier verder
+%
+%For the top-down step, let $d(e,t)$ denote the disambiguated expression $e$ with the type $t$.
+%For the top-level call of $d(e,t)$, let $e=E$ and $t\in p(E)$.
+%Then $d(n,t) = n_{[t]}$, $d(e_1 \cup e_2, t) = d(e_1,t) \cup d(e_2,t)$ and $d(e_1 ; e_2, (x,y)) = d(e_1, (x,z)) ; d(e_2, (z,y))$ where $z$ is picked such that $(x,z)\in p(e_1)$ and $(z,y)\in p(e_2)$.
+%Such a $z$ is guaranteed to exist by how $p$ is defined.
+%
+%As an example, let's look at $E = (\mathrm{before};\mathrm{scheduled}) \cup (\mathrm{scheduled};\mathrm{before})$.
+%Then $p(\mathrm{before}) =  \{(\mathrm{Task}, \mathrm{Task}),(\mathrm{Time}, \mathrm{Time})\}$ following $\mathcal{t}$ and similarly $p(\mathrm{scheduled}) = \{(\mathrm{Task}, \mathrm{Time})\}$.
+%This gives subterms $p(\mathrm{before};\mathrm{scheduled}) = p(\mathrm{scheduled};\mathrm{before}) = \{(\mathrm{Task}, \mathrm{Time})\}$ so $p(E) = \{(\mathrm{Task}, \mathrm{Time})\}$.
+%
+%Top-down, $d(E,t) = d(\mathrm{before};\mathrm{scheduled},t) \cup d(\mathrm{scheduled};\mathrm{before},t)$ with $t=(\mathrm{Task}, \mathrm{Time})$.
+%Since $E$ is not ambiguous, we have only one possible way to continue as we solve the disambiguation problem:
+%\begin{align*}d(\mathrm{before};\mathrm{scheduled},t) &= d(\mathrm{before},(\mathrm{Task}, \mathrm{Task})) ;  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time})) \\
+%&=\mathrm{before}_{\mathrm{Task} * \mathrm{Task}}; \mathrm{scheduled}_{\mathrm{Task}* \mathrm{Time}}\\
+%d(\mathrm{scheduled};\mathrm{before},t) &=  d(\mathrm{scheduled},(\mathrm{Task}, \mathrm{Time}));d(\mathrm{before},(\mathrm{Time}, \mathrm{Time}))\\
+%&=\mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}}; \mathrm{before}_{\mathrm{Time}* \mathrm{Time}}\\
+%\end{align*}
+%
+%The disambiguation problem and the corresponding algorithm can be extended over all operations in relation algebra.
+%It can even be used to disambiguate special relations like the identity relation.
+%Let's take $E_2 = \mathrm{scheduled};(\mathrm{before} \cup \mathbb{1})$ as an expression.
+%The signatures are as in the previous example, with $\mathcal{t}(\mathbb{1}) = \left\{(t,t)\mid t\in \mathcal{T}\right\}$.
+%This gives $p(E_2) = \{\mathrm{Task} * \mathrm{Time}\}$ and $d(\{\mathrm{Task} * \mathrm{Time}\},E_2) = \mathrm{scheduled}_{\mathrm{Task} * \mathrm{Time}};(\mathrm{before}_{\mathrm{Time} * \mathrm{Time}}\ \cup\ \mathbb{1}_{\mathrm{Time}})$, as desired.
+%
 
 
 \section{Bibliography}
