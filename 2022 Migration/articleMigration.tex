@@ -646,7 +646,7 @@ The relation $\inst$ contains the pairs:
    The transition from an existing system $\infsys$ to the desired one $\infsys'$ is the topic of this section.
    Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
 \begin{enumerate}
-   \item Let $\infsys$ have state $\dataset$ and schema $\schema$.
+   \item Let $\infsys$ have data set $\dataset$ and schema $\schema$.
          A developer defines $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
          After the migration, the resulting system will be $\infsys'$, enhanced with the triples from $\dataset$ that satisfy $\schema'$,
          and with additional changes made by the migration engineer (see step~\ref{item3}) and by users who have been using the system during the migration.
@@ -658,7 +658,7 @@ The relation $\inst$ contains the pairs:
          $\migrsys$ is meant to migrate the data and define the semantics during the migration phase.
          It contains enforce rules that migrate existing data to the desired data set.
          It also contains data structures and rules that are needed for the duration of the migration phase.
-         The generated script must be free of type errors, to ensure that $\sat{u}{\Dataset}$ exists for every rule $u$ and data set $\dataset$.
+         The generated script must be free of type errors, to ensure that $\sat{u}{\dataset}$ exists for every rule $u$ and data set $\dataset$.
          The proof is available \href{https://www.isa-afp.org/}{here}
    \item\label{item3}
          In many cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration.
@@ -818,13 +818,13 @@ To implement the disjoint union, the following relabelling functions are needed:
    \text{\tt ENFORCE}\ r\ \text{\tt :=}\ \id{expression}\label{enforce eq}\\
    \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{expression}\label{enforce ins}
 \end{eqnarray}
-   An engine enforces all enforce rules by changing the population of relation $r$.
+   The run time environment contains an engine that enforces such rules.
+   The engine will change the population of relation $r$ by the least set of pairs needed to satisfy the rule.
    An enforce rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
    When the population of this expression is losing pairs that are in $r$, the engine will remove such pairs from $r$ to keep $r$ smaller than or equal to \id{expression}.
    An enforce rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
    When the population of this expression is growing with pairs that are not in $r$, the engine will insert such pairs in $r$ to keep $r$ greater than or equal to \id{expression}.
-   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression}.
-   It does so by inserting and deleting pairs in $r$ to keep it equal to \id{expression}.
+   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression} by inserting and deleting the right pairs in $r$.
    Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
 
    Now, let us study how to migrate data from $\dataset$ to $\dataset'$.
@@ -834,6 +834,8 @@ The prefix {\tt new.} refers to items from the desired information system.}:
 \begin{verbatim}
    ENFORCE new.takes >: old.takes
 \end{verbatim}
+   The relation `old.takes' resides in the existing system and will not change anymore.
+   
    This would mean, however, that all pairs from {\tt old.takes} will be in {\tt new.takes} forever.
    An extra relation (\ref{extraRelation}) fixes this problem by remembering which pairs have been copied:
 \begin{eqnarray}
