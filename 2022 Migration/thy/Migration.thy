@@ -355,7 +355,6 @@ lemma disjoint_union_well_typed:
 datatype ('l,'v,'c) pre_dataset
   = DS (tripleset: "('l,'v) labeled_graph") (dsTyping : "('l,'v,'c) graphTyping")
 
-
 fun disjoint_union_pre_dataset where
   "disjoint_union_pre_dataset (DS g1 gt1) (DS g2 gt2)
     = DS (disjoint_union_graphs g1 g2) (disjoint_union_typing gt1 gt2)"
@@ -370,12 +369,44 @@ lemma disjoint_union_pre_dataset:
   using assms disjoint_union_well_typed
   by(cases ds1;cases ds2;auto)
 
+fun map_labels_in_dataset_pre where
+  "map_labels_in_dataset_pre f (DS g gt)
+    = DS (map_labels_in_graph g f) (map_labels_in_graphtype gt f)"
+
+lemma map_labels_pre_dataset:
+  assumes "dataset ds" "inj_on f (Domain (decl (dsTyping ds)))"
+  shows "dataset (map_labels_in_dataset_pre f ds)"
+proof(cases ds)
+  case (DS g gt)
+  hence "typedGraph gt g" "inj_on f (Domain (decl gt))"
+    using assms by auto
+  from map_labels_preserves_wellTypedness[OF this]
+  show ?thesis by (auto simp:DS)
+qed
+
 (* Isabelle documentation on typedef is found in the 'datatypes' tutorial *)
 typedef ('l,'v,'c) dataset = "{ds :: ('l,'v,'c) pre_dataset. typedGraph (dsTyping ds) (tripleset ds)}"
 proof
   let ?emptyset = "DS (LG {} {}) (GT {} {})::('l,'v,'c) pre_dataset"
   show "?emptyset \<in> {ds. typedGraph (dsTyping ds) (tripleset ds)}" by auto
 qed
+
+lemma typedGraph_datasetI[intro]:
+  "typedGraph (dsTyping (Rep_dataset ds)) (tripleset (Rep_dataset ds))"
+  using Rep_dataset by blast
+
+definition map_labels_dataset where
+"map_labels_dataset f ds = Abs_dataset (map_labels_in_dataset_pre f (Rep_dataset ds))"
+
+abbreviation relations where
+  "relations ds \<equiv> Domain (decl (dsTyping (Rep_dataset ds)))"
+
+lemma map_labels_dataset_Rep[simp]:
+  assumes "inj_on f (relations ds)"
+  shows "Rep_dataset (map_labels_dataset f ds)
+  = map_labels_in_dataset_pre f (Rep_dataset ds)"
+  unfolding map_labels_dataset_def
+  using Abs_dataset_inverse[OF map_labels_pre_dataset[OF Rep_dataset assms]].
 
 definition disjoint_union_dataset where
 "disjoint_union_dataset ds1 ds2 =
@@ -446,15 +477,115 @@ lemma filter_with_labelset[simp]:
   unfolding filter_with_labelset_def
   using Abs_dataset_inverse[of ?rhs, OF filter_with_labelset_pre_welltyped[OF Rep_dataset]].
 
-locale rule_implementation =
+lemma filter_with_labelset_twice[simp]:
+  shows "filter_with_labelset L (filter_with_labelset R ds)
+   = filter_with_labelset (L \<inter> R) ds" (is "?lhs=?rhs")
+proof -
+  have "Rep_dataset (filter_with_labelset L (filter_with_labelset R ds)) =
+    Rep_dataset (filter_with_labelset (L \<inter> R) ds)"
+    apply (cases "Rep_dataset ds")
+    apply (cases "tripleset (Rep_dataset ds)"; cases "dsTyping (Rep_dataset ds)")
+    by (auto simp:restrict_def)
+  thus ?thesis using Rep_dataset_inject by blast
+qed
+
+lemma map_labels_in_graph_filter [simp]:
+  assumes "inj_on f (L \<union> Domain x1a)" "typedGraph (GT x1a x2a) (LG x1b x2b)"
+  shows "(apfst f ` {e \<in> x1b. case e of (l, uu_, uua_) \<Rightarrow> l \<in> L}) =
+          {e \<in> apfst f ` x1b. case e of (l, uu_, uua_) \<Rightarrow> l \<in> f ` L}"
+  using wellTypedEdgeE[OF typedGraphE(2)[OF assms(2)]] inj_onD[OF assms(1)]    
+  by (auto intro!:apfst_helper) blast
+
+lemma map_labels_in_dataset_pre_filter[simp]:
+  assumes "inj_on f (L \<union> Domain (decl (dsTyping ds)))" "dataset ds"
+  shows
+  "map_labels_in_dataset_pre f (filter_with_labelset_pre L ds) =
+    filter_with_labelset_pre (f ` L) (map_labels_in_dataset_pre f ds)"
+  using assms 
+  apply(cases ds;cases "dsTyping ds";cases "tripleset ds",simp)
+  by(auto simp:map_labels_in_graph_def map_labels_in_graphtype_def
+        intro!:apfst_helper Domain.DomainI dest!:inj_onD[OF assms(1)])
+
+lemma relations_filter[simp]:
+  "relations (filter_with_labelset L ds)
+  = L \<inter> relations ds" by (cases "Rep_dataset ds"; cases "dsTyping (Rep_dataset ds)", auto)
+
+lemma relations_filterI[intro]:
+  "relations (filter_with_labelset L ds)
+  \<subseteq> relations ds" by (cases "Rep_dataset ds"; cases "dsTyping (Rep_dataset ds)", auto)
+
+lemma filter_map_range[simp]:
+  assumes "inj_on f (relations ds)"
+  shows
+    "filter_with_labelset (range f) (map_labels_dataset f ds)
+  = map_labels_dataset f ds"
+  apply (subst Rep_dataset_inject[symmetric])
+  by (cases "Rep_dataset ds",
+      auto simp:map_labels_dataset_Rep[OF assms]
+      map_labels_in_graph_def
+      map_labels_in_graphtype_def)
+
+lemma map_filter[simp]:
+  assumes "inj_on f (L \<union> relations ds)"
+  shows "map_labels_dataset f (filter_with_labelset L ds)
+        = filter_with_labelset (f ` L) (map_labels_dataset f ds)"
+proof (subst Rep_dataset_inject[symmetric])
+  have inj:"inj_on f (relations ds)" using assms unfolding inj_on_Un by auto
+  from map_labels_in_dataset_pre_filter[OF assms Rep_dataset] inj
+       inj_on_subset[OF inj relations_filterI]
+  show "Rep_dataset (map_labels_dataset f (filter_with_labelset L ds)) =
+    Rep_dataset (filter_with_labelset (f ` L) (map_labels_dataset f ds))"
+    by auto
+(* auto does the following:
+    unfolding map_labels_dataset_Rep[OF inj_on_subset[OF inj relations_filterI]]
+              filter_with_labelset
+              map_labels_dataset_Rep[OF inj]
+    using map_labels_in_dataset_pre_filter[OF assms Rep_dataset]
+*)
+qed
+
+locale rule_violations =
   fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> ('a,'v) labeled_graph"
   and   relevant_labels :: "'u \<Rightarrow> 'l set"
-assumes "\<And> u. violation u (filter_with_labelset (relevant_labels u) g) = violation u  g"
+assumes filter[simp]:"violation u (filter_with_labelset (relevant_labels u) g) = violation u g"
 begin
-  fun satisfies where
-    "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+fun satisfies where
+  "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+lemma satisfies_relevant[simp]:
+  "satisfies u (filter_with_labelset (relevant_labels u) g) = satisfies u g"
+  by simp
+fun satisfies_set where
+  "satisfies_set U ds \<longleftrightarrow> (\<forall> u\<in>U. satisfies u ds)"
+
+fun violation_mapped where
+  "violation_mapped f u = violation u o map_labels_dataset f"
+
+fun relevant_mapped where
+  "relevant_mapped f u = f -` relevant_labels u"
 
 end
+
+locale mapped_rule_violations = rule_violations + 
+  fixes f :: "'l \<Rightarrow> 'b"
+  assumes inj:"inj f"
+begin
+
+interpretation mapped: rule_violations "violation_mapped f" "relevant_mapped f"
+proof(standard)
+  fix u
+  fix g :: "('l, 'c, 'd) dataset"
+  have inj1:"inj_on f (relations g)" 
+   and inj2:"inj_on f ((f -` relevant_labels u) \<union> relations g)"
+       using subset_inj_on[OF inj] by auto
+  have "violation u (filter_with_labelset (relevant_labels u)
+                    (filter_with_labelset (range f) (map_labels_dataset f g)))
+      = violation u (map_labels_dataset f g)"
+    using filter_map_range[OF inj1] filter by metis
+  then show "violation_mapped f u (filter_with_labelset (relevant_mapped f u) g) =
+                   violation_mapped f u g" by (auto simp:map_filter[OF inj2])
+qed
+end
+
 
 (*
 

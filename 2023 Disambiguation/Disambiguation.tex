@@ -280,13 +280,13 @@ Possible disambiguated terms include:
 \end{align}
 
 The intended term is Term~\ref{eqn:disambGood} here.
-Its meaning is different from that of Term~\ref{eqn:disambBad}, since the term $\epsilon_{t_3};\typecomp{1_{\mathrm{Event}}};\epsilon_{t_3}$ can contain pairs in $\mathrm{Event}$ that $\epsilon_{t_0};\typecomp{1_{\mathrm{Task}}};\epsilon_{t_0}$ does not.
+Its meaning is different from that of Term~\ref{eqn:disambBad}, since the term $\epsilon_{t_3};\overline{1_{\mathrm{Event}}};\epsilon_{t_3}$ can contain pairs in $\mathrm{Event}$ that $\epsilon_{t_0};\overline{1_{\mathrm{Task}}};\epsilon_{t_0}$ does not.
 We could argue that the user must specify more type information here, since the meanings for these terms differ.
-However, the term can be interpreted as one that does not use sub-typing in any meaningful way.
+However, the term can be interpreted as one that does not use sub-typing.
 Since the purpose of a disambiguation system is to reduce verbosity, we should prefer the intended term over Term~\ref{eqn:disambBad}.
 A criterium that distinguishes the two terms is that the intended disambiguation uses $\epsilon_{t_0}$ throughout, which will be the preferred term if we prefer $\epsilon_{A*B}$'s that do not employ sub-typing (that is: those where $A=B$).
 
-What if the user writes $\typecomp{\typetyped{\typeident}{\mathrm{Event*Event}}} \typeunion \typecomp{\left(\mathrm{before} \typeinter \typeconv{\mathrm{before}}\right)}$, a term forces the use of sub-typing? Now possible disambiguated terms include:
+What if the user writes $\typecomp{\typetyped{\typeident}{\mathrm{Event*Event}}} \typeunion \typecomp{\left(\mathrm{before} \typeinter \typeconv{\mathrm{before}}\right)}$, a term that forces the use of sub-typing? Now possible disambiguated terms include:
 \begin{align}
 \epsilon_{t_3};\overline{\typetyped{1_{\mathrm{Event}}}{t_3}};\epsilon_{t_3} &\cup \epsilon_{t_3};\overline{\left(\epsilon_{t_1};\mathrm{before}_{t_0};\epsilon_{t_2} \cap \epsilon_{t_1};\conv{\mathrm{before}_{t_0}};\epsilon_{t_2} \right)};\epsilon_{t_3}\label{eqn:disambOption}\\
 \epsilon_{t_3};\overline{\typetyped{1_{\mathrm{Event}}}{t_3}};\epsilon_{t_3} &\cup \epsilon_{t_1};\overline{\left(\epsilon_{t_0};\mathrm{before}_{t_0};\epsilon_{t_0} \cap \epsilon_{t_0};\conv{\mathrm{before}_{t_0}};\epsilon_{t_0} \right)};\epsilon_{t_2}\label{eqn:disambOld}\\
@@ -295,7 +295,7 @@ What if the user writes $\typecomp{\typetyped{\typeident}{\mathrm{Event*Event}}}
 
 Observe that again, the two terms have different semantics, due to the complement being computed over a different type.
 In previous publications on the Ampersand type system, where sub-typing did not play a role, Term~\ref{eqn:disambOld} would be chosen over Term~\ref{eqn:disambOption}.
-The rational here is that types are computed bottom up.
+The rationale here is that types are computed bottom up.
 However, we have observed that sub-typing around complements can be error-prone, and the Term~\ref{eqn:disambOption} might well have been intended.
 We therefore argue that an error should be raised here.
 The algorithm presented can be configured either way: accepting the term as Term~\ref{eqn:disambOld}, or throwing an error.
@@ -330,15 +330,15 @@ We can compute $p(e)$ in time that is at most quadratic in terms of $\left|\math
 For Ampersand, $\left|\mathcal{T}\right|$ is at most linear in the size of the user's script.
 
 Aside from type errors, we can use $p$ to find ambiguous terms:
-If there is a sub-term $\Xi$ of $e$ that can be replaced by both $x\in \Xi$ and $y\in Xi$ for some $x \neq y$, then $p(e')$ and $p(e'')$ are nonempty for $e'$ and $e''$ equal to $e$ under the substitution of $\Xi$ for $\{x\}$ and $\{y\}$ respectively.
+If there is a sub-term $\Xi$ of $e$ that can be replaced by both $x\in \Xi$ and $y\in \Xi$ for some $x \neq y$, then $p(e')$ and $p(e'')$ are nonempty for $e'$ and $e''$ equal to $e$ under the substitution of $\Xi$ for $\{x\}$ and $\{y\}$ respectively.
 Furthermore, we can use $p$ to find out whether a negation can have multiple types.
 
 A second operation at our disposal is one that selects preferred $\mathcal{R}$-terms for each $\Xi$ as a way to avoid ambiguous terms.
 This operation fulfils our requirement that we should prefer some terms over others.
-Let $f : \powerset{\mathcal{R}}\to\powerset{\mathcal{R}}$ be an idempotent function (a function such that $f(f(x))=f(x)$ for all $x$) that returns a subset of its argument, indicating which elements would be preferred.
-In particular, choosing $f(\Xi) = \left\{\epsilon_{A*B} \mid \epsilon_{A*B}\in \Xi \wedge A=B\right\}$ would have us pick $\epsilon_{A*B}$ relations with $A=B$.
+Let $f : \powerset{(\mathcal{R})}\to\powerset{(\mathcal{R})}$ be an idempotent function (a function such that $f(f(x))=f(x)$ for all $x$) that returns a subset of its argument, indicating which elements would be preferred.
+In particular, choosing $f(\Xi) = \left\{\epsilon_{A*B} \mid \epsilon_{A*B}\in \Xi \wedge A=B\right\}$ would have us prefer $\epsilon_{A*B}$ relations with $A=B$.
 Given such a function $f$, we say that $e'$ is more preferable to $e$ if $p(e')\neq \emptyset$ and $e'$ can be obtained from $e$ by substituting some $\Xi$ terms for $f(\Xi)$.
-We say that $e$ is {\emph maximally preferable} if $p(e)\neq \emptyset$ and for every occurrence of a $\Xi$-term in $e$, substituting it for $f(\Xi)$ would either leave $e$ unchanged (as $\Xi=f(\Xi)$ or result in a term $e'$ such that $p(e')=\emptyset$.
+We say that $e$ is {\emph maximally preferable} if $p(e)\neq \emptyset$ and for every occurrence of a $\Xi$-term in $e$, substituting it for $f(\Xi)$ would either leave $e$ unchanged (as $\Xi=f(\Xi)$) or result in a term $e'$ such that $p(e')=\emptyset$.
 Terms that are more preferable to $e$ form a lattice\footnote{Proof: `more preferable' is the subset relation for the set of $\Xi$-term occurrences that have been changed wrt $e$.}, and we call the least upper bound to all maximally preferable terms the term that is generally preferred to $e$ under $f$.
 We believe\footnote{Sketch: Create a maximally preferable term using an eager algorithm, then mark all the $\Xi$-terms that are not in such maximally preferable terms as not in the generally preferred term. Keep going starting from $\Xi$-terms that are known not to be in the generally preferred term. Each iteration a new term that is not in the generally preferred term should be discovered: if not, we are done and the remaining terms are those that can be replaced in the generally preferred term.} we can find the generally preferred term in polynomial time.
 
