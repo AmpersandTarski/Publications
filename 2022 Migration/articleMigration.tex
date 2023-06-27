@@ -438,10 +438,10 @@ generative software\sep incremental software deployment\sep data migration\sep r
    % In practice, there are different ways of enforcing rules: automatic enforcement and manual enforcement.
 
    % Automatic enforcement is specified by the developer with a special syntax:
-   % the {\em enforce rule}.
-   % An enforce rule specifies not only the rule,
+   % the {\em enforcement rule}.
+   % An enforcement rule specifies not only the rule,
    % but it implicitly defines event $e'$ to restore the invariance.
-   % The system must have an engine that restores invariance of all enforce rules,
+   % The system must have an engine that restores invariance of all enforcement rules,
    % so users will experience that these rules are always satisfied.
 
    % Manual enforcement means that the system (temporarily) allows violations,
@@ -453,7 +453,7 @@ generative software\sep incremental software deployment\sep data migration\sep r
    % to keep control over the type of persons that are allowed to ``restore broken rules''.
    % As a consequence, a mechanism is needed to notify those persons of the work to be done.
 
-   % If a rule $u$ is not assigned to any role and it is not an enforce rule,
+   % If a rule $u$ is not assigned to any role and it is not an enforcement rule,
    % the system must prevent any event $e$ from having any effect on the database.
    % So, if $e$ would violate rule $u$, the system must reject $e$.
    % This implements blocking behaviour, and must be accompanied by an error message.
@@ -646,17 +646,17 @@ The relation $\inst$ contains the pairs:
    The transition from an existing system $\infsys$ to the desired one $\infsys'$ is the topic of this section.
    Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
 \begin{enumerate}
-   \item Let $\infsys$ have data set $\dataset$ and schema $\schema$.
-         A developer defines $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
+   \item Let the existing information system $\infsys$ have data set $\dataset$ and schema $\schema$.
+         A developer defines a new information system, $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
          After the migration, the resulting system will be $\infsys'$, enhanced with the triples from $\dataset$ that satisfy $\schema'$,
          and with additional changes made by the migration engineer (see step~\ref{item3}) and by users who have been using the system during the migration.
          $\dataset'$ may contain some new data,
-         for instance to initialize new features on the moment of transition (MoT).
+         for instance, to initialize new features at the moment of transition (MoT).
          If schemas $\schema$ equals $\schema'$, the data migration is unnecessary, so in the sequel we assume they are different.
    \item The migration engineer uses a software generator to generate a migration script, $\migrsys$,
          This is a system that includes both $\infsys$ and $\infsys'$.
          $\migrsys$ is meant to migrate the data and define the semantics during the migration phase.
-         It contains enforce rules that migrate existing data to the desired data set.
+         It contains enforcement rules that migrate existing data to the desired data set.
          It also contains data structures and rules that are needed for the duration of the migration phase.
          The generated script must be free of type errors, to ensure that $\sat{u}{\dataset}$ exists for every rule $u$ and data set $\dataset$.
          The proof is available \href{https://www.isa-afp.org/}{here}
@@ -665,23 +665,33 @@ The relation $\inst$ contains the pairs:
          However, a migration engineer may have specific requirements that call for changes in $\migrsys$.
          For that purpose, the generator generates the migration script as an Ampersand script,
          so the migration engineer can accommodate such requirements.
-         This can be necessary, for example to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
-         She can either implement enforce rules or use the business to resolve the issues.
+         This can be necessary, for example, to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
+         She can either implement enforcement rules or use the business to resolve the issues.
          She can test the resulting migration script, $\migrsys'$ separately before taking the desired system to production.
-         The migration engineer does not alter $\schema$ equals $\schema'$ while adapting $\migrsys'$ to the specific needs of the current migration.
+         The migration engineer alters $\schema$ nor $\schema'$ while adapting $\migrsys'$ to the specific needs of the current migration.
    \item Then, the migration engineer deploys system $\migrsys'$.
-         This event starts the copying of data from $\dataset$ to $\dataset'$ (figure~\ref{fig:migration phase}).
+         This event starts the copying of data from $\dataset$ to $\dataset'$, as specified in $\migrsys'$ (figure~\ref{fig:migration phase}).
          During this phase, the ingress is still referring users to the existing system,
          so they will hardly notice that the desired system is being fired up and loaded with data.
          Users are still changing $\dataset$ (both inserts and deletes),
          but these changes are being transferred to $\dataset'$ as well.
-         This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and
-         both data sets are in sync with respect to the ongoing transactions.
-   \item At this point, the ingress switches the traffic from $\infsys$ to $\migrsys'$,
-         so users will now experience the new functionality.
+         This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and all invariants of the migration system are true.
+   \item At this moment, the ingress switches the incoming traffic from $\infsys$ to $\migrsys'$,
+         so $\migrsys'$ effectively takes over.
          This event marks the MoT.
-         From this point onward, users work with the desired functionality in data set $\dataset'$.
-   \item After taking down the existing system and the migration system, the desired system remains in production and the migration is finished.
+         Since $\infsys$ may still have some violations due to last-minute edits,
+         it may take some (short but finite) time until the invariants of $\infsys$ are true.
+         After that, dataset $\dataset$ will no longer change.
+   \item From this moment, users experience the functionality of the migration system $\migrsys'$.
+         This system must ensure that all invariants of $\schema'$ are true before the migration is complete.
+         It no longer ensures the rules of $\schema$, which govern the existing system.
+         Since $\dataset$ is no longer changing, the migration engineer can now focus on the remaining violations of $\schema'$.
+         Users of the migration system will deal with process rules in the migration system that are still violated.
+         Once all invariants of $\migrsys'$ are true, the migration is complete.
+         This state marks the moment of cleanup (MoC)
+   \item After the MoC, the ingress switches the incoming traffic from $\migrsys'$ to $\infsys'$.
+         The migration system is no longer needed and can be taken out of production, together with the existing system $\infsys$.
+         The desired system remains in production and the migration is finished.
          This establishes the post-migration situation (figure~\ref{fig:post-migration}).
 \end{enumerate}
 
@@ -805,14 +815,14 @@ To implement the disjoint union, the following relabelling functions are needed:
    The relabeling of concepts is not trivial because of specialization.
    To illustrate this point, suppose $D\isa A$.
    Then the substitution $[C\rightarrow D]$ means that every atom $a$ that used to be of concept $C$ in the existing system, is now not only a $D$ but also an $A$.
-   For example by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
+   For example, by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
    all atoms that represent hotels might suddenly be expected to have parking lots.
    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 
 \section*{Generating a Migration Script}
 \subsection{Loading Data}
    Before explaining how to migrate data from $\dataset$ to $\dataset'$, we need to explain {\tt ENFORCE} rules.
-   In Ampersand, an enforce rule comes in three flavors:
+   In Ampersand, an enforcement rule comes in three flavors:
 \begin{eqnarray}
    \text{\tt ENFORCE}\ r\ \text{\tt :<}\ \id{expression}\label{enforce del}\\
    \text{\tt ENFORCE}\ r\ \text{\tt :=}\ \id{expression}\label{enforce eq}\\
@@ -820,12 +830,12 @@ To implement the disjoint union, the following relabelling functions are needed:
 \end{eqnarray}
    The run time environment contains an engine that enforces such rules.
    The engine will change the population of relation $r$ by the least set of pairs needed to satisfy the rule.
-   An enforce rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
+   An enforcement rule with operator {\tt :<} (alternative~\ref{enforce del}) keeps the population of $r$ smaller than or equal to \id{expression}.
    When the population of this expression is losing pairs that are in $r$, the engine will remove such pairs from $r$ to keep $r$ smaller than or equal to \id{expression}.
-   An enforce rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
+   An enforcement rule with operator {\tt >:} (alternative~\ref{enforce ins}) keeps the population of $r$ larger than or equal to \id{expression}.
    When the population of this expression is growing with pairs that are not in $r$, the engine will insert such pairs in $r$ to keep $r$ greater than or equal to \id{expression}.
-   An enforce rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression} by inserting and deleting the right pairs in $r$.
-   Summarizing, an enforce rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
+   An enforcement rule with operator {\tt :=} (alternative~\ref{enforce eq}) keeps the population of $r$ equal to \id{expression} by inserting and deleting the right pairs in $r$.
+   Summarizing, an enforcement rule can be read as an invariant that keeps one of $r\leq\id{expression}$, $r=\id{expression}$, or $r\geq\id{expression}$ satisfied by changing the population of $r$.
 
    Now, let us study how to migrate data from $\dataset$ to $\dataset'$.
    It would be tempting to state that a relation from the example system, say {\tt takes}, could be copied by the following code fragment%
