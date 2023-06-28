@@ -51,24 +51,26 @@
 \fntext[fn2]{ORCID 0000-0002-6590-6220}
 
 \begin{abstract}
-   Incremental software deployment is meant to reduce the time to deploy changes.
-   However, an increment might involve a change in the database schema.
-   This poses the challenge to preserve already deployed data.
-   The problem is how to preserve the semantics of that data under a changing schema.
+   Software generators can help to increase the frequency of releases and their reliability.
+   They save on time spent on development and time spent on fixing human-induced mistakes by compiling a specification into a working information system.
+   However, many generators do not support data migrations, which are necessary when the schema of a system changes during its operational life.
+   As a consequence, developers often migrate data ``by hand'', which slows down the pace of incremental software development.
+
+   To address this problem, this paper proposes a theory for data migrations.
+   The problem at large is how to preserve the semantics of that data under a changing schema.
    This paper proposes a theory for deploying an incremental change,
    meant to be implemented in a software generator called Ampersand.
-   
-   This paper aims to preserve the semantics of data, satisfy elementary business requirements,
-   and featuring a zero down-time option after deployment.
+
+   This paper aims to preserve the semantics of data by satisfying concrete business requirements.
    We derive a migration schema from both the existing system and a changed schema that specifies the desired system.
    This work is based on the assumptions that
    the migration is meant to deploy a software increment in production,
    the existing data set may be polluted,
    human interaction may be required,
    data meaning must be preserved,
-   the business continues during the migration without interruption,
+   the business continues during the migration without interruption (zero down-time),
    and there is a compiler to generate an information system from a given schema.
-   The correctness of the migration is the focus of this paper, while efficiency is beyond its scope.
+   The correctness of the migration is the focus of this paper, while efficiency is outside its scope.
 \end{abstract}
 
 \begin{keyword}
@@ -83,17 +85,21 @@ generative software\sep incremental software deployment\sep data migration\sep r
 \footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }.
 
    This paper is founded in the belief that generating systems can prevent human programming errors, which contributes to robust software.
-   Besides, information systems should be released into production in small increments.
-   That yields shorter release cycles, more frequent releases, and thus a more agile software development process%
-   \footnote{These effects can be measured in terms of DevOps metrics such as
+   Developers can use their efforts saved by generating systems to decrease the time to release successive increments.
+   More frequent data migrations are then to be expected.
+   A problem is that software generators typically do not support the data migration process, especially when the schema changes.
+   With such generators at hand, we can expect developers to spend a larger portion of their time on data migrations,
+   which limits the pace of deploying successive releases%
+\footnote{These effects can be measured in terms of DevOps metrics such as
    deployment frequency,
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
-   By deploying frequently, in small increments, and without down-time,
-   users get a system that evolves organically.
+
+   This paper proposes a theory for data migrations that is meant to be implemented in a software generator called Ampersand~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017}.
+   It aims at automating data migrations, so incremental changes can be done more reliably and faster.
+   This contributes to a more agile software development process.
+   We believe that users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
    This requires a robust data migration process in which the deployment succeeds without failure.
-   Automation is required too, to prevent human errors in the process.
-   As a result, we expect that migration engineers can deploy smaller increments more frequently, which contributes to a more agile software development process.
    
    This paper assumes the the existing system and the desired system have different schemas,
    which occurs in incremental software deployment.
@@ -135,6 +141,7 @@ generative software\sep incremental software deployment\sep data migration\sep r
 
 \section{Analysis}
 \label{sct:Analysis}
+\subsection{Information Systems}
    The purpose of an information system is to make data meaningful to its users.
    The analysis of the problem starts with a formal definition of information systems,
    in which the schema contains all information that makes data meaningful.
@@ -173,27 +180,39 @@ generative software\sep incremental software deployment\sep data migration\sep r
    which most database management systems refer to as integrity rules.
    The purpose of these rules is to keep all constraints satisfied.
 
-   This work uses the Ampersand compiler~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017} to generate information systems.
-   It uses a syntactically sugared form of heterogeneous relation algebra,
+   Like most other software generators, Ampersand~\cite{Joosten-JLAMP2018, JoostenRAMiCS2017}
+   is a compiler that generates information systems from a script.
+   Once a generated system is in production, changes that affect the schema are expensive because developers must migrate data ``by hand''.
+   This is an error-prone process which slows down the deployment of successive increments.
+
+   Ampersand uses a syntactically sugared form of heterogeneous relation algebra,
    which works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
    Each rule in Ampersand is a constraint (aka invariant), which the system keeps satisfied as long as that rule lives%
 \footnote{The dotted lines in the diagrams show which set of rules is enforced.}.
-   So, the user spends no effort to extract constraints from specifications or (even more laborious) from code
+   So, developers spend no effort to extract constraints from specifications or (even more laborious) from code
    because all constraints are explicitly available as rules in the code.
+
    This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
    It also allows us to be explicit about ``preserving the meaning as much as possible''.
    An Ampersand script contains just enough information to generate a complete system,
    which means that a classical database schema (i.e.\ data structure plus semantics) can be extracted from the Ampersand script.
-   For the purpose of this paper an Ampersand script is considered equivelant to the schema of the generated system.
 
+\subsection{Data Migrations}
    Data migration occurs when a desired system replaces an existing one,
    while preserving the meaning of the present data as much as possible~\cite{Spivak2012}.
    Just copying the set of data from the existing system to the desired system is obviously wrong if the schemas of both systems differ.
 
-   Complications may arise as a result of data pollution,
-   which may require human interventions to resolve.
-   Data pollution is distinguished in the following categories:
+   In practice, data migrations are done by deploying the desired system and the existing system side-by-side,
+   while transferring data in a controlled fashion.
+   A migration strategy (e.g. case by case, customer by customer, or in batches) must ensure the quality of the migration.
+   To assume that this can be done fully automatically is unrealistic in many cases%
+\footnote{Note that smaller increments improve the chance that a fully automic migration is possible,
+although there will always be cases where human intervention is required.}.
+   Manual interventions can be necessary to resolve data pollution, new business rules, or to fix known issues in the old system.
+   Consequently, a migration engineer must have the freedom to change the migration script to suit the particulars of the migration.
+   Such complications may arise mostly as a result of data pollution.
+   We distinguish data pollution in the following categories:
 \begin{itemize}
    \item data pollution that violates a constraint in the schema.
    \item data pollution that violates a constraint that is not in the schema.
@@ -220,8 +239,8 @@ generative software\sep incremental software deployment\sep data migration\sep r
    In our approach, such user interventions are given some time by
    defining two distinct moments:
 \begin{enumerate}
-   \item the moment of transition (the MoT), i.e. the moment the desired system is made available to users;
-   \item the moment of cleanup (the MoC), i.e. the moment that the old software and data are removed.%
+   \item the moment of transition (the MoT), i.e. the moment that changed functionality is made available to users;
+   \item the moment of cleanup (the MoC), i.e. the moment after which the old software and data can be removed.%
 \footnote{Backup mechanisms are outside the scope of this paper.}.
 \end{enumerate}
 
@@ -259,7 +278,7 @@ generative software\sep incremental software deployment\sep data migration\sep r
 \label{fig:post-migration}
 \end{figure}
 
-   In the following section introduces the definitions required to migrate data from one system to another.
+   The following section introduces the definitions required to migrate data from one system to another.
 
 \section{Terminology}
 \label{sct:Terminology}
@@ -1200,13 +1219,13 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
    \label{fig:during}
 \end{figure}
    Deployment of the migration system (figure~\ref{fig:during}) leaves the existing system intact.
-   It enhances the system with the data set needed by the migration system, which includes the data set needed by the new system.
+   It enhances the system with the data set needed by the migration system, which includes the data set needed by the desired system.
    So, users will notice no difference in the existing system when the migration system is deployed.
 
    When all rules in the migration script have been satisfied, the migration system is ready to be deployed.
    At this point, the ingress switches traffic from the existing system to the migration system.
-   Until this moment, users have been updating data in the existing system, which is continuously being migrated to the new system.
-   After the ingress switch is made, users have the new functionality at their disposal and make their changes in the new system.
+   Until this moment, users have been updating data in the existing system, which is continuously being migrated to the desired system.
+   After the ingress switch is made, users have the new functionality at their disposal and make their changes in the desired system.
    If for some reason, there is remaining migration work, the migration system will execute this.
    Since there is no more input in the existing system, the migration system will eventually be consistent.
    At this point, the existing system can be removed, which leaves the migration system in place.
