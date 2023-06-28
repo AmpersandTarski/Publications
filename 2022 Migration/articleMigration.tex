@@ -666,7 +666,7 @@ The relation $\inst$ contains the pairs:
    Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
 \begin{enumerate}
    \item Let the existing information system $\infsys$ have data set $\dataset$ and schema $\schema$.
-         A developer defines a new information system, $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{For now, we ignore the functionality.} as illustrated in figure~\ref{fig:post-migration}.
+         A developer defines a new information system, $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{In this paper, we only consider the functionality captured by rules.} as illustrated in figure~\ref{fig:post-migration}.
          After the migration, the resulting system will be $\infsys'$, enhanced with the triples from $\dataset$ that satisfy $\schema'$,
          and with additional changes made by the migration engineer (see step~\ref{item3}) and by users who have been using the system during the migration.
          $\dataset'$ may contain some new data,
@@ -677,8 +677,8 @@ The relation $\inst$ contains the pairs:
          $\migrsys$ is meant to migrate the data and define the semantics during the migration phase.
          It contains enforcement rules that migrate existing data to the desired data set.
          It also contains data structures and rules that are needed for the duration of the migration phase.
-         The generated script must be free of type errors, to ensure that $\sat{u}{\dataset}$ exists for every rule $u$ and data set $\dataset$.
-         The proof is available \href{https://www.isa-afp.org/}{here}
+%         The generated script must be free of type errors, to ensure that $\sat{u}{\dataset}$ exists for every rule $u$ and data set $\dataset$.
+%         The proof is available \href{https://www.isa-afp.org/}{here}
    \item\label{item3}
          In many cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration.
          However, a migration engineer may have specific requirements that call for changes in $\migrsys$.
@@ -714,129 +714,130 @@ The relation $\inst$ contains the pairs:
          This establishes the post-migration situation (figure~\ref{fig:post-migration}).
 \end{enumerate}
 
-\subsection{Formalization}
-   Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
-\begin{definition}[union of data sets]
-\label{def:graph_union_wellTyped_if_parts_wellTyped}
-    \[\pair{\triples_1}{\inst_1}\cup\pair{\triples_2}{\inst_2}\ =\ \pair{\triples_1\cup\triples_2}{\inst_1\cup\inst_2}\]
-\end{definition}
-
-\begin{lemma}
-\label{lemma:graph_union_wellTyped_if_parts_wellTyped}
-   If $\dataset_1$ and $\dataset_2$ are data sets, then $\dataset_1\cup\dataset_2$ is a data set.
-\end{lemma}
-
-\begin{definition}[map relation names in data sets]
-\label{def:map_labels_preserves_wellTypedness}
-   Let $h:\Rels\rightarrow\Rels$, then
-   \[\begin{array}{rcl}
-      \maprel{h}{\pair{\triples}{\inst}}&=&\pair{\maprel{h}{\triples}}{\inst}\\
-      \maprel{h}{\triple{a}{r}{b}}&=&\triple{a}{h(r)}{b}
-   \end{array}\]
-\end{definition}
-
-\begin{lemma}
-\label{lemma:map_labels_preserves_wellTypedness}
-   If $\dataset$ is a data set and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a data set.
-\end{lemma}
-
-\begin{definition}[disjoint union of data sets]
-\begin{eqnarray}
-   \pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}&=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\\
-      X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
-      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}
-\end{eqnarray}
-\end{definition}
-   In a disjoint union, the instances of the two data sets are relabeled to avoid name clashes.
-   In practice, we will not use 0 and 1 as labels for $x$ and $y$, but rather extend their names by prefixing.
-   For example, \texttt{old.Person} and \texttt{new.Address} might be the names of concepts \texttt{Person} and \texttt{Address} from contexts \texttt{old} and \texttt{new}, respectively.
-\begin{lemma}
-   If $\dataset$ and $\dataset'$ are data sets, then so is $\dataset\sqcup\dataset'$.
-\end{lemma}
-   This lemma is being proven in Isabelle/HOL~\cite{Isabelle}. The proof is published \href{location.domain}{here}
-
-\begin{definition}[disjoint union of schemas]
-\begin{eqnarray}
-   \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
-\end{eqnarray}
-\end{definition}
-% \begin{definition}[disjoint union of data sets]
-% \begin{eqnarray}
-%    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
-%    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\instuplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
-%       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
-%       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
-%       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
-%       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
-% \end{eqnarray}
-% \end{definition}
-\begin{lemma}
-   If $\schema$ and $\schema'$ are schemas, then so is $\schema\sqcup\schema'$.
-\end{lemma}
-The proof of this lemma is published \href{location.domain}{here}
-
-To implement the disjoint union, the following relabelling functions are needed:
-\begin{definition}[relabel concepts]
-   \[\subst{C}{D}{A}\ =\ \text{\bf if}\ C=A\ \text{\bf then}\ D\ \text{\bf else}\ A\]
-\end{definition}
-\begin{definition}[relabel concepts in triples]
-   \[\subst{C}{D}{\triple{a}{r}{b}} = \triple{a}{\subst{C}{D}{r}}{b}\]
-\end{definition}
-\begin{definition}[relabel concepts in relations]
-   \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
-\end{definition}
-\begin{definition}[relabel concepts in $\inst$]
-   \[a\ \subst{C}{D}{\inst}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\inst A\]
-\end{definition}
-\begin{definition}[relabel concepts in data sets]
-   \[\begin{array}{rcl}
-      \rlap{$\subst{C}{D}{\pair{\triples}{\inst}}$}\\
-      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\inst}}
-   \end{array}\]
-\end{definition}
-   The relabeling of concepts in rules must satisfy:
-\begin{equation}
-   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}
-\end{equation}
-\begin{definition}[relabel concepts in schemas]
-   \begin{eqnarray}
-      \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-      &=&\begin{array}[t]{l@{}l}
-         \la&\{\subst{C}{D}{c}\mid c\in\concepts\}\\
-         ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
-         ,&\{\subst{C}{D}{u}\mid u\in\rules\}\ \ra\notag
-         \end{array}
-   \end{eqnarray}
-\end{definition}
-\begin{definition}[relabel relations]
-   \[\subst{\declare{m}{C}{D}}{m'}{{\declare{n}{A}{B}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ \declare{m'}{A}{B}\ \text{\bf else}\ \declare{m}{A}{B}\]
-\end{definition}
-\begin{definition}[relabel relations in triples]
-   \[\subst{r'}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{r'}{m'}{r}}{b}\]
-\end{definition}
-\begin{definition}[relabel relations in data sets]
-   \[\begin{array}{rcl}
-      \rlap{$\subst{r'}{m'}{\pair{\triples}{\inst}}$}\\
-      &=&\pair{\{\subst{r'}{m'}{t}\mid t\in\triples\}}{\inst}
-   \end{array}\]
-\end{definition}
-   The relabeling of relation names in rules must satisfy:
-\begin{equation}
-   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{r'}{m'}{u}}{\subst{r'}{m'}{\dataset}}
-\end{equation}
-\begin{definition}[relabel relations in schemas]
-   \begin{eqnarray}
-      \rlap{$\subst{r'}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-      &=&\triple{\concepts}{\{\subst{r'}{m'}{r} \mid r\in\rels\}}{\{\subst{r'}{m'}{u} \mid u\in\rules\}}\notag
-   \end{eqnarray}
-\end{definition}
-   
-   The relabeling of concepts is not trivial because of specialization.
-   To illustrate this point, suppose $D\isa A$.
-   Then the substitution $[C\rightarrow D]$ means that every atom $a$ that used to be of concept $C$ in the existing system, is now not only a $D$ but also an $A$.
-   For example, by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
-   all atoms that represent hotels might suddenly be expected to have parking lots.
-   So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
+%SJC on Formalization: it's often better to put these inline where we first use them. Leaving this as a comment for easy copy-paste.
+%\subsection{Formalization}
+%   Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
+%\begin{definition}[union of data sets]
+%\label{def:graph_union_wellTyped_if_parts_wellTyped}
+%    \[\pair{\triples_1}{\inst_1}\cup\pair{\triples_2}{\inst_2}\ =\ \pair{\triples_1\cup\triples_2}{\inst_1\cup\inst_2}\]
+%\end{definition}
+%
+%\begin{lemma}
+%\label{lemma:graph_union_wellTyped_if_parts_wellTyped}
+%   If $\dataset_1$ and $\dataset_2$ are data sets, then $\dataset_1\cup\dataset_2$ is a data set.
+%\end{lemma}
+%
+%\begin{definition}[map relation names in data sets]
+%\label{def:map_labels_preserves_wellTypedness}
+%   Let $h:\Rels\rightarrow\Rels$, then
+%   \[\begin{array}{rcl}
+%      \maprel{h}{\pair{\triples}{\inst}}&=&\pair{\maprel{h}{\triples}}{\inst}\\
+%      \maprel{h}{\triple{a}{r}{b}}&=&\triple{a}{h(r)}{b}
+%   \end{array}\]
+%\end{definition}
+%
+%\begin{lemma}
+%\label{lemma:map_labels_preserves_wellTypedness}
+%   If $\dataset$ is a data set and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a data set.
+%\end{lemma}
+%
+%\begin{definition}[disjoint union of data sets]
+%\begin{eqnarray}
+%   \pair{\triples}{\inst}\sqcup\pair{\triples'}{\inst'}&=&\pair{\triples\uplus\triples'}{\inst\uplus^2\inst'}\\
+%      X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
+%      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}
+%\end{eqnarray}
+%\end{definition}
+%   In a disjoint union, the instances of the two data sets are relabeled to avoid name clashes.
+%   In practice, we will not use 0 and 1 as labels for $x$ and $y$, but rather extend their names by prefixing.
+%   For example, \texttt{old.Person} and \texttt{new.Address} might be the names of concepts \texttt{Person} and \texttt{Address} from contexts \texttt{old} and \texttt{new}, respectively.
+%\begin{lemma}
+%   If $\dataset$ and $\dataset'$ are data sets, then so is $\dataset\sqcup\dataset'$.
+%\end{lemma}
+%   This lemma is proven in Isabelle/HOL~\cite{Isabelle}. % TODO: point to formalization %The proof is published \href{location.domain}{here}
+%
+%\begin{definition}[disjoint union of schemas]
+%\begin{eqnarray}
+%   \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
+%\end{eqnarray}
+%\end{definition}
+%% \begin{definition}[disjoint union of data sets]
+%% \begin{eqnarray}
+%%    \omit\rlap{$\la\atoms,\concepts,\inst,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\inst',\isa',\rels',\dataset'\ra$}\notag\\
+%%    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\instuplus^2\inst',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
+%%       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
+%%       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
+%%       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
+%%       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
+%% \end{eqnarray}
+%% \end{definition}
+%\begin{lemma}
+%   If $\schema$ and $\schema'$ are schemas, then so is $\schema\sqcup\schema'$.
+%\end{lemma}
+%The proof of this lemma is published \href{location.domain}{here}
+%
+%To implement the disjoint union, the following relabelling functions are needed:
+%\begin{definition}[relabel concepts]
+%   \[\subst{C}{D}{A}\ =\ \text{\bf if}\ C=A\ \text{\bf then}\ D\ \text{\bf else}\ A\]
+%\end{definition}
+%\begin{definition}[relabel concepts in triples]
+%   \[\subst{C}{D}{\triple{a}{r}{b}} = \triple{a}{\subst{C}{D}{r}}{b}\]
+%\end{definition}
+%\begin{definition}[relabel concepts in relations]
+%   \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
+%\end{definition}
+%\begin{definition}[relabel concepts in $\inst$]
+%   \[a\ \subst{C}{D}{\inst}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\inst A\]
+%\end{definition}
+%\begin{definition}[relabel concepts in data sets]
+%   \[\begin{array}{rcl}
+%      \rlap{$\subst{C}{D}{\pair{\triples}{\inst}}$}\\
+%      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\inst}}
+%   \end{array}\]
+%\end{definition}
+%   The relabeling of concepts in rules must satisfy:
+%\begin{equation}
+%   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}
+%\end{equation}
+%\begin{definition}[relabel concepts in schemas]
+%   \begin{eqnarray}
+%      \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+%      &=&\begin{array}[t]{l@{}l}
+%         \la&\{\subst{C}{D}{c}\mid c\in\concepts\}\\
+%         ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
+%         ,&\{\subst{C}{D}{u}\mid u\in\rules\}\ \ra\notag
+%         \end{array}
+%   \end{eqnarray}
+%\end{definition}
+%\begin{definition}[relabel relations]
+%   \[\subst{\declare{m}{C}{D}}{m'}{{\declare{n}{A}{B}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ \declare{m'}{A}{B}\ \text{\bf else}\ \declare{m}{A}{B}\]
+%\end{definition}
+%\begin{definition}[relabel relations in triples]
+%   \[\subst{r'}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{r'}{m'}{r}}{b}\]
+%\end{definition}
+%\begin{definition}[relabel relations in data sets]
+%   \[\begin{array}{rcl}
+%      \rlap{$\subst{r'}{m'}{\pair{\triples}{\inst}}$}\\
+%      &=&\pair{\{\subst{r'}{m'}{t}\mid t\in\triples\}}{\inst}
+%   \end{array}\]
+%\end{definition}
+%   The relabeling of relation names in rules must satisfy:
+%\begin{equation}
+%   \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{r'}{m'}{u}}{\subst{r'}{m'}{\dataset}}
+%\end{equation}
+%\begin{definition}[relabel relations in schemas]
+%   \begin{eqnarray}
+%      \rlap{$\subst{r'}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
+%      &=&\triple{\concepts}{\{\subst{r'}{m'}{r} \mid r\in\rels\}}{\{\subst{r'}{m'}{u} \mid u\in\rules\}}\notag
+%   \end{eqnarray}
+%\end{definition}
+%   
+%   The relabeling of concepts is not trivial because of specialization.
+%   To illustrate this point, suppose $D\isa A$.
+%   Then the substitution $[C\rightarrow D]$ means that every atom $a$ that used to be of concept $C$ in the existing system, is now not only a $D$ but also an $A$.
+%   For example, by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
+%   all atoms that represent hotels might suddenly be expected to have parking lots.
+%   So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 
 \section*{Generating a Migration Script}
 \subsection{Loading Data}
@@ -966,13 +967,9 @@ The prefix {\tt new.} refers to items from the desired information system.}:
            old.isEnrolledFor - copied_isEnrolledFor
    ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
 
-   ROLE MigrationEngineer MAINTAINS migrating_takes,
-                                    migrating_isPartOf,
-                                    migrating_isEnrolledFor
-   RULE migrating_takes : old.takes-copied_takes = -V
-   RULE migrating_isPartOf : old.isPartOf-copied_isPartOf = -V
-   RULE migrating_isEnrolledFor :
-        old.isEnrolledFor-copied_isEnrolledFor = -V
+   RULE ExamRule1: new.student~;new.course |- new.takes
+   RULE ExamRule2: new.student~;new.course;new.isPartOf~ 
+                 |- new.isEnrolledFor
 \end{verbatim}
 
 \subsection{Preparing for the Moment of Transition}
