@@ -853,13 +853,14 @@ The relation $\inst$ contains the pairs:
 \footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
 The prefix {\tt new.} refers to items from the desired information system.}:
 \begin{verbatim}
-   ENFORCE new.takes >: old.takes
+   ENFORCE new.takes := old.takes
 \end{verbatim}
    The relation `old.takes' resides in the existing system and will not change anymore.
    
-   This means, however, that all pairs from {\tt old.takes} will be in {\tt new.takes} forever.
-   This is undesirable because data in the existing system may still change.
-   An extra relation (\ref{extraRelation}) fixes this problem by remembering which pairs have been copied:
+   This means, however, that {\tt old.takes} determines {\tt new.takes} forever.
+   This is undesirable because it prevents us from changing data in the migration system.
+   The desired behavior is that all pairs in {\tt old.takes} are copied to {\tt new.takes} when the system is first initialized, but that {\tt new.takes} can be changed freely after that.
+   An extra relation (\ref{extraRelation}) achieves this behavior by remembering which pairs have been copied:
 \begin{eqnarray}
    &&\verb#RELATION copied_takes[Student*Course]#\label{extraRelation}\\
    &&\verb#ENFORCE new.takes >: old.takes - copied_takes#\label{difference}\\
@@ -1049,9 +1050,9 @@ To resolve this, the simplest solution is to change the roles assigned to the ru
 Naturally, this solution requires effort from people with the role migrationHelper.
 This in itself is not an issue: problems need to be solved one way or another.
 However, a problem that may occur is that regular users of the system, who are used to the existing system, might be adding data to the system that causes violations faster than they can be solved.
-Two solutions can mitigate this.
+To avoid this problem, we restrict the behavior of the system such that incremental progress will lead to eventually reaching the goal.
 
-One solution is to state that the only violations that may occur in the relation \verb=isPartOfUNI= are those that were present when the migration started:
+Our solution is to state that the only violations that may occur in the relation \verb=isPartOfUNI= are those that were present when the migration started:
 \begin{verbatim}
    RELATION isPartOf[Module*Course]
    RULE isPartOfUNI: isPartOf;isPartOf~ |- I
@@ -1066,81 +1067,84 @@ One solution is to state that the only violations that may occur in the relation
    ENFORCE isPartOfUNI_violations :< -(isPartOf;isPartOf~) /\ I  
 \end{verbatim}
 
-In this first solution, the first rule is the same as with the simple solution.
+In this solution, the first rule is the same as with the simple solution.
 The second rule prevents any new violation from occurring.
 Existing violations are recorded in the \verb=isPartOfUNI_violations= relation, and the rule \verb=isPartOfUNI_progress= prevents the set of violations to \verb=isPartOfUNI= from growing beyond this.
 The \verb=ENFORCE= statement at the end of this code snippet states that the relation recording existing violations should be shrunk whenever violations are solved.
 This way, violations cannot re-occur.
 As a whole, this means that \verb=migrationHelper= has a finite task.
 
-As a second solution, the data in the designed system does not have any violations.
-Consequentially, the cause of the violations comes from the triples in the existing system.
-Rather than taking the union of all triples, the disjoint union is taken instead;
-\begin{verbatim}
-   RELATION isPartOf_old[Module*Course] [UNI]=
-      [ ("Finance", "Management")
-      ; ("Business Rules", "Business IT")
-      ; ("Business Analytics", "Business IT")
-      ; ("IT-Governance", "Management")
-      ]
-   RELATION isPartOf[Module*Course] [UNI]=
-      [ ("IT-Governance", "Business IT") ]
-   RELATION isPartOf_ignored[Module*Course]
-   
-   RULE isPartOf_isUnion:
-         isPartOf_old |- isPartOf \/ isPartOf_ignored
-   ROLE migrationHelper MAINTAINS isPartOf_isUnion
-   
-   ENFORCE isPartOf_ignored :> isPartOf
-\end{verbatim}
+% SJC: TODO voor Stef. Misschien is het de moeite waard om te zeggen hoe isPartOfUNI_violations initieel gevuld kan worden.
+% (Dit werkt precies als het initieel vullen van andere relaties, zoals in de vorige sectie).
 
-\begin{verbatim}
-   RELATION isPartOf_old[Module*Course] [UNI]=
-      [ ("Finance", "Management")
-      ; ("Business Rules", "Business IT")
-      ; ("Business Analytics", "Business IT")
-      ; ("IT-Governance", "Management")
-      ]
-   RELATION isPartOf[Module*Course] [UNI]=
-      [ ("IT-Governance", "Business IT") ]
-   RELATION isPartOf_ignored[Module*Course]
-
-   ENFORCE isPartOf :> isPartOf_old - isPartOf_ignored
-   ENFORCE isPartOf_ignored :> isPartOf
-\end{verbatim}
-In this second solution, we immediately move to a system in which the \verb=UNI= rule is maintained by the system.
-The work for the \verb=migrationHelper= is again finite: the pairs in \verb=isPartOf_old= need to be copied over or explicitly ignored.
-Once a pair is in \verb=isPartOf=, the pair is copied over to \verb=isPartOf_ignored= by the \verb=ENFORCE= statement, such that regular users can delete it without adding work to anyone with the \verb=migrationHelper= role.
-Of course, since this solution starts with fewer pairs in the \verb=isPartOf= relation, other rules could be violated as a result of choosing this solution.
-Indeed, ExamRule2 initially has more violations in this scenario.
-
-\begin{definition}[migration data set]
-   \begin{eqnarray}
-      &&\begin{array}[t]{@{}l}
-         \{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
-            \mid\ \begin{array}[t]{@{}l}
-               \declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
-               \{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
-               \end{array}
-           \end{array}\\
-           &\cup&\begin{array}[t]{@{}l}
-            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)\mid\ C\in\concepts,C'\in\concepts',C=C'\}\\
-           \end{array}
-   \end{eqnarray}
-\end{definition}
-
-The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statement adds two pairs to the $\isa$ relation:
-$\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
-Note that if $\dataset$ is a data set, and $\dataset'$ is that data set with pairs added%
-\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a data set.
-The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
-The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a data set.
-
-\begin{definition}[]
-   \begin{eqnarray}
-      \infsys\sqcup\infsys'&=&\triple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
-   \end{eqnarray}
-\end{definition}
+%As a second solution, the data in the designed system does not have any violations.
+%Consequentially, the cause of the violations comes from the triples in the existing system.
+%Rather than taking the union of all triples, the disjoint union is taken instead;
+%\begin{verbatim}
+%   RELATION isPartOf_old[Module*Course] [UNI]=
+%      [ ("Finance", "Management")
+%      ; ("Business Rules", "Business IT")
+%      ; ("Business Analytics", "Business IT")
+%      ; ("IT-Governance", "Management")
+%      ]
+%   RELATION isPartOf[Module*Course] [UNI]=
+%      [ ("IT-Governance", "Business IT") ]
+%   RELATION isPartOf_ignored[Module*Course]
+%   
+%   RULE isPartOf_isUnion:
+%         isPartOf_old |- isPartOf \/ isPartOf_ignored
+%   ROLE migrationHelper MAINTAINS isPartOf_isUnion
+%   
+%   ENFORCE isPartOf_ignored :> isPartOf
+%\end{verbatim}
+%
+%\begin{verbatim}
+%   RELATION isPartOf_old[Module*Course] [UNI]=
+%      [ ("Finance", "Management")
+%      ; ("Business Rules", "Business IT")
+%      ; ("Business Analytics", "Business IT")
+%      ; ("IT-Governance", "Management")
+%      ]
+%   RELATION isPartOf[Module*Course] [UNI]=
+%      [ ("IT-Governance", "Business IT") ]
+%   RELATION isPartOf_ignored[Module*Course]
+%
+%   ENFORCE isPartOf :> isPartOf_old - isPartOf_ignored
+%   ENFORCE isPartOf_ignored :> isPartOf
+%\end{verbatim}
+%In this second solution, we immediately move to a system in which the \verb=UNI= rule is maintained by the system.
+%The work for the \verb=migrationHelper= is again finite: the pairs in \verb=isPartOf_old= need to be copied over or explicitly ignored.
+%Once a pair is in \verb=isPartOf=, the pair is copied over to \verb=isPartOf_ignored= by the \verb=ENFORCE= statement, such that regular users can delete it without adding work to anyone with the \verb=migrationHelper= role.
+%Of course, since this solution starts with fewer pairs in the \verb=isPartOf= relation, other rules could be violated as a result of choosing this solution.
+%Indeed, ExamRule2 initially has more violations in this scenario.
+%
+%\begin{definition}[migration data set]
+%   \begin{eqnarray}
+%      &&\begin{array}[t]{@{}l}
+%         \{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
+%            \mid\ \begin{array}[t]{@{}l}
+%               \declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
+%               \{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
+%               \end{array}
+%           \end{array}\\
+%           &\cup&\begin{array}[t]{@{}l}
+%            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)\mid\ C\in\concepts,C'\in\concepts',C=C'\}\\
+%           \end{array}
+%   \end{eqnarray}
+%\end{definition}
+%
+%The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statement adds two pairs to the $\isa$ relation:
+%$\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
+%Note that if $\dataset$ is a data set, and $\dataset'$ is that data set with pairs added%
+%\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a data set.
+%The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
+%The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\inst \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a data set.
+%
+%\begin{definition}[]
+%   \begin{eqnarray}
+%      \infsys\sqcup\infsys'&=&\triple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
+%   \end{eqnarray}
+%\end{definition}
 
 \subsection{Changes}
 % The purpose of this section is to explain why a data set is structured the way it is.
@@ -1153,25 +1157,33 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
    but the migration should try to preserve the maximal amount of data.
 
 \section{Validation}
-   To validate the theory, we have to prove that:
-\begin{itemize}
-   % -> het migratie-systeem is typefout-vrij (opmerking: als we de type-checker buiten beschouwing willen laten, kunnen we dit niet beschrijven)
-   \item the migration script $\migrsys$ is free of type errors.
-   % -> het migratie-systeem is vrij van overtredingen op regels die het migratie-systeem moet bewaken
-   \item the migration system $\migrsys$ is an information system (definition~\ref{def:information system}),
-         which implies that its population yields no violations.
-   % -> het migratie-systeem bevat alle oude data, ihb nog steeds na het toepassen van de enforce regels
-   \item $\migrsys$ contains all data of the existing system. So, $\dataset_\infsys\subseteq\dataset_\migrsys$.
-   % -> er is een pad naar ingebruikname van het nieuwe systeem (vanaf de initiële toestand van het migratie-systeem)
-   \item there is a well-founded progress measure towards releasing the desired system.
-   % -> corollary: op het moment van ingebruikname van het nieuwe systeem, is het migratie-systeem vrij van overtredingen op regels die het nieuwe systeem moet bewaken
-   \item When the progress measure indicates that further steps are not possible, the desired system $\infsys'$ is void of violations.
-   The invariants of $\infsys'$ are cork rules in $\migrsys$.
-   So, once all these rules are satisfied (and secured with a cork),
-   all invariants in $\infsys'$ are satisfied and ready for deployment.
-   % -> optioneel: na een begrensd aantal 'voortgangs-stappen' kan het nieuwe systeem in gebruik genomen worden
-\end{itemize}
-% Bewijsverplichtingen:
+   We claim that the information system does not need to be paused in order for the migration to happen successfully.
+   By this, we mean that computations that take a considerable amount of time, as well as human actions, can be performed incrementally while the system is in use.
+   In order for us to prove this claim, we model the behavior of our information system as a series of systems $\migrsys_0,\migrsys_1,\ldots,\migrsys_n$ with $\migrsys = \migrsys_0$, where only the dataset of the system changes.
+   We consider two types of updates to the dataset.
+   
+   The first type of update helps the migration to go forward: we'll write $\rightsquigarrow$ for those.
+   The second type of update is that which other users of the system do (possibly none), indicated as $\dashrightarrow$.
+   The two updates alternate: $\migrsys_0 \dashrightarrow \migrsys_1 \rightsquigarrow \migrsys_2 \dashrightarrow \ldots \rightsquigarrow \migrsys_{2i} \dashrightarrow \migrsys_{2i+1}\rightsquigarrow\migrsys_{2i+2}\dashrightarrow\ldots\migrsys_n$.
+   
+   We validate our claim that the information system will reach the MoC by arguing about two situations:
+   The system between deployment and the MoT can reach the MoT by firing the ENFORCE rules, and the system between the MoT and the MoC can reach the MoC after a finite number of actions by the migration engineer.
+   More concretely, this means the following:
+   
+When the default migration system $\migrsys$ is deployed, the system will always be in a state such that continually running any violated ENFORCE rules (in any order) leads to the MoT.
+   This means that $A\rightsquigarrow B$ is such that the dataset of $B$ is that of $A$ with an update applied according to one or more violated enforce rules. % TODO: define 'violated'
+   If there is no such $B$ because no enforce rules are violated, we are at the moment of transition.
+   We say that the system $A$ is in a state such that the MoT can be reached if there are no infinite $\rightsquigarrow$-paths from $A$.
+   The constraint on $A\dashrightarrow B$ is that only the old system can change at this point.
+   Note that this does not prove that the moment of transition to never be reached, as more enforce rules may get violated at every $\dashrightarrow$ step.
+   We expect this not to be a problem in practice since $\dashrightarrow$ transitions are triggered by users while $\rightsquigarrow$ is triggered automatically through ENFORCE rules: the ENFORCE rules should outperform the $\dashrightarrow$ actions by a big margin.
+
+After the moment of transition, there is a finite upper-bound on the amount of work the migration engineer has to do:
+   $A\rightsquigarrow B$ is such that the dataset of $B$ is that of $A$ with one of the violations shown to a migration engineer resolved (including the firing of corresponding ENFORCE statements), and $\dashrightarrow$ arbitrary.
+   In both $A\rightsquigarrow B$ and $A\dashrightarrow B$ we assume that the relations that were specifically created for the bookkeeping (suffixed by \verb=_progress= and \verb=_violations=) can only be updated through the firing of the ENFORCE statements.
+   These assumptions make the total number of pairs in \verb=_violations= relations decline in every $\rightsquigarrow$-step, proving that the MoC will be reached after a finite number of $\rightsquigarrow$ steps (assuming that the set of violations is finite).
+   Moreover, we show that the desired system with the dataset taken from the migration system (after dropping the old system and the bookkeeping) is free of violations when all \verb=_violations= relations are empty.
+
 
 \section{Software architecture}
    Since functionality is excluded from this paper, we discuss the software architecture of the back-end of the migration system.
