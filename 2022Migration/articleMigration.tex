@@ -1174,12 +1174,13 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
 % Bewijsverplichtingen:
 
 \section{Software architecture}
-   Since functionality is excluded from this paper, we discuss the software architecture of the back-end of the migration system.
+   The theory presented above roughly corresponds to the back-end of a migration system.
+   This section describes its software architecture.
    For this research, we have used the Ampersand compiler to generate the system(s).
    Figure~\ref{fig:initial} shows the starting point of the migration.
 \begin{figure}
    \centering
-   \includegraphics[width=0.8\textwidth]{figures/Before migration.png}
+   \includegraphics[scale=0.1]{figures/Before migration.png}
    \caption{Initial state of the migration}
    \label{fig:initial}
 \end{figure}
@@ -1194,7 +1195,7 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
    This is implemented by Ampersand's INCLUDE mechanism, which boils down to taking the disjoint union of the schemas.
 \begin{figure}
    \centering
-   \includegraphics[width=0.8\textwidth]{figures/During migration.png}
+   \includegraphics[scale=0.1]{figures/During migration.png}
    \caption{During the migration}
    \label{fig:during}
 \end{figure}
@@ -1216,7 +1217,7 @@ The terms $t$ in these statements are such that $x\ (\inst \compose \kleenestar{
 
 \begin{figure}
    \centering
-   \includegraphics[width=0.8\textwidth]{figures/After migration.png}
+   \includegraphics[scale=0.1]{figures/After migration.png}
    \caption{After the migration}
    \label{fig:after}
 \end{figure}
