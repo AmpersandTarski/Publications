@@ -147,9 +147,12 @@ generative software\sep incremental software deployment\sep data migration\sep r
    
    Information systems are typically used by actors (both users and computers) who are distributed and work with data all the time.
    As a consequence, the data in a system changes continually.
-   In practice, actors ``talk to'' the system through an ingress mechanism, which connects each user to the right service(s).
-   The ingress function is provided by the deployment platform, so it is beyond the scope of this paper.
-   Also, every service runs independent of other services,
+   In practice, actors ``talk to'' the system through an ingress mechanism,
+   which routes the traffic between each user and the required application service(s).
+   The ingress function is used during migration to switch users from the old to new functionality.
+   In this research we assume that the deployment platform provides the ingress mechanism,
+   so developers merely have to configure it.
+   Also, we assume that every service runs independent of other services,
    meaning that each service can be stopped, (re)started and substituted without disrupting the other services.
    For practical purposes, this presumes a platform of managed services, such as Kubernetes,
    even though the theory in this paper is not specific to any platform.
@@ -656,7 +659,7 @@ The relation $\inst$ contains the pairs:
    The transition from an existing system $\infsys$ to the desired one $\infsys'$ is the topic of this section.
 \begin{figure}
    \centering
-   \includegraphics[scale=0.1]{figures/Before migration.png}
+   \includegraphics[scale=0.09]{figures/Before migration.png}
    \caption{Initial state of the migration}
    \label{fig:initial}
 \end{figure}
@@ -673,46 +676,45 @@ The relation $\inst$ contains the pairs:
       Before replacing $\infsys$ by $\infsys'$, the data from $\dataset$ must be migrated to $\dataset'$
       and all invariants of $\schema'$ must be satisfied.
       We assume that schemas $\schema$ and $\schema'$ are different, or else the migration would be unnecessary.
-\item From schemas $\schema$ and $\schema'$, a migration engineer%
+\item A migration engineer%
 \footnote{The migration engineer may also stand for a team, which may overlap with the developer role.}
-      generates a migration script, using the Ampersand compiler.
-      This script specifies the migration system, $\migrsys$, that includes $\infsys$, $\infsys'$ and a number of migration rules.
-      $\migrsys$ is meant to migrate the data and ensure that $\dataset'$ satisfies all invariants of $\schema'$.
+      uses the Ampersand compiler to generate a migration script from schemas $\schema$ and $\schema'$.
+      This script specifies a migration system, $\migrsys$, that includes $\infsys$, $\infsys'$ and a number of migration rules.
+      $\migrsys$ is meant to migrate the data and ensure that $\dataset'$ satisfies all invariants of $\schema'$
+      before taking $\infsys'$ to production.
 \item\label{item3}
-      In specific cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration automatically.
-      As soon as the data is transferred and $\migrsys$ has satisfied the invariants of $\schema'$,
-      $\infsys'$ can take care of production on its own without the help of $\migrsys$.
+      In specific cases, $\migrsys$ suffices to perform the migration automatically.
       However, a migration engineer may have specific requirements that call for changes in $\migrsys$.
-      For that purpose, she may want to alter the migration script to accommodate such requirements.
+      For that purpose, she may want to alter the migration script to accommodate such requirements, yielding another migration script $\migrsys'$.
       This can be necessary, for example, to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
       She can implement such adaptations as enforcement rules, which are executed automatically.
-      But she can also ask business users to resolve issues by specifying process rules.
+      But she can also choose to specify process rules that require business users to resolve issues interactively.
       Human involvement is often needed to implement a desired migration strategy.
       In that case the migration system must ensure that there are finitely many steps to complete the migration.
       The migration engineer must ensure that $\migrsys'$ can satisfy all invariants in $\schema'$, either by enforcement rules or by process rules.
-      She can test the resulting migration script, $\migrsys'$ separately before taking the desired system to production.
+      She can test $\migrsys'$ separately before taking the desired system to production.
       When this work is done, the migration engineer has a migration system $\migrsys'$ with schema $\schema'$ and an initial dataset $\dataset'$
       that is ready to deploy.
 \item\label{item4}
-      Then, the migration engineer deploys system $\migrsys'$.
-\begin{figure}
+      At this moment, let us call it the moment of deployment (MoD),
+\begin{figure}[h]
    \centering
-   \includegraphics[scale=0.1]{figures/4MoD.png}
+   \includegraphics[scale=0.09]{figures/4MoD.png}
    \caption{During the migration}
    \label{fig:4MoD}
 \end{figure}
-      Let us call this moment the moment of deployment (MoD).
+      the migration engineer deploys system $\migrsys'$.
       This event starts the copying of data from $\dataset$ to $\dataset'$, as specified in $\migrsys'$.
-      During this phase, the ingress is still referring users to the existing system,
+      During this phase, the ingress still refers users to the existing system,
       so they will hardly notice that the desired system is being fired up and loaded with data.
-      During this phase, users can still change $\dataset$ (both inserts and deletes) while $\infsys$ is keeping its invariants true.
+      Users can still change data in $\dataset$, while $\infsys$ is keeping its invariants true.
       Yet, the migration system also transfers these ``new'' changes to $\dataset'$ by means of its enforcement rules.
       This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and all invariants of the migration system are true.
 \item After completing step~\ref{item4}, the ingress switches the incoming traffic from $\infsys$ to $\migrsys'$,
       so $\migrsys'$ effectively takes over.
-\begin{figure}
+\begin{figure}[h]
    \centering
-   \includegraphics[scale=0.1]{figures/5MoT.png}
+   \includegraphics[scale=0.09]{figures/5MoT.png}
    \caption{Situation after MoT}
    \label{fig:during}
 \end{figure}
@@ -731,6 +733,7 @@ The relation $\inst$ contains the pairs:
       Once all invariants of $\migrsys'$ are true, the migration is complete.
 \item Let us designate the moment of completion as MoC.
       After the MoC, the ingress can switch the incoming traffic from $\migrsys'$ to $\infsys'$ because all invariants of $\infsys'$ are true.
+      Simultaneously, all clients must switch to the functionality of $\infsys'$.
       $\infsys$ and $\migrsys'$ are no longer needed and can be taken out of production.
       $\infsys'$ remains in production and the migration is finished.
       This establishes the post-migration situation (figure~\ref{fig:post-migration}).
