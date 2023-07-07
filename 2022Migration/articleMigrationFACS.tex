@@ -958,7 +958,7 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    &\text{\tt ENFORCE viols\_UNI >: old.isPartOf\textasciitilde;old.isPartOf - I}\label{fill viols}\\
    &\text{\tt ENFORCE fixed\_UNI >: viols\_UNI - (old.isPartOf\textasciitilde;old.isPartOf - I)}\label{fill fixed}\\
    &\begin{aligned}
-   \text{\tt RULE isPartOf\_UNI: old.isPartOf\textasciitilde;old.isPartOf}\\
+   \text{\tt RULE isPartOf\_UNI: new.isPartOf\textasciitilde;new.isPartOf}\\
    \quad\text{\tt |- I \textbackslash/ (viols\_UNI - fixed\_UNI)}
    \end{aligned}\label{rule uni}
    \end{align}
@@ -971,6 +971,19 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    This way, previously fixed errors cannot reoccur.
    Once {\tt viols\_UNI} is equal to {\tt fixed\_UNI}, the \verb=UNI= requirement holds and the information system is ready for the MoC in regard to this rule.
    
+   We also wish to alert users with the role `migration helper' to violations that need to be fixed.
+   For the original \verb=UNI= requirement, this means specifying:
+   
+   \begin{align}
+   \begin{aligned}
+   \text{\tt RULE isPartOf\_UNI\_warn: new.isPartOf\textasciitilde;new.isPartOf |- I}\\
+   \quad\text{\tt RULE MigrationHelper}
+   \end{aligned}\label{warnings}
+   \end{align}
+   
+   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated information system:
+   By assigning a role, the responsibility of maintaining the rule no longer lies with the information system.
+   Instead, users with the migration helper role can see the violations and act on it as they see fit.
    
 
 % Het volgende is wellicht iets teveel van het goede. Het lijkt me dat de lezer het voorgaande al wel snapt.
