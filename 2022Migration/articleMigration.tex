@@ -52,23 +52,23 @@
 
 \begin{abstract}
    Software generators can help to increase the frequency of releases and their reliability.
-   They save on time spent on development and time spent on fixing human-induced mistakes by compiling a specification into a working information system.
+   They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
    However, many generators do not support data migrations.
-   A data migration is necessary when an incremental deployment changes the schema of the system.
-   As a consequence, developers tend to avoid migrations or migrate data ``by hand''.
+   Data migration is necessary when an incremental deployment changes the system's schema.
+   Consequently, developers tend to avoid migrations or migrate data ``by hand''.
 
    To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process.
    The problem at large is how to preserve the semantics of that data under a changing schema.
-   This paper proposes a theory for deploying an incremental change.
-   The theory is applicable in general, but will be implemented in a software generator called Ampersand.
+   This paper proposes a theory for deploying incremental change.
+   The theory is applicable in general but will be implemented in a software generator called Ampersand.
 
    This paper aims to preserve the semantics of data by satisfying concrete business requirements.
-   The migration process is based on the assumptions that
+   The migration process is based on the assumption that
    software is deployed incrementally,
    the existing data set may be polluted,
    human interaction may be required,
    the meaning of data must be preserved,
-   the business continues during the migration without interruption (zero down-time),
+   the business continues during the migration without interruption (zero downtime),
    and there is a compiler to generate an information system from a given schema.
    The correctness of the migration is the focus of this paper, while efficiency is outside its scope.
 \end{abstract}
@@ -95,10 +95,12 @@ generative software\sep incremental software deployment\sep data migration\sep r
    reliability of deployments, and
    change failure rate~\cite{DevOps2021}.}.
 
-   This paper proposes a theory for data migrations that is meant to be implemented in a software generator called Ampersand~\cite{JoostenRAMiCS2017, Joosten-JLAMP2018}.
-   It aims at automating data migrations, so incremental changes can be done more reliably and faster.
+   This paper proposes a theory for data migrations in general. 
+   It will be implemented in a software generator called Ampersand~\cite{JoostenRAMiCS2017, Joosten-JLAMP2018},
+   but the theory is kept general to make it applicable in other contexts as well.
+   It aims at automating data migrations, so developers can change systems in production more reliably and faster.
    This contributes to a more agile software development process.
-   We believe that users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
+   We believe that end users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
    
    This paper assumes that the existing system and the desired system have different schemas.
    The existing system is the system that is already deployed in production,
@@ -133,31 +135,33 @@ generative software\sep incremental software deployment\sep data migration\sep r
 \section{Analysis}
 \label{sct:Analysis}
 \subsection{Information Systems}
-   The purpose of an information system is to make data meaningful to its users.
-   The analysis of the problem starts with a formal definition of information systems,
-   in which the schema contains all information that makes data meaningful.
+   Our analysis of data migration starts with a definition of information systems.
+   This comprises a schema, which contains all information that makes data meaningful.
    We then define a migration procedure from one information system to another,
    which preserves the meaning of the data as much as possible.
 
-   Every user has her\footnote{Throughout this paper, we ask the reader to read ``she'' or ``her'' to include the masculin form as well.} own tasks and responsibilities
-   and may work from different locations and on different moments.
-   This collective use by multiple users serves a purpose which we will loosely call ``the business''.
-   It is this business that depends on the semantics of the data to draw the right conclusions and carry out their tasks.
-   This paper uses semantic constraints to represent this meaning.
-   
-   Information systems are typically used by actors (both users and computers) who are distributed and work with data all the time.
+   The purpose of an information system is to make data meaningful to its users.
+   These users work from different locations and on different moments. They work with data that the system keeps (syn: stores, maintains).
    As a consequence, the data in a system changes continually.
+   Other computers can use the system too. So, we will use the word ``actor'' to refer to both users and computers.
+   The collective use by multiple actors serves a purpose which we will loosely call ``the business''.
+   It is this business that relies on the semantics of the data for achieving its goals and fulfilling its purpose.
+
+   Besides data, the system also contains services that actors can use to change the data.
+   For the data migration we need services that can be switched on and off independently of each other,
+   so we can switch old and new functionalities on and off as needed in the process of migrating the data.
    In practice, actors ``talk to'' the system through an ingress mechanism,
    which routes the traffic between each user and the required application service(s).
-   The ingress function is used during migration to switch users from the old to new functionality.
+   We need the ingress function during a migration to switch users from the old to new functionality.
    In this research we assume that the deployment platform provides the ingress mechanism,
    so developers merely have to configure it.
-   Also, we assume that every service runs independent of other services,
-   meaning that each service can be stopped, (re)started and substituted without disrupting the other services.
-   For practical purposes, this presumes a platform of managed services, such as Kubernetes,
-   even though the theory in this paper is not specific to any platform.
 
-   Every system contains a data set, which represents the state of the system.
+   In this work, we represent the semantics of an information system as a set of constraints on the data in the system.
+   Every constraint a service keeps satisfied is called an invariant.
+   So, deploying a service means that the system will keep the invariants of that service satisfied as long as it is alive.
+   It also means that the invariants of a service are prerequisites for its deployment.
+   These constraints are part of the schema of the information system.
+   The data contained in a system represents the state of that system.
    Every service produces and consumes events that may change the state of the system.
    This state is represented in a persistent store, aka the database%
 \footnote{Whether the database is local, remote, or globally distributed is immaterial for the theory in this paper.}.
@@ -176,19 +180,20 @@ generative software\sep incremental software deployment\sep data migration\sep r
    which most database management systems refer to as integrity rules.
    The purpose of these rules is to keep all constraints satisfied.
 
+   To try out and implement our theory, we use a software generator called Ampersand~\cite{JoostenRAMiCS2017, Joosten-JLAMP2018}.
    Like most other software generators, Ampersand is a compiler that generates information systems from a script.
+   The choice for Ampersand is motivated by its proximity to the theory in this paper, which makes it easy to implement the theory.
    Ampersand uses a syntactically sugared form of heterogeneous relation algebra,
    which works with relations in a way similar to Alloy~\cite{Alloy2006} and allegories%
 \footnote{Allegories are a specific type of categories, which the reader does not need to understand for the purpose of this paper}~\cite{Zielinski2013}.
    Each rule in Ampersand is a constraint (aka invariant), which the system keeps satisfied as long as that rule lives%
 \footnote{The dotted lines in the diagrams show which set of rules is enforced.}.
-   So, developers spend no effort to extract constraints from specifications or (even more laborious) from code
-   because all constraints are explicitly available as rules in the code.
+   Ampersand generates all program code needed in the system from a script, the Ampersand script,
+   in which a developer only specifies rules (semantic constraints). The generator does the rest of the programming.
+   So, developers need notag extract constraints from specifications or (even more laborious) from program code
+   because they have already specified every constraint explicitly as a rule in the Ampersand script.
 
-   This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
-   It also allows us to be explicit about ``preserving the meaning as much as possible''.
-   An Ampersand script contains just enough information to generate a complete system,
-   which means that a classical database schema (i.e.\ data structure plus semantics) can be extracted from the Ampersand script.
+   Our theory can be implemented in an ordinary programming language as well, although it might require more effort.
 
 \subsection{Data Migrations}
    Data migration occurs when a desired system replaces an existing one,
@@ -254,7 +259,7 @@ although there will always be cases where human intervention is required.}.
    and it may require users to introduce new data (which will take time). 
    So the idea of a migration schema is to compute the disjoint union of the existing and the desired schemas
    and to present it to the migration engineer in the form of source code,
-   so the migration engineer can change everything she wants to suit the particulars of the data migration.
+   so the migration engineer can change everything she\footnote{Throughout this paper, we ask the reader to read ``she'' or ``her'' to include the masculin form as well.} wants to suit the particulars of the data migration.
 
    During the migration phase, transactions in the existing system are allowed because the migration engine will transport them to the desired system.
    This allows the business to finish transactions in the existing system while the desired system is already up and running.
