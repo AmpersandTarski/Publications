@@ -587,29 +587,5 @@ qed
 end
 
 
-(*
-
-\<rightarrow> Regels uitdrukken zodat we kunnen zeggen dat gaandeweg aan regels voldaan wordt:
-\<longrightarrow> sat_u(D): de dataset D voldoet aan u.
-\<longrightarrow> viol_u(D): de set overtredingen van D.
-     dwz: viol_u(D)=ø \<longleftrightarrow> sat_u(D)
-\<longrightarrow> labels_u: de set relatie-namen waar u een uitspraak over doet.
-\<longrightarrow> map f labels_u: hernoemen van die relatie-namen.
-\<longrightarrow> als twee populaties overeenkomen voor zover u naar ze kijkt, dan heeft u ook dezelfde violations:
-     dwz: D[labels_u] = E[labels_u] \<Longrightarrow> viol_u(D) = viol_u(E)
-\<longrightarrow> vergelijkbaar thm over het re-labelen van een systeem.
-
-\<longrightarrow> Thm: als ik een deel van het informatiesysteem laat vallen (regels en relaties),
-         blijft aan de regels die daar niet over gingen voldaan.
-
-*)
-
-(*
-
-\<rightarrow> Syntax van regels uitdrukken zodat we het over goed-getypeerde regels kunnen hebben
-\<rightarrow> Rollen uitdrukken zodat we regels aan en uit kunnen zetten
-\<rightarrow> Er is een informatie-systeem rol die zorgt dat sommige regels (invariant) waar blijven
-
-*)
 
 end
