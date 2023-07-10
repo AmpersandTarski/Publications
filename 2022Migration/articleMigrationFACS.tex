@@ -172,12 +172,21 @@ Ordina NV, Nieuwegein, the Netherlands}
 %
 \maketitle              % typeset the header of the contribution
 %
-\begin{abstract}
-Software generators can help to increase the frequency of releases and their reliability. They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system. However, many generators do not support data migrations. Data migration is necessary when an incremental deployment changes the system's schema. Consequently, developers tend to avoid migrations or migrate data ``by hand''.
+\begin{abstract}  % There are 176 words in the abstract
+Software generators can help to increase the frequency of releases and their reliability.
+They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
+However, many generators do not support data migrations.
+Data migration is necessary when an incremental deployment changes the system's schema.
+Consequently, developers tend to avoid migrations or migrate data ``by hand''.
 
-To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process. The problem at large is how to preserve the semantics of that data under a changing schema. This paper proposes a theory for deploying incremental change. The theory is applicable in general but will be implemented in a software generator called Ampersand.
+To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process.
+The problem at large is how to preserve the semantics of that data under a changing schema.
+This paper proposes a theory for deploying incremental change.
+The theory is applicable in general but will be implemented in a software generator called Ampersand.
 
-This paper aims to preserve the semantics of data by satisfying concrete business requirements. The migration process is based on the assumption that software is deployed incrementally, the existing data set may be polluted, human interaction may be required, the meaning of data must be preserved, the business continues during the migration without interruption (zero downtime), and there is a compiler to generate an information system from a given schema. The correctness of the migration is the focus of this paper, while efficiency is outside its scope.
+This paper defines a migration process that preserves the semantics of data by means of rules (constraints).
+The migration process is based assumptions and requirements that aim for a large class of data migrations in practice.
+This paper focuses on correctness of the migration. Efficiency of the migration is outside its scope.
 
 \keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change.}
 \end{abstract}
@@ -276,8 +285,8 @@ This paper aims to preserve the semantics of data by satisfying concrete busines
    while transferring data in a controlled fashion.
    Typically, a migration strategy (e.g. case by case, customer by customer, or in batches) is in place
    to ensure the preservation of valuable data and the quality of the migration.
-   Automating this process completely is unrealistic in many cases:
-   While smaller increments improve the chance that a fully automatic migration is possible, there will always be cases where human intervention is required.
+   To fully automate every incremental data migration is unrealistic.
+   Smaller increments stand a higher chance of being automated, but there will always be cases where some human intervention is required.
    Manual interventions can be necessary to resolve data pollution, new business rules, or to fix known issues in the old system.
    Consequently, a migration engineer must have the freedom to tailor any automatic approach to migration to suit the particulars.
    
