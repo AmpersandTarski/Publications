@@ -221,7 +221,7 @@ This paper aims to preserve the semantics of data by satisfying concrete busines
    \item {\em incremental deployment}\\The data migration is meant to deploy a software increment in production.
    \item {\em data pollution}\\The existing data set may be polluted, but it satisfies its schema.
    \item {\em human intervention}\\The data migration may require human interaction, which may take time.
-   \item {\em semantic continuity}\\the meaning of data must be preserved.
+   %\item {\em semantic continuity}\\the meaning of data must be preserved.
    \item {\em zero down-time}\\The business continues during the migration without interruption.
    \item {\em generative software development}\\A compiler exists to generate an information system from a given schema.
 \end{itemize}
@@ -560,10 +560,10 @@ This paper aims to preserve the semantics of data by satisfying concrete busines
    Let us now define the notion of an information system.
 \begin{definition}[information system]
 \label{def:information system}
-\item An information system $\infsys$ is a tuple $\triple{\dataset}{\schema}{\enf}$, in which
+\item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
-   \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies Equation~\ref{eqn:wellTypedEdge});
-   \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts});
+   \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies Equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
+   \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$ and $\rules_\infsys=\rules$;
    \item all rules are satisfied:
    \begin{eqnarray}
    \forall u\in\rules&:\viol{u}{\dataset}=\emptyset
@@ -904,7 +904,9 @@ The relation $\instance$ contains the pairs:
 %    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
 
 \section{Generating a Migration Script}
-
+   A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
+   We first illustrate how this works by example, using Ampersand syntax.
+   We can then describe what this means in terms of the definitions of information system.
 
 \subsection{Loading Data}
    Let us study how to migrate data from $\dataset$ to $\dataset'$.
@@ -977,14 +979,13 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \begin{align}
    \begin{aligned}
    \text{\tt RULE isPartOf\_UNI\_warn: new.isPartOf\textasciitilde;new.isPartOf |- I}\\
-   \quad\text{\tt RULE MigrationHelper}
+   \quad\text{\tt ROLE MigrationHelper}
    \end{aligned}\label{warnings}
    \end{align}
    
    Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated information system:
    By assigning a role, the responsibility of maintaining the rule no longer lies with the information system.
    Instead, users with the migration helper role can see the violations and act on it as they see fit.
-   
 
 % Het volgende is wellicht iets teveel van het goede. Het lijkt me dat de lezer het voorgaande al wel snapt.
 %    The following table summarizes what happens when pairs are inserted or deleted from {\tt old.takes} and {\tt new.takes}.
@@ -1005,145 +1006,157 @@ The prefix {\tt new.} refers to items from the desired information system.}:
 %       If this pair is in {\tt old.takes}, rule~\ref{difference} causes the engine to insert $p$ back into {\tt new.takes}.
 % \end{itemize}
 
-\subsection{Example}
-   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
-   The example in section~\ref{sct:Example existing IS}, called $\infsys$, serves as the existing system.
-   Its population reflects the state of the system just before the migration.
-
-   Information system $\infsys'$, the desired system, is specified by:
-\begin{verbatim}
-   RELATION takes[Student*Course]
-   RELATION isPartOf[Module*Course] [UNI]
-   RELATION isEnrolledFor[Student*Module]
-   RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+\subsection{General migration script}
+   So far, we illustrated how to do migration by giving two concrete examples.
+   This section generalizes those ideas by giving a general approach for generating a migration script.
    
-   RELATION course[ExamReg*Course] [UNI] =
-      [ ("ER1", "Management")
-      ; ("ER2", "Business IT")
-      ; ("ER3", "Business IT")
-      ]
-   RELATION student[ExamReg*Student] [UNI] =
-      [ ("ER1", "Peter")
-      ; ("ER2", "Susan")
-      ]
-   RULE ExamRule1: student~;course |- takes
-   RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
-\end{verbatim}
-   In this example, the relations and the rule of the existing system remain part of the desired system%
-\footnote{Removal or changing of relations is allowed as well.}
-   because the developer has copied these items into the script of the desired system.
-   However, she has imposed the restriction \verb-UNI- on the relation {\tt isPartOf}, stating that this relation is univalent.
-   This means that every \verb-Module- is part of at most one \verb-Course-.
-   Besides, two new relations and two rules have appeared.
-
-   The desired system, $\infsys'$, contains exam registrations (concept \verb-ExamReg-), which is new.
-   In an exam registration, a student registers for the examination of a course.
-   $\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
-   The first one says that an exam registration requires that a student actually takes the course.
-   In logic, the constraint $p_{\tt ExamRule1}$ is written as:
-\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, c\in\text{\tt Course}:\\
-   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
-\end{array}\]
-   Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
-   Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
-\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
-   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
-\end{array}\]
-   Both rules are invariants.
-   So, a student can register for an exam only if she is taking the course for which she registers and if she is enrolled for every module of that course.
-   % Ampersand also derives the following violation sets:
-% \[\begin{array}{l}
-   % \viol{\text{\tt ExamRule1}}{\dataset}\\
-   % \hspace{1cm}=\{\pair{s}{c}\mid\exists e:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\neg(s\ \text{\tt takes}\ c)\}\\
-   % \viol{\text{\tt ExamRule2}}{\dataset}\\
-   % \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
-% \end{array}\]
-
-\subsection{Migration script}
-   The generated migration script, $\migrsys$, consists of the schema of the existing system $\infsys$,
-   the migration system, and the desired system $\infsys'$.
-   The migration system copies the data of the existing system to the desired system by the following rules:
-\begin{verbatim}
--- The existing system (everything is prefixed with "old.")
-   RELATION old.takes[Student*Course]
-   RELATION old.isPartOf[Module*Course]
-   RELATION old.isEnrolledFor[Student*Module]
-
-   RULE old.EnrollRule:
-      old.isEnrolledFor |- old.takes;old.isPartOf~
-      
--- Migration system
-   RELATION copied_takes[Student*Course]
-   ENFORCE new.takes >: old.takes - copied_takes
-   ENFORCE copied_takes >: new.takes
-
-   RELATION copied_isPartOf[Module*Course]
-   ENFORCE new.isPartOf >: old.isPartOf - copied_isPartOf
-   ENFORCE copied_isPartOf >: new.isPartOf
-
-   RELATION copied_isEnrolledFor[Student*Module]
-   ENFORCE new.isEnrolledFor >:
-           old.isEnrolledFor - copied_isEnrolledFor
-   ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
-
--- The desired system (everything is prefixed with "new.")
-   RELATION new.takes[Student*Course]
-   RELATION new.isPartOf[Module*Course] [UNI]
-   RELATION new.isEnrolledFor[Student*Module]
-   RULE new.EnrollRule:
-      new.isEnrolledFor |- new.takes;new.isPartOf~
-      
-   RELATION new.course[ExamReg*Course] [UNI] =
-      [ ("ER1", "Management")
-      ; ("ER2", "Business IT")
-      ; ("ER3", "Business IT")
-      ]
-   RELATION new.student[ExamReg*Student] [UNI] =
-      [ ("ER1", "Peter")
-      ; ("ER2", "Susan")
-      ]
-
-   RULE new.ExamRule1 :
-      new.student~;new.course |- new.takes
-   RULE new.ExamRule2 :
-      new.student~;new.course;new.isPartOf~ |- new.isEnrolledFor
-\end{verbatim}
-
-\subsection{Preparing for the Moment of Transition}
-   Just before starting the migration,
-   the data in the existing system typically differs from the data at its inception (section~\ref{sct:Example existing IS}).
-   Let us assume the actual population at the start of the migration is:
-\begin{verbatim}
-   POPULATION takes[Student*Course] CONTAINS
-      [ ("Peter", "Management")
-      ; ("Susan", "Business IT")
-      ; ("John", "Business IT")
-      ]
-   POPULATION isPartOf[Module*Course] CONTAINS
-      [ ("Finance", "Management")
-      ; ("Business Rules", "Business IT")
-      ; ("Business Analytics", "Business IT")
-      ; ("IT-Governance", "Management")
-      ; ("IT-Governance", "Business IT")
-      ]
-   POPULATION isEnrolledFor [Student*Module] CONTAINS
-      [ ("Susan", "Business Analytics")
-      ; ("Susan", "IT-Governance")
-      ; ("Susan", "Business Rules")
-      ]
-\end{verbatim}
-
-   Upon initialization, the migration system evaluates all enforce rules in an attempt to satisfy all invariants.
-   In this example, it leaves two violations behind that it cannot resolve by enforce rules.
-   The pair {\tt ("Peter", "Management")} is the first one; it violates rule {\tt new.ExamRule2}.
-   This is because Peter has registered for an examination of the course Management,
-   which contains the module Finance for which Peter is not enrolled.
-   The other is {\tt "IT-Governance"}, which violates the univalence of relation {\tt new.isPartOf}.
-   Since rule {\tt new.ExamRule2} and the univalence of {\tt new.isPartOf} are both defined as invariants,
-   the desired system cannot be taken into production until these violations are resolved.
-   Until that moment, the migration system remains operational to allow a user to resolve this violation. 
-   The moment of cleanup is marked by the event that all invariants of the Migration system and the desired system are satisfied.
-   At that moment, the migration system is no longer needed and can be removed.
+   Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
+   Then we define the migration systems $\migrsys$ and the events as follows:
+   \begin{enumerate}
+   \item We take a disjoint union of the relations: $\rels_\migrsys = \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}$
+     where we define $\overleftarrow~$ and $\overrightarrow~$ to generate new names: $\overleftarrow{\declare{n}{x}{y}}=\declare{(old.n)}{x}{y}$ and $\overrightarrow{\declare{n}{x}{y}}=\declare{(new.n)}{x}{y}$,
+     overloading the notations on sets pointwise: $\overleftarrow{X} = \{\overleftarrow{x}\mid x\in X\}$ and $\overrightarrow{X} = \{\overrightarrow{x}\mid x\in X\}$.
+   \item We copy the relations 
+   \end{enumerate}
+   
+%   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
+%   The example in section~\ref{sct:Example existing IS}, called $\infsys$, serves as the existing system.
+%   Its population reflects the state of the system just before the migration.
+%
+%   Information system $\infsys'$, the desired system, is specified by:
+%\begin{verbatim}
+%   RELATION takes[Student*Course]
+%   RELATION isPartOf[Module*Course] [UNI]
+%   RELATION isEnrolledFor[Student*Module]
+%   RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+%   
+%   RELATION course[ExamReg*Course] [UNI] =
+%      [ ("ER1", "Management")
+%      ; ("ER2", "Business IT")
+%      ; ("ER3", "Business IT")
+%      ]
+%   RELATION student[ExamReg*Student] [UNI] =
+%      [ ("ER1", "Peter")
+%      ; ("ER2", "Susan")
+%      ]
+%   RULE ExamRule1: student~;course |- takes
+%   RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
+%\end{verbatim}
+%   In this example, the relations and the rule of the existing system remain part of the desired system%
+%\footnote{Removal or changing of relations is allowed as well.}
+%   because the developer has copied these items into the script of the desired system.
+%   However, she has imposed the restriction \verb-UNI- on the relation {\tt isPartOf}, stating that this relation is univalent.
+%   This means that every \verb-Module- is part of at most one \verb-Course-.
+%   Besides, two new relations and two rules have appeared.
+%
+%   The desired system, $\infsys'$, contains exam registrations (concept \verb-ExamReg-), which is new.
+%   In an exam registration, a student registers for the examination of a course.
+%   $\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
+%   The first one says that an exam registration requires that a student actually takes the course.
+%   In logic, the constraint $p_{\tt ExamRule1}$ is written as:
+%\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, c\in\text{\tt Course}:\\
+%   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
+%\end{array}\]
+%   Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
+%   Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
+%\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
+%   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
+%\end{array}\]
+%   Both rules are invariants.
+%   So, a student can register for an exam only if she is taking the course for which she registers and if she is enrolled for every module of that course.
+%   % Ampersand also derives the following violation sets:
+%% \[\begin{array}{l}
+%   % \viol{\text{\tt ExamRule1}}{\dataset}\\
+%   % \hspace{1cm}=\{\pair{s}{c}\mid\exists e:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\neg(s\ \text{\tt takes}\ c)\}\\
+%   % \viol{\text{\tt ExamRule2}}{\dataset}\\
+%   % \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
+%% \end{array}\]
+%
+%\subsection{Migration script}
+%   The generated migration script, $\migrsys$, consists of the schema of the existing system $\infsys$,
+%   the migration system, and the desired system $\infsys'$.
+%   The migration system copies the data of the existing system to the desired system by the following rules:
+%\begin{verbatim}
+%-- The existing system (everything is prefixed with "old.")
+%   RELATION old.takes[Student*Course]
+%   RELATION old.isPartOf[Module*Course]
+%   RELATION old.isEnrolledFor[Student*Module]
+%
+%   RULE old.EnrollRule:
+%      old.isEnrolledFor |- old.takes;old.isPartOf~
+%      
+%-- Migration system
+%   RELATION copied_takes[Student*Course]
+%   ENFORCE new.takes >: old.takes - copied_takes
+%   ENFORCE copied_takes >: new.takes
+%
+%   RELATION copied_isPartOf[Module*Course]
+%   ENFORCE new.isPartOf >: old.isPartOf - copied_isPartOf
+%   ENFORCE copied_isPartOf >: new.isPartOf
+%
+%   RELATION copied_isEnrolledFor[Student*Module]
+%   ENFORCE new.isEnrolledFor >:
+%           old.isEnrolledFor - copied_isEnrolledFor
+%   ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
+%
+%-- The desired system (everything is prefixed with "new.")
+%   RELATION new.takes[Student*Course]
+%   RELATION new.isPartOf[Module*Course] [UNI]
+%   RELATION new.isEnrolledFor[Student*Module]
+%   RULE new.EnrollRule:
+%      new.isEnrolledFor |- new.takes;new.isPartOf~
+%      
+%   RELATION new.course[ExamReg*Course] [UNI] =
+%      [ ("ER1", "Management")
+%      ; ("ER2", "Business IT")
+%      ; ("ER3", "Business IT")
+%      ]
+%   RELATION new.student[ExamReg*Student] [UNI] =
+%      [ ("ER1", "Peter")
+%      ; ("ER2", "Susan")
+%      ]
+%
+%   RULE new.ExamRule1 :
+%      new.student~;new.course |- new.takes
+%   RULE new.ExamRule2 :
+%      new.student~;new.course;new.isPartOf~ |- new.isEnrolledFor
+%\end{verbatim}
+%
+%\subsection{Preparing for the Moment of Transition}
+%   Just before starting the migration,
+%   the data in the existing system typically differs from the data at its inception (section~\ref{sct:Example existing IS}).
+%   Let us assume the actual population at the start of the migration is:
+%\begin{verbatim}
+%   POPULATION takes[Student*Course] CONTAINS
+%      [ ("Peter", "Management")
+%      ; ("Susan", "Business IT")
+%      ; ("John", "Business IT")
+%      ]
+%   POPULATION isPartOf[Module*Course] CONTAINS
+%      [ ("Finance", "Management")
+%      ; ("Business Rules", "Business IT")
+%      ; ("Business Analytics", "Business IT")
+%      ; ("IT-Governance", "Management")
+%      ; ("IT-Governance", "Business IT")
+%      ]
+%   POPULATION isEnrolledFor [Student*Module] CONTAINS
+%      [ ("Susan", "Business Analytics")
+%      ; ("Susan", "IT-Governance")
+%      ; ("Susan", "Business Rules")
+%      ]
+%\end{verbatim}
+%
+%   Upon initialization, the migration system evaluates all enforce rules in an attempt to satisfy all invariants.
+%   In this example, it leaves two violations behind that it cannot resolve by enforce rules.
+%   The pair {\tt ("Peter", "Management")} is the first one; it violates rule {\tt new.ExamRule2}.
+%   This is because Peter has registered for an examination of the course Management,
+%   which contains the module Finance for which Peter is not enrolled.
+%   The other is {\tt "IT-Governance"}, which violates the univalence of relation {\tt new.isPartOf}.
+%   Since rule {\tt new.ExamRule2} and the univalence of {\tt new.isPartOf} are both defined as invariants,
+%   the desired system cannot be taken into production until these violations are resolved.
+%   Until that moment, the migration system remains operational to allow a user to resolve this violation. 
+%   The moment of cleanup is marked by the event that all invariants of the Migration system and the desired system are satisfied.
+%   At that moment, the migration system is no longer needed and can be removed.
 
 %\subsubsection{Strategies for restoring invariants}
 %
