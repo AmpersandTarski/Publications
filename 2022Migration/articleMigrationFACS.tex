@@ -474,17 +474,17 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    A rule $u$ in the schema is a function such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
-   For some rules, the system is told what to do in order to fix it.
-   Such rules are called enforce rules.
+   For a different kind of constraint, the system is told what to do in order to fix it.
+   Such constraints are called enforce rules.
    We just need to consider one type of enforce rule in this work, its syntax is as follows:
    
 \begin{align}
       \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
 \end{align}
 
-   Adding an enforce rule to the script of an information system specifies a rule $u$ with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$, and the information system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$, thus maintaining $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
+   Adding an enforce rule to the script of an information system specifies a function $u : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$ with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$, and the information system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$, thus maintaining $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
    
-   Formally, enforce rules are pairs with $u$ a rule and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
+   Formally, enforce rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
    The set of enforce rules in a schema is $\enforces$.
    
    \begin{definition}[Schema]
@@ -592,11 +592,12 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \begin{itemize}
    \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies Equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
    \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$ and $\rules_\infsys=\rules$;
-   \item all rules are satisfied:
-   \begin{eqnarray}
-   \forall u\in\rules&:\viol{u}{\dataset}=\emptyset
+   \item all rules and enforce rules are satisfied:
+   \begin{align}
+   \forall u\in\rules&:\viol{u}{\dataset}=\emptyset\\
+   \forall (r\mapsfrom u)\in\enforces&:\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
    \label{eqn:satisfaction}
-   \end{eqnarray}
+   \end{align}
    \item triples in the data set have their relation mentioned in the schema:
    \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
@@ -1083,10 +1084,11 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    This implies that if the MoC is initially reachable through $\xrightarrow[I]{\overrightarrow\rels_{\schema'}}$ events, then it will remain reachable.
    So is the MoC initially reachable?
    
-   For this last question, we need to add a small condition:
+   For this last question, we need to add a condition:
    There needs to be an information system that has the desired schema $\schema'$.
    If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the dataset, no such system exists and we have no hope of reaching it.
-   However, let $\pair{\dataset'}{\schema'}$ be an information system, then we can get to it through our migration system.
+   We assume that the rules of $\schema'$ are intended to prevent data pollution, such that a dataset $\dataset'$ describing the `real world' would be one that satisfies them.
+   So let $\pair{\dataset'}{\schema'}$ be an information system, then we can get to it through our migration system.
    To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{f_u}{\dataset_{\migrsys^C}}=\pop{v_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
    We can do so by simply stating its triples, since the schema is determined by $\migrsys'$:
    
@@ -1442,11 +1444,29 @@ The prefix {\tt new.} refers to items from the desired information system.}:
 %\end{figure}
 
 \section{Conclusions}
-\begin{itemize}
-   \item the part of the data that does not change can be migrated automatically;
-   \item the part of the migration that can be automated is usually not sufficient;
-         it takes additional human creativity to complete the migration specification;
-\end{itemize}
+
+In this paper, we describe the data migration as going from an existing information system to a desired one, where the schema changes.
+As Ampersand generates information systems, creating a new information system can be a small task, allowing for incremental deployment of new features.
+We describe the parts of an information system that have an effect on data pollution.
+We assume that the existing system does not violate any constraints of its schema, but address other forms of data pollution:
+constraints that are not in the schema but are in the desired schema are initially relaxed such that the business can start using the migration system, after which this form of data pollution needs to be addressed by human intervention.
+We propose a method for doing migration such that only a finite amount of human intervention is needed.
+Our method allows a system similar to the desired system to be used while the intervention takes place.
+
+Our proposed migration is certainly not the only approach one could think of.
+However, we have not come across other approaches that allow changing the schema in the presence of constraints.
+As such, we cannot compare our approach against other approaches.
+We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
+For now, our next step is to implement the approach shown here into Ampersand.
+
+This work does not consider what to do about (user) interfaces.
+Instead, it models events by assuming that any change to the dataset can be achieved.
+In practice, such changes need to be achieved through interfaces.
+Most Ampersand systems indeed allow the users of the information system to edit the dataset quite freely through the interfaces.
+However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break.
+In the spirit of the approach outlined here, we hope to generate migration interfaces that can replace any broken interfaces until the Moment of Transition.
+How to do this is future work.
+
 %\section{Bibliography}
 \bibliographystyle{splncs04}
 \bibliography{doc}
