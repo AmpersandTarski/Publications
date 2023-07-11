@@ -53,8 +53,8 @@
 \newcommand{\src}[1]{\id{src}(#1)}
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
 \newcommand{\sat}[2]{\id{sat}_{#1}(#2)}
-\newcommand{\viol}[2]{\violC{#1}(#2)}
-\newcommand{\violC}[1]{\id{viol}_{#1}}
+\newcommand{\viol}[2]{{#1}(#2)}
+%\newcommand{\violC}[1]{\id{viol}_{#1}}
 \newcommand{\sign}[1]{\id{sign}(#1)}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
 \newcommand{\la}{\langle}
@@ -462,12 +462,12 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    We describe a schema $\schema$ via a tuple $\triple{\concepts}{\rels}{\rules}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   and $\rules\subseteq \Rules$ is a finite set of rules.
+   and $\rules\subseteq \left(\Dataset \to \Pair{\Atoms}{\Atoms}\right)$ is a finite set of rules.
    
    Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$.
    In this paper, variables $u$ and $v$ represent rules.
-   For every rule $u$ in the schema, we assume there is a function $\violC{u}$ such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
+   A rule $u$ in the schema is a function such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
    %The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
@@ -1022,20 +1022,28 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
    Then we define the migration systems $\migrsys$ and the events as follows:
    \begin{enumerate}
-   \item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names:
+   \item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the dataset of the old system and the rules of the new system:
    \begin{align}
    \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
    \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
-   \rels_1 &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
+   \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}\\
+   \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\infsys\}&
+   \instance_\migrsys &= \instance_\infsys\\
+   \rules_\theenumi &= \rules_\infsys
    \end{align}
    \item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
-   \rels_2 &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-   \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\infsys\}\\
-   \mathcal{E}_2 &= \{\overrightarrow{r}\mapsfrom (\overleftarrow{r} - \widetilde{r}) \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \overrightarrow{r} \mid \widetilde{r} \in \rels_2\}
+   \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
+   \mathcal{E}_\theenumi &= \{\overrightarrow{r}\mapsfrom (\overleftarrow{r} - \widetilde{r}) \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \overrightarrow{r} \mid \widetilde{r} \in \rels_2\}
    \end{align}
-   \item 
+   \item For each rule, we generate two helper relations, viols and fixed. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
+   \begin{align}
+   \widetilde{\dataset'} &= \pair{\{\triple{x}{\widetilde{r}}{y}\mid \triple{x}{r}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
+   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\infsys\}}{\instance_{\dataset'}}\\
+   \mathcal{E}_{\theenumi} &=\{TODO\}\\
+   \rules_\theenumi &= \{\lambda {\dataset'}. \viol{u}{\widetilde{\dataset'}}\}
+   \end{align}
    \end{enumerate}
    
 %   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
