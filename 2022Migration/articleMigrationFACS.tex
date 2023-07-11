@@ -76,8 +76,8 @@
 \newcommand{\atom}[1]{{\tt\small #1}}
 \newcommand{\atoms}{\mathcal{A}}
 \newcommand{\Atoms}{\mathbb{A}}
-\newcommand{\events}{\mathcal{E}}
-\newcommand{\Events}{\mathbb{E}}
+%\newcommand{\events}{\mathcal{E}}
+%\newcommand{\Events}{\mathbb{E}}
 \newcommand{\concept}[1]{{\tt\small #1}}
 \newcommand{\concepts}{\mathcal{C}}
 \newcommand{\Concepts}{\mathbb{C}}
@@ -89,6 +89,7 @@
 \newcommand{\Triples}{\mathbb{T}}
 \newcommand{\Triple}[3]{#1\times#2\times#3}
 \newcommand{\vertices}{N}
+\newcommand{\enforces}{\mathcal{E}}
 \newcommand{\rules}{\mathcal{U}}
 \newcommand{\Rules}{\mathbb{U}}
 \newcommand{\specrules}{\mathcal{S}}
@@ -473,20 +474,35 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    A rule $u$ in the schema is a function such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
-   %The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
-   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$
-   for $\concepts$, $\rels$, and $\rules$ corresponding to $\schema$.
+   For some rules, the system is told what to do in order to fix it.
+   Such rules are called enforce rules.
+   We just need to consider one type of enforce rule in this work, its syntax is as follows:
+   
+\begin{align}
+      \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
+\end{align}
 
+   Adding an enforce rule to the script of an information system specifies a rule $u$ with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$, and the information system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$, thus maintaining $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
+   
+   Formally, enforce rules are pairs with $u$ a rule and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
+   The set of enforce rules in a schema is $\enforces$.
+   
    \begin{definition}[Schema]
-   A schema is a tuple $\triple{\concepts}{\rels}{\rules}$ that satisfies:
-\begin{eqnarray}
-   \declare{n}{A}{B}\in\rels&\Rightarrow&A\in\concepts\ \wedge\ B\in\concepts
-   \label{eqn:relationsIntroduceConcepts}
-\end{eqnarray}
+   A schema is a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$ that satisfies:
+\begin{align}
+   \declare{n}{A}{B}\in\rels&~\Rightarrow~ A\in\concepts\ \wedge\ B\in\concepts
+   \label{eqn:relationsIntroduceConcepts}\\
+   \pair{u}{r}\in\mathcal\enforces&~\Rightarrow~ r \in \rels\label{eqn:enforceRulesRels}
+\end{align}
    \end{definition}
    Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
    The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies this requirement.
    This is also known as static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
+   
+   %The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
+   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\enforces_{\schema}$
+   for $\concepts$, $\rels$, $\rules$, and $\enforces$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\enforces}$.
+
    
 %   Note that these requirements do not depend on any particular data set,
 %   so they can be checked at compile time.
@@ -575,7 +591,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
    \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies Equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
-   \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$ and $\rules_\infsys=\rules$;
+   \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$ and $\rules_\infsys=\rules$;
    \item all rules are satisfied:
    \begin{eqnarray}
    \forall u\in\rules&:\viol{u}{\dataset}=\emptyset
@@ -616,15 +632,8 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    $t \in \triples_{\dataset'} \cap (\Triple{\Atoms}{I}{\Atoms})$ and $t \not\in \triples_{\dataset}$ for some triple $t$.
    \end{definition}
    
-   We use inserting events to model the effect of a type of rule that is particular to Ampersand, known as an enforce rule.
-   The syntax is as follows:
-   
-\begin{align}
-      \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
-\end{align}
-
-   Adding an enforce rule to the script of an information system specifies a rule $u$ with $\viol{u}{\dataset} = \pop{\id{term}}{\dataset} - \pop{r}{\dataset}$, and the information system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$, thus maintaining $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
-   If $R$ is a set of relations that covers those that occur in $\id{term}$, then changes to an information system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
+   We use inserting events to model the effect of enforce rules.
+%   If $R$ is a set of relations that covers those that occur in the rule, then changes to an information system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
 
 \subsection{Example}
 \label{sct:Example existing IS}
@@ -995,9 +1004,9 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \end{aligned}\label{warnings}
    \end{align}
    
-   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated information system:
+   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated information system in the formal sense:
    By assigning a role, the responsibility of maintaining the rule no longer lies with the information system.
-   Instead, users with the migration helper role can see the violations and act on it as they see fit.
+   Instead, users with the migration helper role can see the violations and act on it as they see fit, so the only effect of Line~{\ref{warnings}} is that such users will be shown its violations.
 
 % Het volgende is wellicht iets teveel van het goede. Het lijkt me dat de lezer het voorgaande al wel snapt.
 %    The following table summarizes what happens when pairs are inserted or deleted from {\tt old.takes} and {\tt new.takes}.
@@ -1029,34 +1038,69 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \begin{align}
    \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
    \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
-   \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}\\
    \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}&
    \instance_\migrsys &= \instance_\dataset\\
-   \rules_\theenumi &= \rules_\schema
+   \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
+   %&\rules_\theenumi &= \rules_\schema
    \end{align}
    \item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-   \mathcal{E}_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
+   \enforces_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
    \end{align}
    \item For each rule, we generate two helper relations, viols and fixed. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
    \begin{align}
    \widetilde{\dataset'} &= \pair{\{\triple{x}{\widetilde{r}}{y}\mid \triple{x}{r}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
-   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}}{\instance_{\dataset'}}\\
-   \mathcal{E}_{\theenumi} &=\{v_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
-    \{f_u \mapsfrom \lambda \dataset'.~ v_u - \viol{u}{\overrightarrow{\dataset'}}\} \\
+   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
    \rels_\theenumi &= \{v_u\mid u \in \rules_{\schema'}\} \cup \{f_u\mid u \in \rules_{\schema'}\}\\
-   \rules_\theenumi &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - (v_u - f_u) \mid u\in\rules_{\schema'}\}
+   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - \pop{v_u - f_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
+   \enforces_{\theenumi} &=\{v_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
+    \{f_u \mapsfrom \lambda \dataset'.~ v_u - \viol{u}{\overrightarrow{\dataset'}}\}\label{eqn:enforceForRules}
    \end{align}
    \item Combining the above into a single migration system:
    \begin{align}
+   \concepts_\migrsys &= \concepts_\dataset \cup  \concepts_{\dataset'}\\
    \rels_\migrsys &= \rels_1\cup\rels_2\cup \rels_3\\
-   \rules_\migrsys &= \rules_1\cup \rules_3\\
-   \mathcal{E}_\migrsys &= \mathcal{E}_1\cup\mathcal{E}_2\cup\mathcal{E}_3\\
-   \concepts_\migrsys &= \concepts_\dataset \cup  \concepts_{\dataset'}
+   %\rules_\migrsys &= \rules_1\cup \rules_3\\
+   \enforces_\migrsys &= \enforces_1\cup\enforces_2\cup\enforces_3
    \end{align}
    \end{enumerate}
+   
+   \subsection{Validation}
+   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\enforces_\migrsys}}$ is an information system after application of the enforce rules:
+   the only rules are those introduced in Eqution~\ref{eqn:migrsysrules}, and enforce rules from Equation~\ref{eqn:enforceForRules} ensure that $\popF{v_u} = u$ initially, while $\popF{f_u}$ is empty.
+   Hence, the MoT can happen after the enforce rules have been applied, giving us $\migrsys'$.
+   The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
+   
+   The MoC is reached for dataset $\dataset'$ whenever $\pop{v_u - f_u}{\dataset'}=\emptyset$ for all rules.
+   This should happen after a finite number of inserting events: let $I = \{f_u \mid u\in\rules_{\schema'}\}$ be the relations that keep track of which violations have been fixed, then there is no infinite chain of systems $\migrsys' = \migrsys_0, \migrsys_1,\ldots$ such that $\migrsys_i\xrightarrowdbl[I]{\overrightarrow\rels_{\schema'}}\migrsys_{i+1}$.
+   This shows that when users get rid of violations, there is real progress: they can only do this a finite number of times.
+   Next we ask ourselves: does this mean we always reach the MoC?
+   
+   Suppose there is a system in which all violations have been fixed, that is, suppose there is a $\migrsys^C$ such that $\pop{f_u}{\dataset_{\migrsys^C}}=\pop{v_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
+   In that case, after any steps done by users (both those with and without the migration helper role), we can reach it, that is: for any $\migrsys_i$, $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys_i$ implies $\migrsys_i\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
+   This implies that if the MoC is initially reachable through $\xrightarrow[I]{\overrightarrow\rels_{\schema'}}$ events, then it will remain reachable.
+   So is the MoC initially reachable?
+   
+   For this last question, we need to add a small condition:
+   There needs to be an information system that has the desired schema $\schema'$.
+   If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the dataset, no such system exists and we have no hope of reaching it.
+   However, let $\pair{\dataset'}{\schema'}$ be an information system, then we can get to it through our migration system.
+   To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{f_u}{\dataset_{\migrsys^C}}=\pop{v_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
+   We can do so by simply stating its triples, since the schema is determined by $\migrsys'$:
+   
+   \begin{align}
+   \begin{aligned}
+   \triples_{\migrsys^C} &= \triples_\migrsys 
+   \cup \{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_{\dataset'}\}\\
+   &\cup \{\triple{a}{v_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   \cup \{\triple{a}{f_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   \end{aligned}
+   \end{align}
+   
+   Collectively, this shows that the MoC is and remains reachable after a finite number of inserting events by users in the migration helper role.
+   
    
 %   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
 %   The example in section~\ref{sct:Example existing IS}, called $\infsys$, serves as the existing system.
