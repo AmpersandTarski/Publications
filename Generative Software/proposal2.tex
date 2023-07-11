@@ -1,0 +1,133 @@
+\documentclass{elsarticle}
+% \usepackage{natbib}
+% \usepackage{graphicx}
+% \usepackage{footmisc}
+% \usepackage{amstext}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{amsthm}
+\usepackage[english]{babel}
+\usepackage{libertine}
+\usepackage{inconsolata}
+% \usepackage[official,right]{eurosym}
+\selectlanguage{english}
+\usepackage{hyperref}
+\frenchspacing
+
+\begin{document}
+% \include{preamble}
+
+\title{Enhancing Software Development with Artificial Intelligence}
+\author{prof.dr.ir.\ Stef Joosten\footnote{ORCID 0000-0001-8308-0189}}
+\author{dr.\ Tim Steenvoorden\footnote{ORCID 0000-0002-8436-2054}}
+\address{Open Universiteit Nederland, Heerlen, the Netherlands}
+
+\begin{abstract}
+    This proposal aims at supporting software engineers to develop software correctly and reliably by construction.
+    The threshold of learning formal specification languages has kept scores of software engineers from using them in practice.
+    Recent progress in Artificial Intelligence fuels the hope that AI might leverage the use of formal specification languages.
+    This proposal aims at investigating how.
+
+    The ambition of this research is to contribute to solving the problem of large IT-projects
+    along the line of correctness and reliability.
+\end{abstract}
+
+\begin{keyword}
+    generative software, AI enhanced software engineering, reliability by construction, prototyping, correctness by construction, Ampersand, TopHat
+\end{keyword}
+\maketitle
+
+% \section{Requirements (remove this section before submitting)}
+% Reviewers will judge this proposal by the following requirements.
+% \subsection{Scientific quality}
+% \begin{enumerate}
+%    \item 	To what extent is the proposed research original and how would you rate the innovative elements?
+%    \item 	What is your assessment of the design of the project, including the goals, hypotheses, research methods, and scientific feasibility?
+%    \item 	What is your assessment of the coherence and time schedule of the proposed lines of research?
+%    \item 	Is the research group competent enough to carry out the research? Does the group have a relevant position in the international scientific community? Is the available infrastructure adequate?
+%    \item 	Are the number and category of requested personnel, budget for materials, investments, and foreign travel adequate?
+%    \item 	Does the proposed research fit in the Open Technology Programme; does it focus on engineering sciences research?
+%    \item 	What are the strong and weak points of the scientific part of the proposal?   
+% \end{enumerate}
+
+% \subsection{Knowledge Utilisation} (the application of the results of the research by third parties)
+% \begin{enumerate}
+%    \item  	What is your assessment of the description of the commercial and/or societal potential impacts of the research given in the proposal?
+%    \item 	What is your assessment of the contribution and commitment of the users and the proposed composition of the user committee?
+%    \item 	What is your assessment of the freedom to operate concerning commercial propositions, existing patents, eligibility or societal acceptance? 
+%    \item 	What are the prospects for collaboration with the industry and knowledge transfer, assuming the project is successful? Please address both aspects.
+%    \item 	What is your assessment of the research group's competence regarding the transfer and application of research results?
+%    \item 	What are the strong and weak points of the utilisation plan?   
+% \end{enumerate}
+
+\section{Research question}
+\label{sct:Research question}
+   Data driven organizations that change frequently are facing the dilemma of buy vs. build.
+   On one hand, flexible and fast adaptation requires immediate deployment of new software components, without interrupting the ongoing business.
+   Commercial off-the-shelf (COTS) components can solve that problem, but they can be too generic.
+   On the other hand, one-of-a-kind organizations require one-of-a-kind components that are not readily available.
+   The so called ``low code and no code platforms'' are sometimes advocated as the solution
+   because their (re-)sellers claim that the business itself can configure such systems.
+   However, we have seen some disappointing results of that in practice, because of integration problems and maintainability issues.
+   So custom-built solutions are still widespread in organizations with one-of-a-kind requirements.
+   They are still willing to invest the time to build and maintain information systems and take the risk of a failing IT-innovation.
+ 
+   Generative development can shorten the development time and reduce the development risks of custom-built software,
+   regaining the desired flexibility and satisfying specific one-of-a-kind requirements at the same time.
+   Current research has shown that complete working information systems can be generated.
+   To get this technology ready for real use, research needs to be done on gaining more control over non-functional properties of generated systems,
+   such as scalability, robustness, and security.
+
+\section{Plan}
+   We want to participate in a larger research project by means of one researcher (PhD candidate, full-time, 4 years) and one scientific programmer (professional, full-time, 4 years).
+   We intend to further the knowledge about generative software development by participating in a larger research effort.
+   We bring the expertise~\cite{JoostenRAMiCS2017,Steenvoorden2022} and tools~\cite{Joosten-JLAMP2018,10.1145/3354166.3354182} on generative software development
+   as an asset to that project at no extra cost.
+   The authors also intend to participate in person in the role of supervisors of the researcher and the scientific programmer, each for 0.1 FTE.
+
+   This capability offers the following benefits:
+\begin{itemize}
+    \item By generating software, we can produce live demonstrations periodically to keep the future user population informed of the progress.
+    This produces quick results, which keeps funders happy.
+    \item By automating software production, we can prevent a large class of mistakes and thereby reduce the project risk.
+    \item By formally specifying the functionality, we can give valuable guarantees on the correctness of the results.
+    \item Software that is correctly generated needs no testing. This yields significant savings on testing and test maintenance.
+    \item The tooling that has been developed at the Open University is especially suitable for automating business processes and workflows.
+\end{itemize}
+
+\section{Qualification of researchers}
+\label{sct:Qualification}
+   Research into generative software has a long tradition at the OU.
+   Results from this research comprise:
+\begin{itemize}
+   \item A generator, Ampersand, that produces a complete information system from a specification,
+         and a generator, TopHat, that produces a workflow system from a specification,
+         demonstrating that this research has tangible results~\cite{Michels2011}.
+   \item Numerous publications in peer-reviewed scientific conferences and journals,
+         demonstrating that this research is scientifically relevant.
+         Some of the highlights:
+         \begin{itemize}
+            \item A type system for information systems to ensure that all data is meaningful (i.e. has an interpretation)~\cite{vdWoude2011}
+            \item A book, "Rule Based Design", published as open educational content on the web~\cite{RBD}
+            \item An application that checks modeling conventions in architectural specifications~\cite{iceis22}
+            \item An application for identity and access management~\cite{SIAM2008}
+            \item Domain analysis~\cite{Joosten2015}.
+         \end{itemize}
+   \item A course, Rule Based Design, which is in the Master's program of the Computer Science curriculum and the Business Process Management \& IT program of the OU,
+         demonstrating that this research is valued by the OU.
+   \item over 10 generated information systems in production, made by TNO and one made by the OU,
+         demonstrating that this research has practical value for industry.
+   \item in-kind support from Ordina,
+         demonstrating that this research can draw positive attention from the IT industry.
+\end{itemize}
+
+Current work in our group is about supporting incremental changes to an information system generatively,
+to support DevOps teams who need incremental deployments.
+Supporting incremental deployments with a generator is likely to decrease deployment times,
+to increase the number of releases per time unit, and to decrease the risk of errors propagating to production.
+\section{Bibliography}
+\bibliographystyle{elsarticle-harv}
+\bibliography{doc}
+
+
+\end{document}

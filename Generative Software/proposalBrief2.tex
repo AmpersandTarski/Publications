@@ -1,0 +1,96 @@
+\documentclass{elsarticle}
+% \usepackage{graphicx}
+% \usepackage{footmisc}
+% \usepackage{amstext}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{amsthm}
+\usepackage[english]{babel}
+\usepackage{libertine}
+\usepackage{inconsolata}
+% \usepackage[official,right]{eurosym}
+\selectlanguage{english}
+\frenchspacing
+
+\begin{document}
+% \include{preamble}
+
+\title{Enhancing Software Development with Artificial Intelligence}
+\author{prof.dr.ir.\ Stef Joosten\footnote{ORCID 0000-0001-8308-0189}}
+\author{dr.\ Tim Steenvoorden\footnote{ORCID 0000-0002-8436-2054}}
+\address{Open Universiteit Nederland, Heerlen, the Netherlands}
+
+\begin{abstract}
+\end{abstract}
+
+\begin{keyword}
+    generative software, AI enhanced software engineering, reliability by construction, prototyping, correctness by construction, Ampersand, TopHat
+\end{keyword}
+\maketitle
+
+\section{Problem area}
+    Recent developments in Artificial Intelligence (e.g.~\cite{Chen2021EvaluatingLL,Ernst2022AIDrivenDI,Imai2022}) have attracted
+    the attention of the software engineering community to unleash its potential for software engineering.
+    This proposal addresses the problem of developing software correctly and reliably by construction,
+    leveraging the advances in AI for augmented software engineering for solving an important issue of large IT-projects in practice.
+
+    We hold it to be self-evident that correctness and reliability by construction requires software to be generated from a formal specification.
+    Contemporary low-code platforms, SaaS-solutions, and model-driven development environments are examples of software generators,
+    all of which require some human programming to suit the deployed artifacts to the concrete requirements from practice.
+    Therefore, human errors cannot be ruled out.
+    Such software generators are typically based on informal methods, so their reliability and correctness depends on testing practices.
+    In contrast, formal specification languages, such as~\cite{Alloy2006,CSP,Z}, give a concrete perspective on correctness.
+    However, they typically don't generate full-fledged information systems.
+    As far as we know today, Ampersand~\cite{JoostenRAMiCS2017} is the only formal specification language
+    that generates complete information systems from formal specification.
+    Yet, formal specification languages suffer from the problem that most software engineers lack the education and skills
+    to make formal specifications in real-life situations.
+    These languages are typically difficult to learn and use, so they are not widely used in practice.
+
+\section{Vision}
+    Our vision consists of four beliefs:
+\begin{itemize}
+\item 
+    We believe that formal specifications are prerequisite to the correctness and reliability of software systems.
+\item 
+    We believe that generating software can eliminate many opportunities for human error.
+    For this reason, software generation is a neccessary ingredient of correctness and reliability by construction.
+\item 
+    We believe that AI can be used to make formal specification languages more accessible to software engineers,
+    so they can develop correct and reliable software by construction.
+\item 
+    We believe that AI might cause a breakthrough in the use of formal specification languages by software engineers.
+    If formal methods can be made more accessible to the software engineering community,
+    we may have a game changer with a large potential for the quality of governmental, financial, and industrial data in practice.
+\end{itemize}
+    That summarizes our vision underlying this proposal.
+
+    Our proposal builds on the extensive experience of the Open Universiteit with
+    generating information systems~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018,Steenvoorden2022,10.1145/3354166.3354182},
+    combined with the AI expertise of the new research group of artificial intelligence.
+    For tooling, the proposal builds exclusively on free open source software
+    and the results will be available as free open source software to the public.
+
+\section{Benefits}
+    This research aims to contribute to 
+\begin{itemize}
+    \item Correctness by construction by working from a formal specification, enabling software engineers to use proofs besides testing.
+    \item Reliability by construction by preventing human programming mistakes.
+    \item Productivity of software engineers by eliminating the need to program the software.
+    \item Diminished project risk, by automating software production and thus preventing a large class of mistakes.
+    \item Short release cycles, so live demonstrations can keep the future user population informed and keep funders happy.
+    \item Guarantees on the correctness of software, by eliciting business processes and business rules into formal specifications.
+    \item Savings are expected on software development (by generating), testing (by error prevention), and maintenance of both software and tests.
+\end{itemize}
+
+\section{Researchers}
+    The authors are acknowledged scientists, all with a proven track record in generative software development and workflow modelling.
+
+\newpage
+
+\section{Bibliography}
+    \bibliographystyle{elsarticle-harv}
+    \bibliography{doc}
+
+
+\end{document}
