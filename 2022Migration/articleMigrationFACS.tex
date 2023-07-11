@@ -43,7 +43,8 @@
 \newcommand{\cod}[1]{\id{cod}(#1)}
 %\renewcommand{\int}[2]{\id{inter}(#1,#2)}
 \newcommand{\relsIn}[1]{\id{relsIn}(#1)}    % maps a Term to a set of Relations
-\newcommand{\pop}[2]{\id{pop}_{#1}(#2)}
+\newcommand{\popF}[1]{\id{pop}_{#1}}
+\newcommand{\pop}[2]{\popF{#1}(#2)}
 \newcommand{\maintain}{\mathbin{\id{maint}}}
 \newcommand{\enf}{\mathbin{{\tt enforce}}}
 \newcommand{\enforce}[2]{{\tt enforce}_{#1}(#2)}
@@ -436,7 +437,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
 
    A relation $r$ can serve as a container of pairs,
-   as defined by the function $\id{pop}_r:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
+   as defined by the function $\popF{r}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
    It defines a set of pairs, also known as the population of $r$:
 \begin{equation}
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
@@ -446,12 +447,14 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 %\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\instance_{\dataset}A\ \wedge\ b\instance_{\dataset}B\]
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 %
-   Concepts too can be seen as containers of atoms,
-   defined by the function $\id{pop}_C:\Dataset\rightarrow\powerset{\Atoms}$.
-\begin{equation}
-   \pop{C}{\dataset}\ =\ \{ x\mid\ x\ \instance_{\dataset}\ C\}
-\label{eqn:pop-concept}
-\end{equation}
+   We overload the notation $\popF{\cdot}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
+   and expressions.
+\begin{align}
+   \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
+\label{eqn:pop-concept}\\
+   \pop{A - B}{\dataset}&= \pop{A}{\dataset} - \pop{B}{\dataset}
+\label{eqn:pop-expr}
+\end{align}
 
 \subsection{Schemas}
 \label{sct:Schemas}
@@ -462,7 +465,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    We describe a schema $\schema$ via a tuple $\triple{\concepts}{\rels}{\rules}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   and $\rules\subseteq \left(\Dataset \to \Pair{\Atoms}{\Atoms}\right)$ is a finite set of rules.
+   and $\rules\subseteq \left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)$ is a finite set of rules.
    
    Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$.
@@ -1027,22 +1030,31 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
    \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}\\
-   \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\infsys\}&
-   \instance_\migrsys &= \instance_\infsys\\
-   \rules_\theenumi &= \rules_\infsys
+   \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}&
+   \instance_\migrsys &= \instance_\dataset\\
+   \rules_\theenumi &= \rules_\schema
    \end{align}
    \item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-   \mathcal{E}_\theenumi &= \{\overrightarrow{r}\mapsfrom (\overleftarrow{r} - \widetilde{r}) \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \overrightarrow{r} \mid \widetilde{r} \in \rels_2\}
+   \mathcal{E}_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
    \end{align}
    \item For each rule, we generate two helper relations, viols and fixed. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
    \begin{align}
    \widetilde{\dataset'} &= \pair{\{\triple{x}{\widetilde{r}}{y}\mid \triple{x}{r}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
-   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\infsys\}}{\instance_{\dataset'}}\\
-   \mathcal{E}_{\theenumi} &=\{TODO\}\\
-   \rules_\theenumi &= \{\lambda {\dataset'}. \viol{u}{\widetilde{\dataset'}}\}
+   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}}{\instance_{\dataset'}}\\
+   \mathcal{E}_{\theenumi} &=\{v_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
+    \{f_u \mapsfrom \lambda \dataset'.~ v_u - \viol{u}{\overrightarrow{\dataset'}}\} \\
+   \rels_\theenumi &= \{v_u\mid u \in \rules_{\schema'}\} \cup \{f_u\mid u \in \rules_{\schema'}\}\\
+   \rules_\theenumi &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - (v_u - f_u) \mid u\in\rules_{\schema'}\}
+   \end{align}
+   \item Combining the above into a single migration system:
+   \begin{align}
+   \rels_\migrsys &= \rels_1\cup\rels_2\cup \rels_3\\
+   \rules_\migrsys &= \rules_1\cup \rules_3\\
+   \mathcal{E}_\migrsys &= \mathcal{E}_1\cup\mathcal{E}_2\cup\mathcal{E}_3\\
+   \concepts_\migrsys &= \concepts_\dataset \cup  \concepts_{\dataset'}
    \end{align}
    \end{enumerate}
    
