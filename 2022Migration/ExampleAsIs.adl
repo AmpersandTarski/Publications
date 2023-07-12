@@ -1,0 +1,21 @@
+CONTEXT ExampleAsIs
+
+RELATION takes[Student*Course] =
+[ ("Peter", "Management")
+; ("Susan", "Business IT")
+; ("John", "Business IT")
+]
+
+RELATION isPartOf[Module*Course] [UNI]=
+[ ("Finance", "Management")
+; ("Business Rules", "Business IT")
+; ("Business Analytics", "Business IT")
+; ("IT-Governance", "Management")
+]
+
+RELATION isEnrolledFor [Student*Module]
+
+RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
+ROLE Administrator MAINTAINS EnrollRule
+
+ENDCONTEXT

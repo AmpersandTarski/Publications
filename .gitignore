@@ -1,4 +1,5 @@
-articleRamics.pdf
+*.fdb*
+*.fls
 *.bbl
 *.blg
 *.spl

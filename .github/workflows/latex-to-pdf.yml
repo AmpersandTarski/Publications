@@ -1,0 +1,32 @@
+name: LaTeX to PDF
+
+on:
+  push:
+    branches:
+      - Migration  # Change this to your branch name if necessary
+  pull_request:
+    branches:
+      - main  # Change this to your branch name if necessary
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up LaTeX
+        uses: xu-cheng/latex-action@v2
+        with:
+          working_directory: 2022Migration  # Change this to the name of your working directory
+          root_file: articleMigrationFACS.tex  # Change this to the name of your main LaTeX file
+
+      # - name: Build PDF
+      #   run: pdflatex -interaction=nonstopmode -halt-on-error articleMigration.tex  # Change this to the name of your main LaTeX file
+
+      - name: Publish PDF
+        uses: actions/upload-artifact@v2
+        with:
+          name: articleMigration  # Change this to the desired name of your artifact
+          path: 2022Migration/articleMigrationFACS.pdf  # Change this to the name of your generated PDF file

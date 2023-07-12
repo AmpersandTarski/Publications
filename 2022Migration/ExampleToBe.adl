@@ -1,0 +1,24 @@
+CONTEXT ExampleToBe
+
+RELATION takes[Student*Course]
+RELATION isPartOf[Module*Course] [UNI]=
+[ ("IT-Governance", "Business IT") ]
+RELATION isEnrolledFor [Student*Module] =
+   [ ("Susan", "Business Analytics")
+   ; ("Susan", "IT-Governance")
+   ; ("Susan", "Business Rules")
+   ]
+
+RELATION course[ExamReg*Course] [UNI] =
+[ ("ER1", "Management")
+; ("ER2", "Business IT")
+; ("ER3", "Business IT")
+]
+RELATION student[ExamReg*Student] [UNI] =
+[ ("ER1", "Peter")
+; ("ER2", "Susan")
+]
+RULE ExamRule1: student~;course |- takes
+RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
+
+ENDCONTEXT
