@@ -53,7 +53,6 @@
 \newcommand{\evt}[2]{\id{event}_{#1,#2}}
 \newcommand{\src}[1]{\id{src}(#1)}
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
-\newcommand{\sat}[2]{\id{sat}_{#1}(#2)}
 \newcommand{\viol}[2]{{#1}(#2)}
 %\newcommand{\violC}[1]{\id{viol}_{#1}}
 \newcommand{\sign}[1]{\id{sign}(#1)}
@@ -198,8 +197,8 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \section{Introduction}
 \label{sct:Introduction}
    The purpose of this work is to automate the data migrations that come with incrementally developing and deploying information systems.
-   This paper proposes a theory for such data migrations in the context of generated information systems%
-\footnote{In the sequel, the word ``system'' refers to the phrase ``information system''. This simplifies the language a little. }.
+   This paper proposes a theory for such data migrations in the context of generated information systems.
+   In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.
 
    A problem is that software generators typically do not support the data migration process, especially when the schema changes.
    The ``manual'' effort required to migrate data slows down the development process and introduces mistakes.
@@ -234,7 +233,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    \item {\em human intervention}\\The data migration may require human interaction, which may take time.
    %\item {\em semantic continuity}\\the meaning of data must be preserved.
    \item {\em zero down-time}\\The business continues during the migration without interruption.
-   \item {\em generative software development}\\A compiler exists to generate an information system from a given schema.
+   \item {\em generative software development}\\A compiler exists to generate a system from a given schema.
 \end{itemize}
    This paper focuses on the correctness of the migration.
    Efficiency of the migration is beyond the scope.
@@ -243,7 +242,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \label{sct:Analysis}
 \subsection{Information Systems}
    The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
-   This section defines information systems, after which we define a migration procedure from one information system to another.
+   This section defines information systems, after which we define a migration procedure from one system to another.
 
    Every user has her own tasks and responsibilities and may work from different locations and on different moments.
    This collective use by multiple users serves a purpose which we will loosely call ``the business''.
@@ -370,7 +369,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \subsection{Data sets}
 \label{sct:Data sets}
    A data set $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
-   The notation $\dataset_{\infsys}$ refers to the data set of a particular information system $\infsys$.
+   The notation $\dataset_{\infsys}$ refers to the data set of a particular system $\infsys$.
    The purpose of a data set is to describe the data of a system at one point in time. 
    Before defining data sets, let us first define the constituent notions of atom, concept, specialization, relation, and triple.
    
@@ -395,20 +394,6 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    %This relation is used in the type system, in which $\instance$ assigns one or more concepts to every atom in the data set.
    %Since $\instance$ is a relation and every relation is a set of pairs,
    %set operators $\cup$, $\cap$, and $-$ can be used on $\instance$.
-
-%    Specialization, also known as {\em generalization} or {\em subtyping}, is a relation between concepts.
-%    The statement $A\isa B$ (pronounce: $A$ is a $B$) states that any instance of $A$ is an instance of $B$ as well.
-% \begin{equation}
-%    \label{eqn:specialization}
-%    A\isa B\ \Leftrightarrow\ \forall a: a\instance A\rightarrow a\instance B
-% \end{equation}
-%    Specialization is needed to allow statements such as: ``An employee is a person'' or ``A human is a mammal''.
-%    In her script, a user can declare a specialization as a pair of concepts in the relation $\isa$.
-%    A compiler can construct $\isa$ as the transitive, reflexive closure of all user-defined specializations.
-%    It must make sure that $\isa$ is antisymmetric, so that $\isa$ is a partial order of concepts.
-%    Specialization causes atoms to have multiple concepts of which they can be an instance.
-%    As a result, if an atom is an instance of concept $A$ and $A\isa B$,
-%    this atom has all properties that atoms of type $B$ have.
 
    Relations serve to organize and store data, to allow a developer to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations\footnote{Some readers might like to read `relation symbol' where we write `relation'.}.
@@ -460,13 +445,13 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \subsection{Schemas}
 \label{sct:Schemas}
    Schemas serve to capture the semantics of an information system~\cite{Spivak2012}.
-   We consider a schema to represent the static part of an information system, defining concepts, relations, and rules.
+   We consider a schema to represent the static part of a system, defining concepts, relations, and rules.
    A software engineer defines a schema on design time, so that semantic checks can be implemented at compile time.
 
    We describe a schema $\schema$ via a tuple $\triple{\concepts}{\rels}{\rules}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   and $\rules\subseteq \left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)$ is a finite set of rules.
+   and $\rules\subseteq \powerset{\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}}$ is a finite set of rules.
    
    Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$.
@@ -475,17 +460,20 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
    For a different kind of constraint, the system is told what to do in order to fix it.
-   Such constraints are called enforce rules.
-   We just need to consider one type of enforce rule in this work, its syntax is as follows:
-   
+   Such constraints are called enforcement rules.
+   We just use one type of enforcement rule\footnote{Ampersand has several types of enforcement rules.} in this work.
+   Its syntax is as follows:
 \begin{align}
       \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
 \end{align}
 
-   Adding an enforce rule to the script of an information system specifies a function $u : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$ with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$, and the information system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$, thus maintaining $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
+   Adding an enforcement rule to the script of a system specifies a function $u : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$
+   with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$.
+   The system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$.
+   Thus the system maintains $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
    
-   Formally, enforce rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
-   The set of enforce rules in a schema is $\enforces$.
+   Formally, enforcement rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
+   The set of enforcement rules in a schema is $\enforces$.
    
    \begin{definition}[Schema]
    A schema is a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$ that satisfies:
@@ -496,106 +484,26 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \end{align}
    \end{definition}
    Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
-   The type system of Ampersand~\cite{vdWoude2011} ensures that every information system it generates satisfies this requirement.
+   The type system of Ampersand~\cite{vdWoude2011} ensures that every system it generates satisfies this requirement.
    This is also known as static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
    
-   %The notation $\schema_{\infsys}$ refers to the schema of information system $\infsys$.
+   %The notation $\schema_{\infsys}$ refers to the schema of system $\infsys$.
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\enforces_{\schema}$
    for $\concepts$, $\rels$, $\rules$, and $\enforces$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\enforces}$.
 
-   
-%   Note that these requirements do not depend on any particular data set,
-%   so they can be checked at compile time.
-%   This is also known as static typing,
-%   which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
-
-%    For every rule $u$ in the schema, we assume there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
-%    that represents the set of violations%
-% \footnote{The definition of ``violation'' is not needed in this paper. We only use the absence of violations to show satisfaction of a constraint.}
-%    of rule $u$ in any data set.
-%    We also assume a function $\id{sign} : \Rules\rightarrow\Pair{\Concepts}{\Concepts}$
-%    that represents the signature of a rule, i.e. the type of atoms in violations:
-% \begin{eqnarray}
-%    \sign{u}=\pair{A}{B}\ \wedge\ \pair{a}{b}\in\viol{u}{\dataset}&\Rightarrow&a\instance A\wedge b\instance B
-%    \label{eqn:wellTypedEdged violations}
-% \end{eqnarray}
-%    To determine whether rule $u$ satisfies data set $\dataset$,
-%    we define $\sat{u}{\Dataset}$:
-% \begin{eqnarray}
-%    \sat{u}{\dataset}&\Leftrightarrow&\viol{u}{\dataset}=\emptyset
-%    \label{eqn:sat}
-% \end{eqnarray}
-%    Violations are used to produce meaningful error messages and to trigger changes in the data set to restore invariance of that rule.
-
-   % The maintainance relation between roles and rules is used to determine who is allowed to change the data set.
-   % For every rule $u$ in the schema, there is a function $\id{viol}_u : \Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$
-   % that represents the set of violations.%
-   
-   % In practice, there are different ways of enforcing rules: automatic enforcement and manual enforcement.
-
-   % Automatic enforcement is specified by the developer with a special syntax:
-   % the {\em enforcement rule}.
-   % An enforcement rule specifies not only the rule,
-   % but it implicitly defines event $e'$ to restore the invariance.
-   % The system must have an engine that restores invariance of all enforcement rules,
-   % so users will experience that these rules are always satisfied.
-
-   % Manual enforcement means that the system (temporarily) allows violations,
-   % to let a user ``invent'' a reaction $e'$ that restores invariance.
-   % That is why the term $(\exists o\in\roles:\ o\maintain u)$ is added to requirement~\ref{eqn:satisfaction}.
-   % It allows the compiler to generate code for users with role $o$,
-   % so they can restore the invariant manually.
-   % In the Ampersand language, a developer explicitly assigns a rule $u$ to a role $o$,
-   % to keep control over the type of persons that are allowed to ``restore broken rules''.
-   % As a consequence, a mechanism is needed to notify those persons of the work to be done.
-
-   % If a rule $u$ is not assigned to any role and it is not an enforcement rule,
-   % the system must prevent any event $e$ from having any effect on the database.
-   % So, if $e$ would violate rule $u$, the system must reject $e$.
-   % This implements blocking behaviour, and must be accompanied by an error message.
-
 \subsection{Information Systems}
 \label{sct:Information Systems}
-%   An information system has a changing data set because of events that occur.
-%   Whenever the system ``observes'' an event, it attempts to change its data set accordingly.
-%   However, every rule in the schema represents a constraint,
-%   which the data set must invariably satisfy.
-%   That is why rules are also known as ``invariants''.
-%
-%   Events are taken from an infinite set, $\Events$.
-%   An event is denoted as $\evt{d^-}{d^+}$, in which $d^-$ and $d^+$ are data sets.
-%   Every event is a function $\Dataset\rightarrow\Dataset$, so $\evt{d^-}{d^+}(\dataset)$ is a data set.
-%   Equation~\ref{eqn:event} defines the effect of an event on a data set.
-%\begin{eqnarray}
-%      \evt{d^-}{d^+}(\dataset)&=&\la(\triples_{\dataset}-\triples_{d^-})\cup\triples_{d^+},(\instance_{\dataset}-\instance_{d^-})\cup\instance_{d^+}\ra
-%\label{eqn:event}
-%\end{eqnarray}
-%   In English, we would say that an event $\evt{d^-}{d^+}$ removes the triples in $d^-$ from $\dataset$ and then inserts the triples in $d^+$ into the result.
-%   In the sequel, variables $e$, $e'$, $e''$, etc. represent events.
-%   As soon as a system $\infsys$ observes an event $e$,
-%   it applies $e$ to its data set $\dataset$.
-%   Yet, if $e(\dataset)$ does not satisfy a rule $u$ from schema $\schema_\infsys$,
-%   another event is needed, say $e'$, to ensure that $\sat{u}{e'(e(\dataset))}$.
-%   The phrase ``to restore an invariant'' or ``to restore invariance of a rule''
-%   means that the system will change $e(\dataset)$ by applying another event $e'$ to satisfy requirement~\ref{eqn:enforce}.
-%   The notation $\enf_{u,e}$ represents this combination of events $e$ and $e'$.
-%   So, $\enf_{u,e}$ must satisfy:
-%\begin{eqnarray}
-%   \sat{u}{\dataset}&\Rightarrow&\sat{u}{\enforce{u,e}{\dataset}}
-%\label{eqn:enforce}
-%\end{eqnarray}
-
    Let us now define the notion of an information system.
 \begin{definition}[information system]
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
-   \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies Equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
-   \item $\schema=\triple{\concepts}{\rels}{\rules}$ is a schema (satisfies Equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$ and $\rules_\infsys=\rules$;
-   \item all rules and enforce rules are satisfied:
+   \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
+   \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\enforces_\infsys=\enforces$;
+   \item all rules and enforcement rules are satisfied:
    \begin{align}
-   \forall u\in\rules&:\viol{u}{\dataset}=\emptyset\\
-   \forall (r\mapsfrom u)\in\enforces&:\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
+   \forall u\in\rules&.~\viol{u}{\dataset}=\emptyset\\
+   \forall (r\mapsfrom u)\in\enforces&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
    \label{eqn:satisfaction}
    \end{align}
    \item triples in the data set have their relation mentioned in the schema:
@@ -610,35 +518,37 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    % The purpose of a role is to mention an individual user (human) or an automated actor (bot) without knowing who that user is.
 
    As the system responds to events, it changes its data set, while the schema remains the same.
-   In this paper, it suffices to define an event as a pair of information systems for which the schema stays constant.
+   In this paper, it suffices to define an event as a pair of systems for which the schema stays constant.
    Events are categorized by what part of the data set changes.
    
-   \begin{definition}[Event]
-   Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations, and let $\infsys' = \pair{\schema}{\dataset'}$ be an information system, and:
+\begin{definition}[Event]
+   Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations, and let $\infsys=\pair{\schema}{\dataset}$ and  $\infsys'=\pair{\schema}{\dataset'}$ be information systems, and:
       \begin{align}
       \triples_{\dataset} - (\Triple{\Atoms}{(R \cup I)}{\Atoms}) &= \triples_{\dataset'} - (\Triple{\Atoms}{(R \cup I)}{\Atoms})
    \label{eqn:eventUnchanged}\\
       \triples_{\dataset} - (\Triple{\Atoms}{R}{\Atoms}) &\subseteq \triples_{\dataset'} - (\Triple{\Atoms}{R}{\Atoms})
    \label{eqn:eventInsert}
    \end{align}
-   Then we say that $\pair{\pair{\schema}{\dataset}}{\infsys'}$ is an event with scope $R$ inserting in $I$.
-   We use the notation $\pair{\schema}{\dataset} \xrightarrow[I]{R} \infsys'$ to indicate this.
-   \end{definition}
+%   Then we say that $\pair{\pair{\schema}{\dataset}}{\infsys'}$ is an event with scope $R$ inserting in $I$.
+   Then we say that $\infsys\xrightarrow[I]{R} \infsys'$ is an event
+   that brings the system $\infsys$ to $\infsys'$ inserting pairs in relations from $I$ and updating (i.e. deleting and inserting) pairs in $R$.
+%   We use the notation $\pair{\schema}{\dataset} \xrightarrow[I]{R} \infsys'$ to indicate this.
+\end{definition}
    
-   Equation~\ref{eqn:eventUnchanged} states that the triples of those for relations in $I$ or $R$ are the only ones to have changed, and Equation~\ref{eqn:eventInsert} states that of the ones that are only in $I$, no triples were removed.
+   equation~\ref{eqn:eventUnchanged} states that the triples of those for relations in $I$ or $R$ are the only ones to have changed, and equation~\ref{eqn:eventInsert} states that of the ones that are only in $I$, no triples were removed.
    %If $I$ or $R$ is the empty set, we omit it from the arrow, so $\infsys \xrightarrow{R} \infsys'$ is a notation for $\infsys \xrightarrow[\emptyset]{R} \infsys'$.
    
-   \begin{definition}[Inserting event]
+\begin{definition}[Inserting event]
    We write $\infsys \xrightarrowdbl[I]{R} \infsys'$ to state that some triple was inserted whose relation was in $I$, that is:
    $t \in \triples_{\dataset'} \cap (\Triple{\Atoms}{I}{\Atoms})$ and $t \not\in \triples_{\dataset}$ for some triple $t$.
-   \end{definition}
+\end{definition}
    
-   We use inserting events to model the effect of enforce rules.
-%   If $R$ is a set of relations that covers those that occur in the rule, then changes to an information system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
+   We use inserting events to model the effect of enforcement rules.
+%   If $R$ is a set of relations that covers those that occur in the rule, then changes to an system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
 
 \subsection{Example}
 \label{sct:Example existing IS}
-   Having defined an information system in mathematical terms, let us discuss a small example.
+   Having defined information systems in mathematical terms, let us discuss a small example.
    It is written in the language Ampersand to make it more appealing to read.
    Let us first define a data set of just a handful of triples and three relations.
 \begin{verbatim}
@@ -675,15 +585,19 @@ RELATION isEnrolledFor[Student*Module]
 \begin{verbatim}
 RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 \end{verbatim}
-   The Ampersand compiler defines $\sat{\tt EnrollRule}{\dataset}$ as:
+   The Ampersand compiler defines $\viol{\tt EnrollRule}{\dataset}$ as
+\begin{equation}
+   \pop{\tt isEnrolledFor}{\dataset}-\{\pair{s}{m} \mid\exists c.~s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
+\end{equation}
+   This rule is satisfied if $\viol{\tt EnrollRule}{\dataset}=\emptyset$, which means that
 \begin{equation}
    \begin{array}{l}
-   \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}\ \exists c\in\text{\tt Course}:\\
+   \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}.~ \exists c\in\text{\tt Course}~.\\
    s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
    \end{array}
 \label{eqn:example isEnrolledFor}
 \end{equation}
-   As relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty, rule {\tt EnrollRule} is satisfied in this example.
+   In this example, relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty, so rule {\tt EnrollRule} is satisfied.
 
    Now let us check the requirements to verify that this example defines an information system.
    % Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
@@ -721,14 +635,15 @@ The relation $\instance$ contains the pairs:
                \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
                \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\}
              \end{array}\\
-   \rules&=&\{ {\tt EnrollRule}\}
+   \rules&=&\{ {\tt EnrollRule}\}\\
+   \enforces&=&\emptyset
   \end{array}
 \]
    % The user has defined no specializations.
    % This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
    % The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
    % The (nonempty) data set satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
-   So, the schema $\schema=\triple{\concepts}{\rels}{\rules}$ satisfies all requirements from section~\ref{sct:Schemas}.
+   So, the schema $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ satisfies all requirements from section~\ref{sct:Schemas}.
 
    Now let us check the definition of information system.
    Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
@@ -737,208 +652,20 @@ The relation $\instance$ contains the pairs:
    % This meets all requirements for $\infsys=\triple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
    % This concludes the argument that $\infsys$ is an information system.
 
-%    Now suppose that the script also contains the following line:
-% \begin{verbatim}
-% ROLE Administrator MAINTAINS EnrollRule
-% \end{verbatim}
-%    Ampersand generates a set of roles $\roles=\{{\tt Administrator}\}$.
-%    The relation $\maintain$ contains one pair only, $\pair{{\tt Administrator}}{{\tt EnrollRule}}$.
-%    Requirement~\ref{eqn:satisfaction} is still satisfied because now there is a role to maintain rule {\tt EnrollRule}.
-%    The run-time engine will no longer enforce satisfaction of rule {\tt EnrollRule}, but leave it up to an administrator.
-
-%\subsection{Process of Data Migration}
-%   Section~\ref{sct:Information Systems} introduces a single information system.
-%   The transition from an existing system $\infsys$ to the desired one $\infsys'$ is the topic of this section.
-%   Let us first sketch the steps to migrate system $\infsys$ to $\infsys'$.
-%\begin{enumerate}
-%   \item Let the existing information system $\infsys$ have data set $\dataset$ and schema $\schema$.
-%         A developer defines a new information system, $\infsys'$, which contains a data set of its own, $\dataset'$, a schema $\schema'$, and some functionality\footnote{In this paper, we only consider the functionality captured by rules.} as illustrated in Figure~\ref{fig:post-migration}.
-%         After the migration, the resulting system will be $\infsys'$, enhanced with the triples from $\dataset$ that satisfy $\schema'$,
-%         and with additional changes made by the migration engineer (see step~\ref{item3}) and by users who have been using the system during the migration.
-%         $\dataset'$ may contain some new data,
-%         for instance, to initialize new features at the moment of transition (MoT).
-%         If schemas $\schema$ equals $\schema'$, the data migration is unnecessary, so in the sequel we assume they are different.
-%   \item The migration engineer uses a software generator to generate a migration script, $\migrsys$,
-%         This is a system that includes both $\infsys$ and $\infsys'$.
-%         $\migrsys$ is meant to migrate the data and define the semantics during the migration phase.
-%         It contains enforcement rules that migrate existing data to the desired data set.
-%         It also contains data structures and rules that are needed for the duration of the migration phase.
-%%         The generated script must be free of type errors, to ensure that $\sat{u}{\dataset}$ exists for every rule $u$ and data set $\dataset$.
-%%         The proof is available \href{https://www.isa-afp.org/}{here}
-%   \item\label{item3}
-%         In many cases, the schema $\schema_{\migrsys}$ will be enough to perform the migration.
-%         However, a migration engineer may have specific requirements that call for changes in $\migrsys$.
-%         For that purpose, the generator generates the migration script as an Ampersand script,
-%         so the migration engineer can accommodate such requirements.
-%         This can be necessary, for example, to resolve data pollution that violates a constraint that was not in schema $\schema_{\infsys}$.
-%         She can either implement enforcement rules or use the business to resolve the issues.
-%         She can test the resulting migration script, $\migrsys'$ separately before taking the desired system to production.
-%         The migration engineer alters $\schema$ nor $\schema'$ while adapting $\migrsys'$ to the specific needs of the current migration.
-%   \item Then, the migration engineer deploys system $\migrsys'$.
-%         This event starts the copying of data from $\dataset$ to $\dataset'$, as specified in $\migrsys'$ (Figure~\ref{fig:migration phase}).
-%         During this phase, the ingress is still referring users to the existing system,
-%         so they will hardly notice that the desired system is being fired up and loaded with data.
-%         Users are still changing $\dataset$ (both inserts and deletes),
-%         but these changes are being transferred to $\dataset'$ as well.
-%         This step is complete when all data from $\dataset$ has been copied to $\dataset'$ and all invariants of the migration system are true.
-%   \item At this moment, the ingress switches the incoming traffic from $\infsys$ to $\migrsys'$,
-%         so $\migrsys'$ effectively takes over.
-%         This event marks the MoT.
-%         Since $\infsys$ may still have some violations due to last-minute edits,
-%         it may take some (short but finite) time until the invariants of $\infsys$ are true.
-%         After that, data set $\dataset$ will no longer change.
-%   \item From this moment, users experience the functionality of the migration system $\migrsys'$.
-%         This system must ensure that all invariants of $\schema'$ are true before the migration is complete.
-%         It no longer ensures the rules of $\schema$, which govern the existing system.
-%         Since $\dataset$ is no longer changing, the migration engineer can now focus on the remaining violations of $\schema'$.
-%         Users of the migration system will deal with process rules in the migration system that are still violated.
-%         Once all invariants of $\migrsys'$ are true, the migration is complete.
-%         This state marks the moment of cleanup (MoC)
-%   \item After the MoC, the ingress switches the incoming traffic from $\migrsys'$ to $\infsys'$.
-%         The migration system is no longer needed and can be taken out of production, together with the existing system $\infsys$.
-%         The desired system remains in production and the migration is finished.
-%         This establishes the post-migration situation (Figure~\ref{fig:post-migration}).
-%\end{enumerate}
-
-%SJC on Formalization: it's often better to put these inline where we first use them. Leaving this as a comment for easy copy-paste.
-%    
-%    \subsection{Formalization}
-%    Let us define the instruments needed to describe the derivation of $\schema_{\migrsys}$.
-%    \begin{definition}[union of data sets]
-%    \label{def:graph_union_wellTyped_if_parts_wellTyped}
-%    \[\pair{\triples_1}{\instance_1}\cup\pair{\triples_2}{\instance_2}\ =\ \pair{\triples_1\cup\triples_2}{\instance_1\cup\instance_2}\]
-%    \end{definition}
-%    
-%    \begin{lemma}
-%    \label{lemma:graph_union_wellTyped_if_parts_wellTyped}
-%    If $\dataset_1$ and $\dataset_2$ are data sets, then $\dataset_1\cup\dataset_2$ is a data set.
-%    \end{lemma}
-%    
-%    \begin{definition}[map relation names in data sets]
-%    \label{def:map_labels_preserves_wellTypedness}
-%    Let $h:\Rels\rightarrow\Rels$, then
-%    \[\begin{array}{rcl}
-%      \maprel{h}{\pair{\triples}{\instance}}&=&\pair{\maprel{h}{\triples}}{\instance}\\
-%      \maprel{h}{\triple{a}{r}{b}}&=&\triple{a}{h(r)}{b}
-%    \end{array}\]
-%    \end{definition}
-%    
-%    \begin{lemma}
-%    \label{lemma:map_labels_preserves_wellTypedness}
-%    If $\dataset$ is a data set and $h:\Rels\rightarrow\Rels$ is an injective function, then $\maprel{h}{\dataset}$ is a data set.
-%    \end{lemma}
-%    
-%    \begin{definition}[disjoint union of data sets]
-%    \begin{eqnarray}
-%    \pair{\triples}{\instance}\sqcup\pair{\triples'}{\instance'}&=&\pair{\triples\uplus\triples'}{\instance\uplus^2\instance'}\\
-%      X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
-%      X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}
-%    \end{eqnarray}
-%    \end{definition}
-%    In a disjoint union, the instances of the two data sets are relabeled to avoid name clashes.
-%    In practice, we will not use 0 and 1 as labels for $x$ and $y$, but rather extend their names by prefixing.
-%    \begin{lemma}
-%    If $\dataset$ and $\dataset'$ are data sets, then so is $\dataset\sqcup\dataset'$.
-%    \end{lemma}
-%    This lemma is being proven in Isabelle/HOL~\cite{Isabelle}. The proof is published \href{location.domain}{here}
-%    
-%    \begin{definition}[disjoint union of schemas]
-%    \begin{eqnarray}
-%    \triple{\concepts}{\rels}{\rules}\sqcup\triple{\concepts'}{\rels'}{\rules'}&=&\triple{\concepts\uplus\concepts}{\rels\uplus\rels'}{\rules\uplus\rules'}
-%    \end{eqnarray}
-%    \end{definition}
-%    % \begin{definition}[disjoint union of data sets]
-%    % \begin{eqnarray}
-%    %    \omit\rlap{$\la\atoms,\concepts,\instance,\isa,\rels,\dataset\ra\sqcup\la\atoms',\concepts',\instance',\isa',\rels',\dataset'\ra$}\notag\\
-%    %    &=&\la\atoms\uplus\atoms',\ \concepts\uplus\concepts',\instanceuplus^2\instance',\ \isa\uplus^2\isa',\ \rels\uplus^3\rels',\ \dataset\uplus^5\dataset'\ra\notag\\
-%    %       X\uplus Y&=&\{(x,0)\mid\ x\in X\}\ \cup\ \{(y,1)\mid\ y\in Y\}\\
-%    %       X\uplus^2 Y&=&\begin{array}[t]{@{}l}\{((x_1,0),(x_2,0))\mid\ (x_1,x_2)\in X\}\ \cup\\ \{((y_1,1),(y_2,1))\mid\ (y_1,y_2)\in Y\}\end{array}\\
-%    %       X\uplus^3 Y&=&\begin{array}[t]{@{}l}\{\declare{(n,0)}{(A,0)}{(B,0)}\mid\ \declare{n}{A}{B}\in X\}\ \cup\\ \{\declare{(n,1)}{(A,1)}{(B,1)}\mid\ \declare{n}{A}{B}\in Y\}\end{array}\\
-%    %       X\uplus^5 Y&=&\begin{array}[t]{@{}l}\{\triple{(a,0)}{\declare{(n,0)}{(A,0)}{(B,0)}}{(b,0)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in X\}\ \cup\\ \{\triple{(a,1)}{\declare{(n,1)}{(A,1)}{(B,1)}}{(b,1)}\mid\ \triple{a}{\declare{n}{A}{B}}{b}\in Y\}\end{array}
-%    % \end{eqnarray}
-%    % \end{definition}
-%    \begin{lemma}
-%    If $\schema$ and $\schema'$ are schemas, then so is $\schema\sqcup\schema'$.
-%    \end{lemma}
-%    The proof of this lemma is published \href{location.domain}{here}
-%    
-%    To implement the disjoint union, the following relabelling functions are needed:
-%    \begin{definition}[relabel concepts]
-%    \[\subst{C}{D}{A}\ =\ \text{\bf if}\ C=A\ \text{\bf then}\ D\ \text{\bf else}\ A\]
-%    \end{definition}
-%    \begin{definition}[relabel concepts in triples]
-%    \[\subst{C}{D}{\triple{a}{r}{b}} = \triple{a}{\subst{C}{D}{r}}{b}\]
-%    \end{definition}
-%    \begin{definition}[relabel concepts in relations]
-%    \[\subst{C}{D}{(\declare{n}{A}{B})} = \declare{n}{\subst{C}{D}{A}}{\subst{C}{D}{B}}\]
-%    \end{definition}
-%    \begin{definition}[relabel concepts in $\instance$]
-%    \[a\ \subst{C}{D}{\instance}\ \subst{C}{D}{A}\ \Leftrightarrow\ a\instance A\]
-%    \end{definition}
-%    \begin{definition}[relabel concepts in data sets]
-%    \[\begin{array}{rcl}
-%      \rlap{$\subst{C}{D}{\pair{\triples}{\instance}}$}\\
-%      &=&\pair{\{\subst{C}{D}{t}\mid t\in\triples\}}{\subst{C}{D}{\instance}}
-%    \end{array}\]
-%    \end{definition}
-%    The relabeling of concepts in rules must satisfy:
-%    \begin{equation}
-%    \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{C}{D}{u}}{\subst{C}{D}{\dataset}}
-%    \end{equation}
-%    \begin{definition}[relabel concepts in schemas]
-%    \begin{eqnarray}
-%      \rlap{$\subst{C}{D}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-%      &=&\begin{array}[t]{l@{}l}
-%         \la&\{\subst{C}{D}{c}\mid c\in\concepts\}\\
-%         ,&\{\subst{C}{D}{r}\mid r\in\rels\}\\
-%         ,&\{\subst{C}{D}{u}\mid u\in\rules\}\ \ra\notag
-%         \end{array}
-%    \end{eqnarray}
-%    \end{definition}
-%    \begin{definition}[relabel relations]
-%    \[\subst{\declare{m}{C}{D}}{m'}{{\declare{n}{A}{B}}}\ =\ \text{\bf if}\ n=m\wedge A=C\wedge B=D\ \text{\bf then}\ \declare{m'}{A}{B}\ \text{\bf else}\ \declare{m}{A}{B}\]
-%    \end{definition}
-%    \begin{definition}[relabel relations in triples]
-%    \[\subst{r'}{m'}{\triple{a}{r}{b}} = \triple{a}{\subst{r'}{m'}{r}}{b}\]
-%    \end{definition}
-%    \begin{definition}[relabel relations in data sets]
-%    \[\begin{array}{rcl}
-%      \rlap{$\subst{r'}{m'}{\pair{\triples}{\instance}}$}\\
-%      &=&\pair{\{\subst{r'}{m'}{t}\mid t\in\triples\}}{\instance}
-%    \end{array}\]
-%    \end{definition}
-%    The relabeling of relation names in rules must satisfy:
-%    \begin{equation}
-%    \sat{u}{\dataset}\ \Leftrightarrow\ \sat{\subst{r'}{m'}{u}}{\subst{r'}{m'}{\dataset}}
-%    \end{equation}
-%    \begin{definition}[relabel relations in schemas]
-%    \begin{eqnarray}
-%      \rlap{$\subst{r'}{m'}{\triple{\concepts}{\rels}{\rules}}$}\notag\\
-%      &=&\triple{\concepts}{\{\subst{r'}{m'}{r} \mid r\in\rels\}}{\{\subst{r'}{m'}{u} \mid u\in\rules\}}\notag
-%    \end{eqnarray}
-%    \end{definition}
-%    
-%    The relabeling of concepts is not trivial because of specialization.
-%    To illustrate this point, suppose $D\isa A$.
-%    Then the substitution $[C\rightarrow D]$ means that every atom $a$ that used to be of concept $C$ in the existing system, is now not only a $D$ but also an $A$.
-%    For example, by relabeling the concept {\tt Hotel} to {\tt Motel}, in a situation where ${\tt Motel}\isa{\tt Parking}$,
-%    all atoms that represent hotels might suddenly be expected to have parking lots.
-%    So, whereas such examples may fly in a technical sense, the developer must use renaming with care to preserve the intended semantics.
-
 \section{Generating a Migration Script}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
-   We first illustrate how this works by example, using Ampersand syntax.
-   We can then describe what this means in terms of the definitions of information system.
+   Sections~\ref{sec:loading} and~\ref{sec:violations on invariants} illustrate how this works by example, using the Ampersand syntax.
+   Then, section~\ref{General migration script} defines what this means in general terms.
 
 \subsection{Loading Data}\label{sec:loading}
    Let us study how to migrate data from $\dataset$ to $\dataset'$.
    It would be tempting to state that a relation from the example system, say {\tt isPartOf}, could be copied by the following code fragment%
 \footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
-The prefix {\tt new.} refers to items from the desired information system.}:
+The prefix {\tt new.} refers to items from the desired system.}:
 \begin{verbatim}
    ENFORCE new.isPartOf >: old.isPartOf
 \end{verbatim}
-   The relation `old.isPartOf' resides in the existing system and will not change after the MoT.
+   The relation {\tt old.isPartOf} resides in the existing system and will not change after the MoT.
    
    This means, however, that anything in {\tt old.isPartOf} cannot be deleted from {\tt new.isPartOf}.
    This is undesirable because it prevents us from changing data in the migration system.
@@ -956,18 +683,18 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    Then, the engine inserts the same pairs into {\tt copied\_isPartOf} because of rule~\ref*{fill copies with new.isPartOf}.
    After this, triples with the relation {\tt new.isPartOf} can be inserted and deleted freely.
    
-   \subsection{Dealing with violations on invariants}
+\subsection{Dealing with violations on invariants}\label{sec:violations on invariants}
    Suppose the script for the desired system adds an invariant that is not present in the existing system:
    
-   \begin{verbatim}
+\begin{verbatim}
    RELATION isPartOf[Module*Course] [UNI]
-   \end{verbatim}
+\end{verbatim}
    
    The \verb=UNI= annotation requires that each \verb=Module= is part of at most one \verb=Course=.
    The violations are given by:
-   \begin{eqnarray}
+\begin{eqnarray}
    \viol{\tt UNI}{\dataset} = \{\pair{x}{y} \mid x \neq y \wedge \exists z.~ \pair{z}{x}, \pair{z}{y}\in\pop{\tt isPartOf}{\dataset} \}
-   \end{eqnarray}
+\end{eqnarray}
    In Ampersand, the term that gives these violations is: \verb=isPartOf~;isPartOf - I=.
    
    While the \verb=UNI= requirement holds for the population in the original script, that population may have changed.
@@ -976,7 +703,7 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    A challenge lies in ensuring that they do hold at the MoC, and that users that help the migration forward can achieve a state in which all requirements hold.
    
    Two extra relations are used: one to track the violations that occur in the original data (\ref{violRelation}), and one to track the violations that have been fixed (\ref{fixedRelation}) which prevents them from recurring.
-   \begin{align}
+\begin{align}
    &\text{\tt RELATION viols\_UNI[Course*Course]}\label{violRelation}\\
    &\text{\tt RELATION fixed\_UNI[Course*Course]}\label{fixedRelation}\\
    &\text{\tt ENFORCE viols\_UNI >: old.isPartOf\textasciitilde;old.isPartOf - I}\label{fill viols}\\
@@ -985,57 +712,38 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \text{\tt RULE isPartOf\_UNI: new.isPartOf\textasciitilde;new.isPartOf}\\
    \quad\text{\tt |- I \textbackslash/ (viols\_UNI - fixed\_UNI)}
    \end{aligned}\label{rule uni}
-   \end{align}
+\end{align}
    
    We again look at what happens at runtime:
-   Rule~\ref{fill viols} will adds all violations present in the old system to {\tt viols\_UNI}.
+   Enforcement rule~\ref{fill viols} adds all violations present in the old system to {\tt viols\_UNI}.
    Until the MoT, rule~\ref{fill fixed} does nothing, since {\tt viols\_UNI} equals $\viol{\tt UNI}{\dataset}$.
-   At that point, rule~\ref{rule uni} is satisfied, since {\tt fixed\_UNI} is empty.
+   At that point, rule~\ref{rule uni} is satisfied, since the right-hand side of equation~\ref{rule uni} is empty.
    As violations are fixed, rule~\ref{fill fixed} records this by adding to {\tt fixed\_UNI}.
    This way, previously fixed errors cannot reoccur.
-   Once {\tt viols\_UNI} is equal to {\tt fixed\_UNI}, the \verb=UNI= requirement holds and the information system is ready for the MoC in regard to this rule.
+   Once {\tt viols\_UNI} is equal to {\tt fixed\_UNI}, the \verb=UNI= requirement holds and the system is ready for the MoC in regard to this rule.
    
    We also wish to alert users with the role `migration helper' to violations that need to be fixed.
    For the original \verb=UNI= requirement, this means specifying:
    
-   \begin{align}
+\begin{align}
    \begin{aligned}
    \text{\tt RULE isPartOf\_UNI\_warn: new.isPartOf\textasciitilde;new.isPartOf |- I}\\
    \quad\text{\tt ROLE MigrationHelper}
    \end{aligned}\label{warnings}
-   \end{align}
+\end{align}
    
-   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated information system in the formal sense:
-   By assigning a role, the responsibility of maintaining the rule no longer lies with the information system.
+   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated system in the formal sense:
+   By assigning a role, the responsibility of maintaining the rule no longer lies with the system.
    Instead, users with the migration helper role can see the violations and act on it as they see fit, so the only effect of Line~{\ref{warnings}} is that such users will be shown its violations.
 
-% Het volgende is wellicht iets teveel van het goede. Het lijkt me dat de lezer het voorgaande al wel snapt.
-%    The following table summarizes what happens when pairs are inserted or deleted from {\tt old.takes} and {\tt new.takes}.
-% \begin{itemize}
-% \item If pair $p$ is inserted in {\tt old.takes} and $p$ is not in {\tt copied\_takes},
-%       then rule~\ref{difference} causes the engine to insert $p$ in {\tt new.takes}.
-%       Subsequently, rule~\ref{fill copies with new.takes} causes the engine to insert $p$ in {\tt copied\_takes} as well.
-% \item If pair $p$ is inserted in {\tt old.takes} and $p$ is already in {\tt copied\_takes},
-%       then nothing happens.
-% \item If pair $p$ is deleted from {\tt old.takes} and $p$ is in {\tt copied\_takes},
-%       then rule~\ref{del copies from old.takes} causes the engine to delete $p$ from {\tt copied\_takes}.
-% \item If pair $p$ is deleted from {\tt old.takes} and $p$ is not in {\tt copied\_takes},
-%       then nothing happens.
-% \item If pair $p$ is inserted in {\tt new.takes},
-%       rule~\ref{fill copies with new.takes} causes the engine to insert $p$ into {\tt copied\_takes}.
-% \item If pair $p$ is deleted from {\tt new.takes},
-%       rule~\ref{fill copies with new.takes} causes the engine to delete $p$ from {\tt copied\_takes}.
-%       If this pair is in {\tt old.takes}, rule~\ref{difference} causes the engine to insert $p$ back into {\tt new.takes}.
-% \end{itemize}
-
-\subsection{General migration script}
+\subsection{General migration script}\label{General migration script}
    So far, we illustrated how to do migration by giving two concrete examples.
    This section generalizes those ideas by giving a general approach for generating a migration script.
    
    Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
    Then we define the migration systems $\migrsys$ and the events as follows:
-   \begin{enumerate}
-   \item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the dataset of the old system and the rules of the new system:
+\begin{enumerate}
+\item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the dataset of the old system and the rules of the new system:
    \begin{align}
    \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
    \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
@@ -1044,428 +752,88 @@ The prefix {\tt new.} refers to items from the desired information system.}:
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
    %&\rules_\theenumi &= \rules_\schema
    \end{align}
-   \item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
+\item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
    \enforces_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
    \end{align}
-   \item For each rule, we generate two helper relations, viols and fixed. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
+\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
    \begin{align}
    \widetilde{\dataset'} &= \pair{\{\triple{x}{\widetilde{r}}{y}\mid \triple{x}{r}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
    \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
-   \rels_\theenumi &= \{v_u\mid u \in \rules_{\schema'}\} \cup \{f_u\mid u \in \rules_{\schema'}\}\\
-   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - \pop{v_u - f_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
-   \enforces_{\theenumi} &=\{v_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
-    \{f_u \mapsfrom \lambda \dataset'.~ v_u - \viol{u}{\overrightarrow{\dataset'}}\}\label{eqn:enforceForRules}
+   \rels_\theenumi &= \{{\tt viols}_u\mid u \in \rules_{\schema'}\} \cup \{{\tt fixed}_u\mid u \in \rules_{\schema'}\}\\
+   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - \pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
+   \enforces_{\theenumi} &=\{{\tt viols}_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
+    \{{\tt fixed}_u \mapsfrom \lambda \dataset'.~ {\tt viols}_u - \viol{u}{\overrightarrow{\dataset'}}\}\label{eqn:enforceForRules}
    \end{align}
-   \item Combining the above into a single migration system:
+\item Combining the above into a single migration system:
    \begin{align}
    \concepts_\migrsys &= \concepts_\dataset \cup  \concepts_{\dataset'}\\
    \rels_\migrsys &= \rels_1\cup\rels_2\cup \rels_3\\
    %\rules_\migrsys &= \rules_1\cup \rules_3\\
    \enforces_\migrsys &= \enforces_1\cup\enforces_2\cup\enforces_3
    \end{align}
-   \end{enumerate}
+\end{enumerate}
    
-   \subsection{Validation}
-   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\enforces_\migrsys}}$ is an information system after application of the enforce rules:
-   the only rules are those introduced in Eqution~\ref{eqn:migrsysrules}, and enforce rules from Equation~\ref{eqn:enforceForRules} ensure that $\popF{v_u} = u$ initially, while $\popF{f_u}$ is empty.
-   Hence, the MoT can happen after the enforce rules have been applied, giving us $\migrsys'$.
+\subsection{Validation}
+   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\enforces_\migrsys}}$ is a system after application of the enforcement rules:
+   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and enforcement rules from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
+   Hence, the MoT can happen after the enforcement rules have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
    
-   The MoC is reached for dataset $\dataset'$ whenever $\pop{v_u - f_u}{\dataset'}=\emptyset$ for all rules.
-   This should happen after a finite number of inserting events: let $I = \{f_u \mid u\in\rules_{\schema'}\}$ be the relations that keep track of which violations have been fixed, then there is no infinite chain of systems $\migrsys' = \migrsys_0, \migrsys_1,\ldots$ such that $\migrsys_i\xrightarrowdbl[I]{\overrightarrow\rels_{\schema'}}\migrsys_{i+1}$.
+   The MoC is reached for dataset $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
+   This should happen after a finite number of inserting events: let $I = \{{\tt fixed}_u \mid u\in\rules_{\schema'}\}$ be the relations that keep track of which violations have been fixed, then there is no infinite chain of systems $\migrsys' = \migrsys_0, \migrsys_1,\ldots$ such that $\migrsys_i\xrightarrowdbl[I]{\overrightarrow\rels_{\schema'}}\migrsys_{i+1}$.
    This shows that when users get rid of violations, there is real progress: they can only do this a finite number of times.
    Next we ask ourselves: does this mean we always reach the MoC?
    
-   Suppose there is a system in which all violations have been fixed, that is, suppose there is a $\migrsys^C$ such that $\pop{f_u}{\dataset_{\migrsys^C}}=\pop{v_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
+   Suppose there is a system in which all violations have been fixed, that is, suppose there is a $\migrsys^C$ such that $\pop{{\tt fixed}_u}{\dataset_{\migrsys^C}}=\pop{{\tt viols}_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
    In that case, after any steps done by users (both those with and without the migration helper role), we can reach it, that is: for any $\migrsys_i$, $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys_i$ implies $\migrsys_i\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
    This implies that if the MoC is initially reachable through $\xrightarrow[I]{\overrightarrow\rels_{\schema'}}$ events, then it will remain reachable.
    So is the MoC initially reachable?
    
    For this last question, we need to add a condition:
-   There needs to be an information system that has the desired schema $\schema'$.
+   There needs to be a system that has the desired schema $\schema'$.
    If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the dataset, no such system exists and we have no hope of reaching it.
    We assume that the rules of $\schema'$ are intended to prevent data pollution, such that a dataset $\dataset'$ describing the `real world' would be one that satisfies them.
-   So let $\pair{\dataset'}{\schema'}$ be an information system, then we can get to it through our migration system.
-   To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{f_u}{\dataset_{\migrsys^C}}=\pop{v_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
+   So let $\pair{\dataset'}{\schema'}$ be a system, then we can get to it through our migration system.
+   To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{{\tt fixed}_u}{\dataset_{\migrsys^C}}=\pop{{\tt viols}_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
    We can do so by simply stating its triples, since the schema is determined by $\migrsys'$:
    
-   \begin{align}
+\begin{align}
    \begin{aligned}
    \triples_{\migrsys^C} &= \triples_\migrsys 
    \cup \{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_{\dataset'}\}\\
-   &\cup \{\triple{a}{v_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
-   \cup \{\triple{a}{f_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   &\cup \{\triple{a}{{\tt viols}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   \cup \{\triple{a}{{\tt fixed}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
    \end{aligned}
-   \end{align}
+\end{align}
    
    Collectively, this shows that the MoC is and remains reachable after a finite number of inserting events by users in the migration helper role.
    
-   
-%   Let us proceed to specify a desired system, $\infsys'$, to illustrate a (toy) migration.
-%   The example in section~\ref{sct:Example existing IS}, called $\infsys$, serves as the existing system.
-%   Its population reflects the state of the system just before the migration.
-%
-%   Information system $\infsys'$, the desired system, is specified by:
-%\begin{verbatim}
-%   RELATION takes[Student*Course]
-%   RELATION isPartOf[Module*Course] [UNI]
-%   RELATION isEnrolledFor[Student*Module]
-%   RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-%   
-%   RELATION course[ExamReg*Course] [UNI] =
-%      [ ("ER1", "Management")
-%      ; ("ER2", "Business IT")
-%      ; ("ER3", "Business IT")
-%      ]
-%   RELATION student[ExamReg*Student] [UNI] =
-%      [ ("ER1", "Peter")
-%      ; ("ER2", "Susan")
-%      ]
-%   RULE ExamRule1: student~;course |- takes
-%   RULE ExamRule2: student~;course;isPartOf~ |- isEnrolledFor
-%\end{verbatim}
-%   In this example, the relations and the rule of the existing system remain part of the desired system%
-%\footnote{Removal or changing of relations is allowed as well.}
-%   because the developer has copied these items into the script of the desired system.
-%   However, she has imposed the restriction \verb-UNI- on the relation {\tt isPartOf}, stating that this relation is univalent.
-%   This means that every \verb-Module- is part of at most one \verb-Course-.
-%   Besides, two new relations and two rules have appeared.
-%
-%   The desired system, $\infsys'$, contains exam registrations (concept \verb-ExamReg-), which is new.
-%   In an exam registration, a student registers for the examination of a course.
-%   $\infsys'$ contains two extra rules: \verb-ExamRule1- and \verb-ExamRule2-.
-%   The first one says that an exam registration requires that a student actually takes the course.
-%   In logic, the constraint $p_{\tt ExamRule1}$ is written as:
-%\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, c\in\text{\tt Course}:\\
-%   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \rightarrow\ s\ \text{\tt takes}\ c\\
-%\end{array}\]
-%   Another requirement, \verb-ExamRule2-, is that the student is enrolled for every module that is part of the course.
-%   Its constraint, $p_{\tt ExamRule2}$, is written in logic as:
-%\[\begin{array}{l}\forall s\in\text{\tt Student}, e\in\text{\tt ExamReg}, m\in\text{\tt Module}, c\in\text{\tt Course}:\\
-%   e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \rightarrow\ s\ \text{\tt isEnrolledFor}\ m
-%\end{array}\]
-%   Both rules are invariants.
-%   So, a student can register for an exam only if she is taking the course for which she registers and if she is enrolled for every module of that course.
-%   % Ampersand also derives the following violation sets:
-%% \[\begin{array}{l}
-%   % \viol{\text{\tt ExamRule1}}{\dataset}\\
-%   % \hspace{1cm}=\{\pair{s}{c}\mid\exists e:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\neg(s\ \text{\tt takes}\ c)\}\\
-%   % \viol{\text{\tt ExamRule2}}{\dataset}\\
-%   % \hspace{1cm}=\{\pair{s}{m}\mid\exists e,c:\ e\ \text{\tt student}\ s\ \wedge\ \ e\ \text{\tt course}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\ \wedge\neg(s\ \text{\tt isEnrolledFor}\ m)\}
-%% \end{array}\]
-%
-%\subsection{Migration script}
-%   The generated migration script, $\migrsys$, consists of the schema of the existing system $\infsys$,
-%   the migration system, and the desired system $\infsys'$.
-%   The migration system copies the data of the existing system to the desired system by the following rules:
-%\begin{verbatim}
-%-- The existing system (everything is prefixed with "old.")
-%   RELATION old.takes[Student*Course]
-%   RELATION old.isPartOf[Module*Course]
-%   RELATION old.isEnrolledFor[Student*Module]
-%
-%   RULE old.EnrollRule:
-%      old.isEnrolledFor |- old.takes;old.isPartOf~
-%      
-%-- Migration system
-%   RELATION copied_takes[Student*Course]
-%   ENFORCE new.takes >: old.takes - copied_takes
-%   ENFORCE copied_takes >: new.takes
-%
-%   RELATION copied_isPartOf[Module*Course]
-%   ENFORCE new.isPartOf >: old.isPartOf - copied_isPartOf
-%   ENFORCE copied_isPartOf >: new.isPartOf
-%
-%   RELATION copied_isEnrolledFor[Student*Module]
-%   ENFORCE new.isEnrolledFor >:
-%           old.isEnrolledFor - copied_isEnrolledFor
-%   ENFORCE copied_isEnrolledFor >: new.isEnrolledFor
-%
-%-- The desired system (everything is prefixed with "new.")
-%   RELATION new.takes[Student*Course]
-%   RELATION new.isPartOf[Module*Course] [UNI]
-%   RELATION new.isEnrolledFor[Student*Module]
-%   RULE new.EnrollRule:
-%      new.isEnrolledFor |- new.takes;new.isPartOf~
-%      
-%   RELATION new.course[ExamReg*Course] [UNI] =
-%      [ ("ER1", "Management")
-%      ; ("ER2", "Business IT")
-%      ; ("ER3", "Business IT")
-%      ]
-%   RELATION new.student[ExamReg*Student] [UNI] =
-%      [ ("ER1", "Peter")
-%      ; ("ER2", "Susan")
-%      ]
-%
-%   RULE new.ExamRule1 :
-%      new.student~;new.course |- new.takes
-%   RULE new.ExamRule2 :
-%      new.student~;new.course;new.isPartOf~ |- new.isEnrolledFor
-%\end{verbatim}
-%
-%\subsection{Preparing for the Moment of Transition}
-%   Just before starting the migration,
-%   the data in the existing system typically differs from the data at its inception (section~\ref{sct:Example existing IS}).
-%   Let us assume the actual population at the start of the migration is:
-%\begin{verbatim}
-%   POPULATION takes[Student*Course] CONTAINS
-%      [ ("Peter", "Management")
-%      ; ("Susan", "Business IT")
-%      ; ("John", "Business IT")
-%      ]
-%   POPULATION isPartOf[Module*Course] CONTAINS
-%      [ ("Finance", "Management")
-%      ; ("Business Rules", "Business IT")
-%      ; ("Business Analytics", "Business IT")
-%      ; ("IT-Governance", "Management")
-%      ; ("IT-Governance", "Business IT")
-%      ]
-%   POPULATION isEnrolledFor [Student*Module] CONTAINS
-%      [ ("Susan", "Business Analytics")
-%      ; ("Susan", "IT-Governance")
-%      ; ("Susan", "Business Rules")
-%      ]
-%\end{verbatim}
-%
-%   Upon initialization, the migration system evaluates all enforce rules in an attempt to satisfy all invariants.
-%   In this example, it leaves two violations behind that it cannot resolve by enforce rules.
-%   The pair {\tt ("Peter", "Management")} is the first one; it violates rule {\tt new.ExamRule2}.
-%   This is because Peter has registered for an examination of the course Management,
-%   which contains the module Finance for which Peter is not enrolled.
-%   The other is {\tt "IT-Governance"}, which violates the univalence of relation {\tt new.isPartOf}.
-%   Since rule {\tt new.ExamRule2} and the univalence of {\tt new.isPartOf} are both defined as invariants,
-%   the desired system cannot be taken into production until these violations are resolved.
-%   Until that moment, the migration system remains operational to allow a user to resolve this violation. 
-%   The moment of cleanup is marked by the event that all invariants of the Migration system and the desired system are satisfied.
-%   At that moment, the migration system is no longer needed and can be removed.
-
-%\subsubsection{Strategies for restoring invariants}
-%
-%We allow ExamRule2 to be broken during the transition to the desired system, and expect people with the Administrator role to deal with them.
-%
-%However, the violations that arise when taking the (non-disjoint) union of the two scripts include violations of rules that the system should maintain.
-%This means that if we cannot generate software based on the disjoint union as it is.
-%To resolve this, the simplest solution is to change the roles assigned to the rules that are violated in the disjoint union:
-%\begin{verbatim}
-%   RELATION isPartOf[Module*Course]
-%   RULE isPartOfUNI: isPartOf;isPartOf~ |- I
-%   ROLE migrationHelper MAINTAINS isPartOfUNI
-%\end{verbatim}
-%
-%Naturally, this solution requires effort from people with the role migrationHelper.
-%This in itself is not an issue: problems need to be solved one way or another.
-%However, a problem that may occur is that regular users of the system, who are used to the existing system, might be adding data to the system that causes violations faster than they can be solved.
-%To avoid this problem, we restrict the behavior of the system such that incremental progress will lead to eventually reaching the goal.
-%
-%Our solution is to state that the only violations that may occur in the relation \verb=isPartOfUNI= are those that were present when the migration started:
-%\begin{verbatim}
-%   RELATION isPartOf[Module*Course]
-%   RULE isPartOfUNI: isPartOf;isPartOf~ |- I
-%   ROLE migrationHelper MAINTAINS isPartOfUNI
-%   
-%   RELATION isPartOfUNI_violations[Module*Module]
-%     = [("IT-Governance", "IT-Governance")]
-%   RULE isPartOfUNI_progress: -(isPartOf;isPartOf~) /\ I
-%         |- isPartOfUNI_violations
-%   SYSTEM MAINTAINS isPartOfUNI_progress
-%   
-%   ENFORCE isPartOfUNI_violations :< -(isPartOf;isPartOf~) /\ I  
-%\end{verbatim}
-%
-%In this solution, the first rule is the same as with the simple solution.
-%The second rule prevents any new violation from occurring.
-%Existing violations are recorded in the \verb=isPartOfUNI_violations= relation, and the rule \verb=isPartOfUNI_progress= prevents the set of violations to \verb=isPartOfUNI= from growing beyond this.
-%The \verb=ENFORCE= statement at the end of this code snippet states that the relation recording existing violations should be shrunk whenever violations are solved.
-%This way, violations cannot re-occur.
-%As a whole, this means that \verb=migrationHelper= has a finite task.
-
-% SJC: TODO voor Stef. Misschien is het de moeite waard om te zeggen hoe isPartOfUNI_violations initieel gevuld kan worden.
-% (Dit werkt precies als het initieel vullen van andere relaties, zoals in de vorige sectie).
-
-%As a second solution, the data in the designed system does not have any violations.
-%Consequentially, the cause of the violations comes from the triples in the existing system.
-%Rather than taking the union of all triples, the disjoint union is taken instead;
-%\begin{verbatim}
-%   RELATION isPartOf_old[Module*Course] [UNI]=
-%      [ ("Finance", "Management")
-%      ; ("Business Rules", "Business IT")
-%      ; ("Business Analytics", "Business IT")
-%      ; ("IT-Governance", "Management")
-%      ]
-%   RELATION isPartOf[Module*Course] [UNI]=
-%      [ ("IT-Governance", "Business IT") ]
-%   RELATION isPartOf_ignored[Module*Course]
-%   
-%   RULE isPartOf_isUnion:
-%         isPartOf_old |- isPartOf \/ isPartOf_ignored
-%   ROLE migrationHelper MAINTAINS isPartOf_isUnion
-%   
-%   ENFORCE isPartOf_ignored :> isPartOf
-%\end{verbatim}
-%
-%\begin{verbatim}
-%   RELATION isPartOf_old[Module*Course] [UNI]=
-%      [ ("Finance", "Management")
-%      ; ("Business Rules", "Business IT")
-%      ; ("Business Analytics", "Business IT")
-%      ; ("IT-Governance", "Management")
-%      ]
-%   RELATION isPartOf[Module*Course] [UNI]=
-%      [ ("IT-Governance", "Business IT") ]
-%   RELATION isPartOf_ignored[Module*Course]
-%
-%   ENFORCE isPartOf :> isPartOf_old - isPartOf_ignored
-%   ENFORCE isPartOf_ignored :> isPartOf
-%\end{verbatim}
-%In this second solution, we immediately move to a system in which the \verb=UNI= rule is maintained by the system.
-%The work for the \verb=migrationHelper= is again finite: the pairs in \verb=isPartOf_old= need to be copied over or explicitly ignored.
-%Once a pair is in \verb=isPartOf=, the pair is copied over to \verb=isPartOf_ignored= by the \verb=ENFORCE= statement, such that regular users can delete it without adding work to anyone with the \verb=migrationHelper= role.
-%Of course, since this solution starts with fewer pairs in the \verb=isPartOf= relation, other rules could be violated as a result of choosing this solution.
-%Indeed, ExamRule2 initially has more violations in this scenario.
-%
-%\begin{definition}[migration data set]
-%   \begin{eqnarray}
-%      &&\begin{array}[t]{@{}l}
-%         \{ {\tt ENFORCE\ }\declare{(nm',1)}{(A',1)}{(B',1)}\\\quad{\tt\ :=\ }\ident{(A',1)};\declare{(nm,0)}{(A,0)}{(B,0)};\ident{(B',1)}\\
-%            \mid\ \begin{array}[t]{@{}l}
-%               \declare{nm}{A}{B}\in\rels\wedge\declare{nm'}{A'}{B'}\in\rels'\wedge\id{nm}=\id{nm'}\ \wedge\\
-%               \{\pair{A}{A'},\pair{B}{B'}\}\subseteq\isa\cup\isa'\cup\flip{\isa}\cup\flip{\isa'}\}
-%               \end{array}
-%           \end{array}\\
-%           &\cup&\begin{array}[t]{@{}l}
-%            \{ {\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)\mid\ C\in\concepts,C'\in\concepts',C=C'\}\\
-%           \end{array}
-%   \end{eqnarray}
-%\end{definition}
-%
-%The ${\tt CLASSIFY\ }(C',1){\tt\ IS\ }(C,0)$ statement adds two pairs to the $\isa$ relation:
-%$\pair{(C',1)}{(C,0)}$ and $\pair{(C,0)}{(C',1)}$.
-%Note that if $\dataset$ is a data set, and $\dataset'$ is that data set with pairs added%
-%\footnote{TODO: het woord `add' is informeel, dit kan beter} to the $\isa$ relation, then the result is again a data set.
-%The ${\tt ENFORCE\ }r{\tt\ :=\ }e$ statements add triples $(x,r,y)$ for all $(x,y)\in e$.
-%The terms $t$ in these statements are such that $x\ (\instance \compose \kleenestar{\flip{\isa}})\ (A',1)$ and $y \ (\instance \compose \kleenestar{\flip{\isa}})\ (B',1)$, thus preserving the property that the result is a data set.
-%
-%\begin{definition}[]
-%   \begin{eqnarray}
-%      \infsys\sqcup\infsys'&=&\triple{\roles'}{\rules'}{\maintain'}{\dataset\sqcup\dataset'}
-%   \end{eqnarray}
-%\end{definition}
-
-%\subsection{Changes}
-%% The purpose of this section is to explain why a data set is structured the way it is.
-%   In the migration of a data set we deal with changes to the elements that are not data:
-%   $\instance$, $\concepts$, and $\rels$.
-%   Such changes have further reaching consequences, however.
-%   Changes to $\instance$, $\concepts$, $\rels$ change the data structure in a data set.
-%   We define a \define{migration of a data set} $\la\atoms,\concepts,\instance,\rels,\dataset\ra$ as a change in which one or more of $\instance$, $\concepts$, or $\rels$ change.
-%   To satisfy the definition of data sets, $\dataset$ must change too,
-%   but the migration should try to preserve the maximal amount of data.
-
-%\section{Validation}
-%   We claim that the information system does not need to be paused in order for the migration to happen successfully.
-%   By this, we mean that computations that take a considerable amount of time, as well as human actions, can be performed incrementally while the system is in use.
-%   In order for us to prove this claim, we model the behavior of our information system as a series of systems $\migrsys_0,\migrsys_1,\ldots,\migrsys_n$ with $\migrsys = \migrsys_0$, where only the data set of the system changes.
-%   We consider two types of updates to the data set.
-%   
-%   The first type of update helps the migration to go forward: we'll write $\rightsquigarrow$ for those.
-%   The second type of update is that which other users of the system do (possibly none), indicated as $\dashrightarrow$.
-%   The two updates alternate: $\migrsys_0 \dashrightarrow \migrsys_1 \rightsquigarrow \migrsys_2 \dashrightarrow \ldots \rightsquigarrow \migrsys_{2i} \dashrightarrow \migrsys_{2i+1}\rightsquigarrow\migrsys_{2i+2}\dashrightarrow\ldots\migrsys_n$.
-%   
-%   We validate our claim that the information system will reach the MoC by arguing about two situations:
-%   The system between deployment and the MoT can reach the MoT by firing the ENFORCE rules, and the system between the MoT and the MoC can reach the MoC after a finite number of actions by the migration engineer.
-%   More concretely, this means the following:
-%   
-%When the default migration system $\migrsys$ is deployed, the system will always be in a state such that continually running any violated ENFORCE rules (in any order) leads to the MoT.
-%   This means that $A\rightsquigarrow B$ is such that the data set of $B$ is that of $A$ with an update applied according to one or more violated enforce rules. % TODO: define 'violated'
-%   If there is no such $B$ because no enforce rules are violated, we are at the moment of transition.
-%   We say that the system $A$ is in a state such that the MoT can be reached if there are no infinite $\rightsquigarrow$-paths from $A$.
-%   The constraint on $A\dashrightarrow B$ is that only the old system can change at this point.
-%   Note that this does not prove that the moment of transition to never be reached, as more enforce rules may get violated at every $\dashrightarrow$ step.
-%   We expect this not to be a problem in practice since $\dashrightarrow$ transitions are triggered by users while $\rightsquigarrow$ is triggered automatically through ENFORCE rules: the ENFORCE rules should outperform the $\dashrightarrow$ actions by a big margin.
-%
-%After the moment of transition, there is a finite upper-bound on the amount of work the migration engineer has to do:
-%   $A\rightsquigarrow B$ is such that the data set of $B$ is that of $A$ with one of the violations shown to a migration engineer resolved (including the firing of corresponding ENFORCE statements), and $\dashrightarrow$ arbitrary.
-%   In both $A\rightsquigarrow B$ and $A\dashrightarrow B$ we assume that the relations that were specifically created for the bookkeeping (suffixed by \verb=_progress= and \verb=_violations=) can only be updated through the firing of the ENFORCE statements.
-%   These assumptions make the total number of pairs in \verb=_violations= relations decline in every $\rightsquigarrow$-step, proving that the MoC will be reached after a finite number of $\rightsquigarrow$ steps (assuming that the set of violations is finite).
-%   Moreover, we show that the desired system with the data set taken from the migration system (after dropping the old system and the bookkeeping) is free of violations when all \verb=_violations= relations are empty.
-%
-%
-%\section{Software architecture}
-%   The theory presented above roughly corresponds to the back-end of a migration system.
-%   This section describes its software architecture.
-%   For this research, we have used the Ampersand compiler to generate the system(s).
-%   Figure~\ref{fig:initial} shows the starting point of the migration.
-%\begin{figure}
-%   \centering
-%   \includegraphics[scale=0.1]{figures/Before migration.png}
-%   \caption{Initial state of the migration}
-%   \label{fig:initial}
-%\end{figure}
-%   For the purpose of data migration, the existing system must make its schema available through its API.
-%   For this purpose, the back-end offers a service ``retrieve schema'', which provides the schema as Ampersand source-code.
-%   As a result, the migration engineer can rely on the schema of any generated application to be accurate.
-%   For this reason, we can safely assume that the schema this service provides has not been changed since it was deployed.
-%   Its presence allows the generator to build various front-ends and migration scripts during the lifetime of the existing system%
-%
-%   After the migration engineer has produced and tested a migration script, the Ampersand compiler produces a migration system.
-%   It includes the schemas of both the existing system and the desired system, besides having a schema of its own.
-%   This is implemented by Ampersand's INCLUDE mechanism, which boils down to taking the disjoint union of the schemas.
-%\begin{figure}
-%   \centering
-%   \includegraphics[scale=0.1]{figures/During-migration.png}
-%   \caption{During the migration}
-%   \label{fig:during}
-%\end{figure}
-%   Deployment of the migration system (Figure~\ref{fig:during}) leaves the existing system intact.
-%   It enhances the system with the data set needed by the migration system, which includes the data set needed by the desired system.
-%   So, users will notice no difference in the existing system when the migration system is deployed.
-%
-%   When all rules in the migration script have been satisfied, the migration system is ready to be deployed.
-%   At this point, the ingress switches traffic from the existing system to the migration system.
-%   Until this moment, users have been updating data in the existing system, which is continuously being migrated to the desired system.
-%   After the ingress switch is made, users have the new functionality at their disposal and make their changes in the desired system.
-%   If for some reason, there is remaining migration work, the migration system will execute this.
-%   Since there is no more input in the existing system, the migration system will eventually be consistent.
-%   At this point, the existing system can be removed, which leaves the migration system in place.
-%
-%
-%   The main purpose of the migration script is to define the migration rules that are used to migrate data from the existing system to the desired system.
-%   During this process, users continu to use the existing system.
-%
-%\begin{figure}
-%   \centering
-%   \includegraphics[scale=0.1]{figures/After migration.png}
-%   \caption{After the migration}
-%   \label{fig:after}
-%\end{figure}
-
 \section{Conclusions}
 
-In this paper, we describe the data migration as going from an existing information system to a desired one, where the schema changes.
-As Ampersand generates information systems, creating a new information system can be a small task, allowing for incremental deployment of new features.
-We describe the parts of an information system that have an effect on data pollution.
-We assume that the existing system does not violate any constraints of its schema, but address other forms of data pollution:
-constraints that are not in the schema but are in the desired schema are initially relaxed such that the business can start using the migration system, after which this form of data pollution needs to be addressed by human intervention.
-We propose a method for doing migration such that only a finite amount of human intervention is needed.
-Our method allows a system similar to the desired system to be used while the intervention takes place.
+   In this paper, we describe the data migration as going from an existing system to a desired one, where the schema changes.
+   As Ampersand generates information systems, creating a new system can be a small task, allowing for incremental deployment of new features.
+   We describe the parts of a system that have an effect on data pollution.
+   We assume that the existing system does not violate any constraints of its schema, but address other forms of data pollution:
+   constraints that are not in the schema but are in the desired schema are initially relaxed such that the business can start using the migration system, after which this form of data pollution needs to be addressed by human intervention.
+   We propose a method for doing migration such that only a finite amount of human intervention is needed.
+   Our method allows a system similar to the desired system to be used while the intervention takes place.
 
-Our proposed migration is certainly not the only approach one could think of.
-However, we have not come across other approaches that allow changing the schema in the presence of constraints.
-As such, we cannot compare our approach against other approaches.
-We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
-For now, our next step is to implement the approach shown here into Ampersand.
+   Our proposed migration is certainly not the only approach one could think of.
+   However, we have not come across other approaches that allow changing the schema in the presence of constraints.
+   As such, we cannot compare our approach against other approaches.
+   We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
+   For now, our next step is to implement the approach shown here into Ampersand.
 
-This work does not consider what to do about (user) interfaces.
-Instead, it models events by assuming that any change to the dataset can be achieved.
-In practice, such changes need to be achieved through interfaces.
-Most Ampersand systems indeed allow the users of the information system to edit the dataset quite freely through the interfaces.
-However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break.
-In the spirit of the approach outlined here, we hope to generate migration interfaces that can replace any broken interfaces until the Moment of Transition.
-How to do this is future work.
+   This work does not consider what to do about (user) interfaces.
+   Instead, it models events by assuming that any change to the dataset can be achieved.
+   In practice, such changes need to be achieved through interfaces.
+   Most Ampersand systems indeed allow the users of the system to edit the dataset quite freely through the interfaces.
+   However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break.
+   In the spirit of the approach outlined here, we hope to generate migration interfaces that can replace any broken interfaces until the Moment of Transition.
+   How to do this is future work.
 
 %\section{Bibliography}
 \bibliographystyle{splncs04}
