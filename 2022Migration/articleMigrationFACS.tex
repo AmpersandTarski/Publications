@@ -714,7 +714,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    &\text{\tt RELATION viols\_UNI[Course*Course]}\label{violRelation}\\
    &\text{\tt RELATION fixed\_UNI[Course*Course]}\label{fixedRelation}\\
    &\text{\tt ENFORCE viols\_UNI >: old.isPartOf\textasciitilde;old.isPartOf - I}\label{fill viols}\\
-   &\text{\tt ENFORCE fixed\_UNI >: viols\_UNI - (old.isPartOf\textasciitilde;old.isPartOf - I)}\label{fill fixed}\\
+   &\text{\tt ENFORCE fixed\_UNI >: viols\_UNI - (new.isPartOf\textasciitilde;new.isPartOf - I)}\label{fill fixed}\\
    &\begin{aligned}
    \text{\tt RULE isPartOf\_UNI: new.isPartOf\textasciitilde;new.isPartOf}\\
    \quad\text{\tt |- I \textbackslash/ (viols\_UNI - fixed\_UNI)}
@@ -767,11 +767,11 @@ The prefix {\tt new.} refers to items from the desired system.}:
    \end{align}
 \item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
    \begin{align}
-   \widetilde{\dataset'} &= \pair{\{\triple{x}{\widetilde{r}}{y}\mid \triple{x}{r}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
-   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
+   \overleftarrow{\dataset'} &= \pair{\{\triple{x}{{r}}{y}\mid \triple{x}{\overleftarrow{r}}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
+   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{{r}}{b} \mid \triple{a}{\overrightarrow{r}}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
    \rels_\theenumi &= \{{\tt viols}_u\mid u \in \rules_{\schema'}\} \cup \{{\tt fixed}_u\mid u \in \rules_{\schema'}\}\\
-   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\widetilde{\dataset'}} - \pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
-   \enforces_{\theenumi} &=\{{\tt viols}_u \mapsfrom \lambda \dataset'.~ \viol{u}{\widetilde{\dataset'}}\} \cup
+   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\overrightarrow{\dataset'}} - \pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
+   \enforces_{\theenumi} &=\{{\tt viols}_u \mapsfrom \lambda \dataset'.~ \viol{u}{\overleftarrow{\dataset'}}\} \cup
     \{{\tt fixed}_u \mapsfrom \lambda \dataset'.~ {\tt viols}_u - \viol{u}{\overrightarrow{\dataset'}}\}\label{eqn:enforceForRules}
    \end{align}
 \item Combining the above into a single migration system:
