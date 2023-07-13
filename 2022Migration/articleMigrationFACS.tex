@@ -173,8 +173,8 @@ Ordina NV, Nieuwegein, the Netherlands}
 %
 \maketitle              % typeset the header of the contribution
 %
-\begin{abstract}  % There are 176 words in the abstract
-Software generators can help to increase the frequency of releases and their reliability.
+\begin{abstract}
+Software generators can help increase the frequency of releases and their reliability.
 They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
 However, many generators do not support data migrations.
 Data migration is necessary when an incremental deployment changes the system's schema.
@@ -186,7 +186,7 @@ This paper proposes a theory for deploying incremental change.
 The theory is applicable in general but will be implemented in a software generator called Ampersand.
 
 This paper defines a migration process that preserves the semantics of data by means of rules (constraints).
-The migration process is based assumptions and requirements that aim for a large class of data migrations in practice.
+The migration process is based on assumptions and requirements that aim to capture a large class of data migrations in practice.
 This paper focuses on correctness of the migration. Efficiency of the migration is outside its scope.
 
 \keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change.}
@@ -247,7 +247,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    Every user has her own tasks and responsibilities and may work from different locations and on different moments.
    This collective use by multiple users serves a purpose which we will loosely call ``the business''.
    It is this business that depends on the semantics of the data to draw the right conclusions and carry out their tasks.
-   This paper uses semantic constraints to represent this meaning.
+   %This paper uses semantic constraints to represent this meaning.
    
    Information systems are typically used by actors (both users and computers) who are distributed and work with data.
    As a consequence, the data in a system changes continually.
@@ -275,7 +275,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
    It also allows us to be explicit about ``preserving the meaning as much as possible''.
    An Ampersand script contains just enough information to generate a complete system,
-   which means that a classical database schema (i.e.\ data structure plus semantics) can be extracted from the Ampersand script.
+   which means that a classical database schema (i.e.\ data structure plus constraints) can be extracted from the Ampersand script.
 
 \subsection{Data Migrations}
    Data migration occurs when a desired system replaces an existing one,
@@ -371,7 +371,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    A data set $\dataset$ describes a set of structured data, which is typically stored persistently in a database of some kind.
    The notation $\dataset_{\infsys}$ refers to the data set of a particular system $\infsys$.
    The purpose of a data set is to describe the data of a system at one point in time. 
-   Before defining data sets, let us first define the constituent notions of atom, concept, specialization, relation, and triple.
+   Before defining data sets, let us first define the constituent notions of atom, concept, relation, and triple.
    
    Atoms serve as data elements.
    %Atoms are values without internal structure of interest, meant to represent atomic data elements (e.g. dates, strings, numbers, etc.) in a database.
@@ -409,7 +409,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
    
    \begin{definition}[Data set]
-   A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance \subseteq  {\Pair{\Atoms}{\Concepts}}$ that satisfies:
+   A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with finite $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance \subseteq  {\Pair{\Atoms}{\Concepts}}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\instance A\ \wedge\ b\instance B
    \label{eqn:wellTypedEdge}
@@ -420,7 +420,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    In practice, users can say that the Person Peter has telephone number 074238991.
    So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    The notations $\triples_{\dataset}$ and $\instance_{\dataset}$ are used to disambiguate $\triples$ and $\instance$ when necessary.
-   To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
+   %To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
 
    A relation $r$ can serve as a container of pairs,
    as defined by the function $\popF{r}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
@@ -433,7 +433,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 %\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\instance_{\dataset}A\ \wedge\ b\instance_{\dataset}B\]
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 %
-   We overload the notation $\popF{\cdot}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
+   We overload the notation $\popF{}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
    and expressions.
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
@@ -444,14 +444,15 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 
 \subsection{Schemas}
 \label{sct:Schemas}
-   Schemas serve to capture the semantics of an information system~\cite{Spivak2012}.
+   Schemas serve to capture the semantics of a system~\cite{Spivak2012}.
    We consider a schema to represent the static part of a system, defining concepts, relations, and rules.
    A software engineer defines a schema on design time, so that semantic checks can be implemented at compile time.
 
-   We describe a schema $\schema$ via a tuple $\triple{\concepts}{\rels}{\rules}$,
+   We describe a schema $\schema$ via a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   and $\rules\subseteq \powerset{\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}}$ is a finite set of rules.
+   $\rules\subseteq {\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}}$ is a finite set of rules,
+   and $\enforces\subseteq \Pair{\Rels}{\left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)}$ is a finite set of enforce rules.
    
    Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$.
@@ -461,7 +462,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    
    For a different kind of constraint, the system is told what to do in order to fix it.
    Such constraints are called enforcement rules.
-   We just use one type of enforcement rule\footnote{Ampersand has several types of enforcement rules.} in this work.
+   We use just one type of enforcement rule\footnote{Ampersand has several types of enforcement rules.} in this work.
    Its syntax is as follows:
 \begin{align}
       \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
@@ -500,13 +501,13 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \begin{itemize}
    \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
    \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\enforces_\infsys=\enforces$;
-   \item all rules and enforcement rules are satisfied:
+   \item All rules and enforcement rules are satisfied:
    \begin{align}
    \forall u\in\rules&.~\viol{u}{\dataset}=\emptyset\\
    \forall (r\mapsfrom u)\in\enforces&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
    \label{eqn:satisfaction}
    \end{align}
-   \item triples in the data set have their relation mentioned in the schema:
+   \item Triples in the data set have their relation mentioned in the schema:
    \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
@@ -519,23 +520,29 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 
    As the system responds to events, it changes its data set, while the schema remains the same.
    In this paper, it suffices to define an event as a pair of systems for which the schema stays constant.
-   Events are categorized by what part of the data set changes.
+   Events are categorized by the part of the data set that changes.
    
 \begin{definition}[Event]
-   Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations, and let $\infsys=\pair{\schema}{\dataset}$ and  $\infsys'=\pair{\schema}{\dataset'}$ be information systems, and:
-      \begin{align}
-      \triples_{\dataset} - (\Triple{\Atoms}{(R \cup I)}{\Atoms}) &= \triples_{\dataset'} - (\Triple{\Atoms}{(R \cup I)}{\Atoms})
+   Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations,
+   and let $\infsys=\pair{\schema}{\dataset}$ and  $\infsys'=\pair{\schema}{\dataset'}$ be information systems,
+   then $\infsys\xrightarrow[I]{R} \infsys'$ is an event if and only if:
+   \begin{align}
+      \triple{a}{r}{b}\in\triples_{\dataset}-\triples_{\dataset'}&\Rightarrow\ r\in R
    \label{eqn:eventUnchanged}\\
-      \triples_{\dataset} - (\Triple{\Atoms}{R}{\Atoms}) &\subseteq \triples_{\dataset'} - (\Triple{\Atoms}{R}{\Atoms})
+      \triple{a}{r}{b}\in\triples_{\dataset'}-\triples_{\dataset}&\Rightarrow\ r\in(R \cup I)
    \label{eqn:eventInsert}
    \end{align}
-%   Then we say that $\pair{\pair{\schema}{\dataset}}{\infsys'}$ is an event with scope $R$ inserting in $I$.
-   Then we say that $\infsys\xrightarrow[I]{R} \infsys'$ is an event
-   that brings the system $\infsys$ to $\infsys'$ inserting pairs in relations from $I$ and updating (i.e. deleting and inserting) pairs in $R$.
-%   We use the notation $\pair{\schema}{\dataset} \xrightarrow[I]{R} \infsys'$ to indicate this.
+   % was:
+   % \begin{align}
+   %    \triples_{\dataset} - (\Triple{\Atoms}{(R \cup I)}{\Atoms}) &= \triples_{\dataset'} - (\Triple{\Atoms}{(R \cup I)}{\Atoms})
+   % \label{eqn:eventUnchanged}\\
+   %    \triples_{\dataset} - (\Triple{\Atoms}{R}{\Atoms}) &\subseteq \triples_{\dataset'} - (\Triple{\Atoms}{R}{\Atoms})
+   % \label{eqn:eventInsert}
+   % \end{align}
+   We say that event $\infsys\xrightarrow[I]{R} \infsys'$ brings the system $\infsys$ to $\infsys'$ inserting pairs in relations from $I$ and deleting pairs in relations from $R$.
 \end{definition}
    
-   equation~\ref{eqn:eventUnchanged} states that the triples of those for relations in $I$ or $R$ are the only ones to have changed, and equation~\ref{eqn:eventInsert} states that of the ones that are only in $I$, no triples were removed.
+   Equation~\ref{eqn:eventUnchanged} and~\ref{eqn:eventInsert} state that the triples of those for relations in $I$ or $R$ are the only ones that can be changed, and that only triples in $R$ can be removed.
    %If $I$ or $R$ is the empty set, we omit it from the arrow, so $\infsys \xrightarrow{R} \infsys'$ is a notation for $\infsys \xrightarrow[\emptyset]{R} \infsys'$.
    
 \begin{definition}[Inserting event]
@@ -614,15 +621,15 @@ RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
 \end{array}\]
 The relation $\instance$ contains the pairs:
 \[\begin{array}{l}
-   \pair{\tt "Finance"}{\tt Module}\\
-   \pair{\tt "Business Rules"}{\tt Module}\\
-   \pair{\tt "Business Analytics"}{\tt Module}\\
-   \pair{\tt "IT-Governance"}{\tt Module}\\
-   \pair{\tt "Management"}{\tt Course}\\
-   \pair{\tt "Business IT"}{\tt Course}\\
-   \pair{\tt "Peter"}{\tt Student}\\
-   \pair{\tt "Susan"}{\tt Student}\\
-   \pair{\tt "John"}{\tt Student}
+   \pair{\text{\tt "Finance"}}{\tt Module}\\
+   \pair{\text{\tt "Business Rules"}}{\tt Module}\\
+   \pair{\text{\tt "Business Analytics"}}{\tt Module}\\
+   \pair{\text{\tt "IT-Governance"}}{\tt Module}\\
+   \pair{\text{\tt "Management"}}{\tt Course}\\
+   \pair{\text{\tt "Business IT"}}{\tt Course}\\
+   \pair{\text{\tt "Peter"}}{\tt Student}\\
+   \pair{\text{\tt "Susan"}}{\tt Student}\\
+   \pair{\text{\tt "John"}}{\tt Student}
 \end{array}\]
    The pair $\pair{\triples}{\instance}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a data set $\dataset$ as introduced in section~\ref{sct:Data sets}.
 
@@ -719,7 +726,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    Until the MoT, rule~\ref{fill fixed} does nothing, since {\tt viols\_UNI} equals $\viol{\tt UNI}{\dataset}$.
    At that point, rule~\ref{rule uni} is satisfied, since the right-hand side of equation~\ref{rule uni} is empty.
    As violations are fixed, rule~\ref{fill fixed} records this by adding to {\tt fixed\_UNI}.
-   This way, previously fixed errors cannot reoccur.
+   This way, previously fixed errors cannot recur.
    Once {\tt viols\_UNI} is equal to {\tt fixed\_UNI}, the \verb=UNI= requirement holds and the system is ready for the MoC in regard to this rule.
    
    We also wish to alert users with the role `migration helper' to violations that need to be fixed.
@@ -803,9 +810,9 @@ The prefix {\tt new.} refers to items from the desired system.}:
 \begin{align}
    \begin{aligned}
    \triples_{\migrsys^C} &= \triples_\migrsys 
-   \cup \{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_{\dataset'}\}\\
-   &\cup \{\triple{a}{{\tt viols}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
-   \cup \{\triple{a}{{\tt fixed}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   \cup  \{\triple{a}{{\tt viols}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \} \\
+   &\cup \{\triple{a}{{\tt fixed}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
+   \cup \{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_{\dataset'}\}   
    \end{aligned}
 \end{align}
    
