@@ -759,13 +759,13 @@ The prefix {\tt new.} refers to items from the desired system.}:
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
    %&\rules_\theenumi &= \rules_\schema
    \end{align}
-\item We create ENFORCE rules to copy equal relations, corresponding to (\ref{extraRelation}) and (\ref{difference}) in Section~\ref{sec:loading}:
+\item We create ENFORCE rules to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
    \enforces_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
    \end{align}
-\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here.
+\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here. This corresponds to equation~\ref{violRelation} through~\ref{rule uni}.
    \begin{align}
    \overleftarrow{\dataset'} &= \pair{\{\triple{x}{{r}}{y}\mid \triple{x}{\overleftarrow{r}}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
    \overrightarrow{\dataset'} &= \pair{\{\triple{a}{{r}}{b} \mid \triple{a}{\overrightarrow{r}}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
