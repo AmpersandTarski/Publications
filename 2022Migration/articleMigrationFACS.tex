@@ -53,8 +53,8 @@
 \newcommand{\evt}[2]{\id{event}_{#1,#2}}
 \newcommand{\src}[1]{\id{src}(#1)}
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
-\newcommand{\viol}[2]{{#1}(#2)}
-%\newcommand{\violC}[1]{\id{viol}_{#1}}
+\newcommand{\viol}[2]{\violC{#1}(#2)}
+\newcommand{\violC}[1]{\id{viol}_{#1}}
 \newcommand{\sign}[1]{\id{sign}(#1)}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
 \newcommand{\la}{\langle}
@@ -438,7 +438,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
 \label{eqn:pop-concept}\\
-   \pop{A - B}{\dataset}&= \pop{A}{\dataset} - \pop{B}{\dataset}
+   \pop{x-y}{\dataset}&= \pop{x}{\dataset} - \pop{y}{\dataset}
 \label{eqn:pop-expr}
 \end{align}
 
@@ -451,13 +451,16 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    We describe a schema $\schema$ via a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   $\rules\subseteq {\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}}$ is a finite set of rules,
+   $\rules\subseteq \Triple{(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}})}{\Concepts}{\Concepts}$ is a finite set of rules,
    and $\enforces\subseteq \Pair{\Rels}{\left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)}$ is a finite set of enforcement rules.
    
    Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
    Every rule is an element of an infinite set called $\Rules$.
    In this paper, variables $u$ and $v$ represent rules.
-   A rule $u$ in the schema is a function such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
+   A rule $u$ in the schema is a triple $\triple{\violC{u}}{A}{B}$ such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
+   In Ampersand, rules are well-typed, just like relations:
+   Every violation $\pair{a}{b}$ of a rule $\triple{\violC{u}}{A}{B}$ must satisfy $a\instance A$ and $b\instance B$.
+   % For every data set $\dataset$, the set $\viol{u}{\dataset}$ is a subset of $\pop{A}{\dataset}\times\pop{B}{\dataset}$.
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
    For a different kind of constraint, the system is told what to do in order to fix it.
@@ -468,27 +471,30 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
       \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
 \end{align}
 
-   Adding an enforcement rule to the script of a system specifies a function $u : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$
+   Adding an enforcement rule to the script of a system specifies a function $\violC{u} : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$
    with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$.
    The system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$.
    Thus the system maintains $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
    
-   Formally, enforcement rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$.
+   Formally, enforcement rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom t$ or equivalently $r \mapsfrom \lambda \dataset.~ t(\dataset)$.
    The set of enforcement rules in a schema is $\enforces$.
    
    \begin{definition}[Schema]
    A schema is a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$ that satisfies:
 \begin{align}
-   \declare{n}{A}{B}\in\rels&~\Rightarrow~ A\in\concepts\ \wedge\ B\in\concepts
+   \declare{n}{A}{B}\in\rels&~\Rightarrow~ A\in\concepts\,\wedge\, B\in\concepts
    \label{eqn:relationsIntroduceConcepts}\\
-   \pair{u}{r}\in\mathcal\enforces&~\Rightarrow~ r \in \rels\label{eqn:enforceRulesRels}
+   \triple{\violC{u}}{A}{B}\in\rules&~\Rightarrow~A\in\concepts\,\wedge\, B\in\concepts\label{eqn:rule-has-type}\\
+   \triple{\violC{u}}{A}{B}\in\rules&~\Rightarrow~\forall\dataset.\ \viol{u}{\dataset}\subseteq\Pair{\pop{A}{\dataset}}{\pop{B}{\dataset}}\label{eqn:rule-well-typed}\\
+   (\declare{n}{A}{B}\mapsfrom t)\in\mathcal\enforces&~\Rightarrow~ \declare{n}{A}{B}\in \rels\label{eqn:enforcement-has-type}\\
+   (\declare{n}{A}{B}\mapsfrom t)\in\mathcal\enforces&~\Rightarrow~\forall\dataset.\ \pop{t}{\dataset}\subseteq\Pair{\pop{A}{\dataset}}{\pop{B}{\dataset}}\label{eqn:enforcement-well-typed}
 \end{align}
    \end{definition}
    Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
-   The type system of Ampersand~\cite{vdWoude2011} ensures that every system it generates satisfies this requirement.
    This is also known as static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
-   
-   %The notation $\schema_{\infsys}$ refers to the schema of system $\infsys$.
+   Requirements~\ref{eqn:rule-has-type} and~\ref{eqn:rule-well-typed} ensure that violations in a rule correspond to the type of that rule. 
+   Requirements~\ref{eqn:enforcement-has-type} and~\ref{eqn:enforcement-well-typed} ensure the same for enforcement rules. 
+   The type system of Ampersand~\cite{vdWoude2011} ensures that every system it generates satisfies requirements~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-well-typed}.
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\enforces_{\schema}$
    for $\concepts$, $\rels$, $\rules$, and $\enforces$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\enforces}$.
 
@@ -500,11 +506,11 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
    \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
-   \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:enforceRulesRels}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\enforces_\infsys=\enforces$;
+   \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-well-typed}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\enforces_\infsys=\enforces$;
    \item All rules and enforcement rules are satisfied:
    \begin{align}
    \forall u\in\rules&.~\viol{u}{\dataset}=\emptyset\\
-   \forall (r\mapsfrom u)\in\enforces&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
+   \forall (r\mapsfrom t)\in\enforces&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
    \label{eqn:satisfaction}
    \end{align}
    \item Triples in the data set have their relation mentioned in the schema:
