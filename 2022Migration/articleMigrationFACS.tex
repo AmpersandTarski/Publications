@@ -296,27 +296,25 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    which has its own schema to specify the migration itself.
    The migration system comprises the schemas of both the existing system and the desired system,
    to implement the copying of data.
-   It also implements the migration strategy,
-   automated policies to resolve data pollution,
-   and other rules at the discretion of the migration engineer.
    To fully automate every data migration is unrealistic.
    A migration engineer can minimize manual work by minimizing the size of the increments,
    but she cannot eliminate it completely.
    Data pollution, new business rules, or known issues in the existing system
    may occasionally require the migration engineer to tailor the migration script to specific needs.
 
-   A data migration has the following distinct moments:
+   A data migration has the following distinct moments\footnote{Completion can also be done gradually, but that is outside the scope of this paper.}:
 \begin{enumerate}
-   \item the moment of transition (the MoT), i.e. the moment that users experience changed functionality;
-   \item the moment of completion (the MoC), i.e. the migration engineer removes the migration system and the old system, including its data.
+   \item the moment of transition (the MoT), after which users experience changed functionality;
+   \item the moment of completion (the MoC), after which the migration engineer removes the migration system and the old system, including its data.
 \end{enumerate}
 
    Before the migration, the existing system satisfies its invariants (by definition).
    When the migration system compiles correctly, it satisfies its own invariants,
    so it can be deployed in production.
    That is the MoT.
-   The task of the migration system is to satisfy the invariants of the desired system.
-   Some of these invariants can be satisfied automatically by means of enforce rules.
+   The task of the migration system is to satisfy the invariants of the desired system
+   so that it can be deployed in production.
+   For some of these invariants, enforcement rules can satisfy them automatically.
    There may be invariants, however, that require human interaction to resolve.
    Once all invariants of the desired system are satisfied, the migration is ready for the MoC.
    So, the schema of the migration system must contain the rules to satisfy all invariants of the desired system.
@@ -744,7 +742,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
    %&\rules_\theenumi &= \rules_\schema
    \end{align}
-\item We create ENFORCE rules to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
+\item We create enforcement rules to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
