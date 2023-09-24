@@ -584,8 +584,7 @@ proof(standard)
   then show "violation_mapped f u (filter_with_labelset (relevant_mapped f u) g) =
                    violation_mapped f u g" by (auto simp:map_filter[OF inj2])
 qed
+
 end
-
-
 
 end
