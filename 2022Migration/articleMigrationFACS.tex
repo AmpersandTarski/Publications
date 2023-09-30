@@ -26,7 +26,7 @@
 \usepackage[english]{babel}
 %\usepackage[official,right]{eurosym}
 \selectlanguage{english}
-\hyphenation{ExecEngine}
+\hyphenation{ExecEngine DevOps}
 %\newtheorem{lemma}{Lemma}
 
 
@@ -154,7 +154,7 @@
 \begin{document}
 %
 
-\title{Data Migration under a Changing Schema}
+\title{Data Migration under a Changing Schema in Ampersand}
 %
 %\titlerunning{Abbreviated paper title}
 % If the paper title is too long for the running head, you can set
@@ -196,31 +196,113 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 %
 \section{Introduction}
 \label{sct:Introduction}
-   The purpose of this work is to automate the data migrations that come with incrementally developing and deploying information systems.
-   This paper proposes a theory for such data migrations in the context of generated information systems.
-   In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.
+   In practice, information systems%
+   \footnote{In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.}
+   may live for many years.
+   After they are built, they need to be upgraded at an ever-increasing pace to keep up with changing requirements in a dynamically evolving environment.
+   Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
+   Obviously, these deployments are mostly upgrades of existing systems.
 
-   A problem is that software generators typically do not support the data migration process, especially when the schema changes.
-   The ``manual'' effort required to migrate data slows down the development process and introduces mistakes.
-   Such effects can be measured in terms of DevOps metrics such as deployment frequency, reliability of deployments, and change failure rate~\cite{DevOps2021}.
+   A problem occurs when an upgrade involves a change in the schema of the deployed system:
+   The production data of the existing system must be migrated to fit the schema of the migrated system.
+   Let us call that a "schema changing data migration" (SCDM).
+   For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
+   Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
+   For good reasons, most development teams will therefore try to avoid schema changes at all costs, fearing the risk and effort of the data migration.
 
-   This paper proposes a theory for data migrations that is meant to be implemented in a software generator called Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}.
-   It aims at automating data migrations, so incremental changes can be done more reliably and faster.
-   This contributes to a more agile software development process.
-   We believe that users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
-   
-   This paper assumes that the existing system and the desired system have different schemas.
-   The existing system is the system that is already deployed in production,
-   which makes it necessary to preserve the existing data.
-   The desired system contains a number of changes and is meant to replace the existing system.
-
+   During the lifetime of a system, schema changing data migrations cannot always be avoided, however.
+   It is this problem that we address in this paper.
    Data migration for other purposes has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers may deliberately avoid schema differences and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
-   For example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define an increment as a variation between two data structures.
+   migration engineers can and will avoid schema changes and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
+   Another example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014}, defines a migration as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
-   Such data migrations do not allow for schema changes and do not fit our need for incremental software deployment.
+   This does not cater for schema changes, however.
+   Then there are SCDMs in situations without a schema or an implicit schema, e.g.~\cite{Hillenbrand2022}.
+   If the schema is not available at compile time, the work will have to be done at runtime.
+   This leads to versioned storage and an overhead in performance.
+   This paper focuses on SCDMs in situations with an explicit schema that changes with the data migration.
+   The prototypical use case for that is to frequently release upgrades of information systems in production,
+   where the semantic integrity of data must be preserved across schema changes.
+   Another use case is application integration for multiple dispersed data sources with explicit schemas.
+
+   To analyze this situation, we need to define the notion of schema and how it constrains the data.
+   To facilitate a formal analysis of the situation,
+   we define an information system (section~\ref{sct:Information Systems}) as a pair of a schema and a dataset,
+   so that we have the schema explicitly at our disposal.
+   The dataset is separate, so we may consider an analysis of the schema only as a compile-time activity.
+   Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and rules.
+   Relations are carriers of the data and concepts are needed to define them.
+   Rules serve as invariants on the dataset; they constrain the data to impose semantics on the data.
+   For experimental validation we use the language Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}
+   because its syntax and semantics correspond directly to these definitions.
+   It has a notion of rule, which implements the invariants on the dataset.
+   In this way, prototypes built in Ampersand have helped to refine the theory.
+
+   In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
+   for which many tools are available.
+   However, invariants that change yield extra work for software engineers to write the transform code,
+   for which ETL tools typically provide little support.
+   If automation can improve that, the frequency of SCDM's might well increase,
+   and downtime for the sake of migration will become less acceptable.
+   So, our research aims for zero-downtime as perceived by end-users.
+   Another practical problem is that of data quality.
+   Migrations typically suffer from a backlog of deteriorated data, incurring work to clean up data.
+   Some of that must be done before the migration; some can wait till after the migration.
+   We can define part of the data quality as satisfying semantic constraints.
+   E.g. the constraint that the combination of street name, house number, postal code, and city occurs in
+   a registration of valid addresses can be checked automatically.
+   We can actually use invariants to help find and correct data pollution.
+   We cannot use always use invariants, however.
+   An example is when a person has deliberately specified a false name, without violating any of the existing invariants.
+
+   To make the case for zero-downtime, we must distinguish between three types of constraint:
+\begin{enumerate}
+\item Transactional invariant\\
+   A \define{transactional invariant} is a constraint is always true in a system.
+   This is the classical database transaction; it may be violated temporarily, but the outside world will never notice.
+   Thus, the zero-downtime requirement holds in the eyes of an end user.
+\item Business invariant\\
+   A \define{business invariant} is a constraint that that can be violated temporarily until the computer restores it.
+   Example: All purchase orders are reflected on an order sheet, but different representations of the order sheet may be out of sync.
+   On my smartphone, I see 7 purchase orders, but in my ERP system I see 6.
+   The inconsistency arises because the back end application is still working on the consistency of the two.
+   As a user, I must trust that the two will eventually be consistent.
+   In this paper, we assume that this delay can be kept short enough to be negligible for users,
+   so that the zero-downtime requirement is satisfied in their perception.
+\item Business constraint\\
+   A \define{business constraint} is a constraint that can be violated temporarily until a user restores it.
+   Example: ``An authorized manager has to sign every purchase order.''
+   We consider business constraints not to be invariants because users can violate them temporarily.
+   This delay is definitely noticable for users.
+   To satisfy the zero-downtime requirement, the system must be up and running to let users restore business constraints.
+\end{enumerate}
+   
+
+Summarizing, the following requirements apply to SCDM'S
+\begin{enumerate}
+\item users must experience zero-downtime.
+   Delays caused by transactional invariants or business invariants are not considered as downtime.
+\item users must be able to fix business constraints, so they can be used
+\item 
+\end{enumerate}
+
+   We can also use invariants to signal data pollution and make the migration system fix that.
+   For that purpose we need to compute violations of invariants, so that we can restore them.
+   The most important use of invariants, however, is to ensure that the migration system preserves the semantics of the data as much as possible.
+   That prevents operational disruptions in the business caused by mistakes during the migration.
+
+
+------------
+oud
+
+   This paper proposes a theory for data migrations that is meant to be implemented in a software generator called Ampersand.
+   It aims at automating data migrations, so incremental changes can be done more reliably and faster.
+   This contributes to a more agile software development process.
+   We believe that users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
+      
+   We have not found any literature on schema changing data migrations.
    Examples like these have convinced the authors to define a new method for data migration that is specifically meant for systems in production that are
    deployed in increments.
    
@@ -232,7 +314,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    \item {\em data pollution}\\The existing data set may be polluted, but it satisfies its schema.
    \item {\em human intervention}\\The data migration may require human interaction, which may take time.
    %\item {\em semantic continuity}\\the meaning of data must be preserved.
-   \item {\em zero down-time}\\The business continues during the migration without interruption.
+   \item {\em zero-downtime}\\The business continues during the migration without interruption.
    \item {\em generative software development}\\A compiler exists to generate a system from a given schema.
 \end{itemize}
    This paper focuses on the correctness of the migration.
@@ -241,16 +323,15 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \section{Analysis}
 \label{sct:Analysis}
 \subsection{Information Systems}
-   The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
-   This section defines information systems, after which we define a migration procedure from one system to another.
+   This section defines information systems, so we can formally define the migration procedure from one system to another.
 
-   Every user has her own tasks and responsibilities and may work from different locations and on different moments.
-   This collective use by multiple users serves a purpose which we will loosely call ``the business''.
-   It is this business that depends on the semantics of the data to draw the right conclusions and carry out their tasks.
+   The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
+   Multiple users, working from different locations and on different moments, constitute what we will loosely call ``the business''.
+   The data in the system constitutes the collective memory of the business,
+   which relies on the semantics of the data to draw the right conclusions and carry out their tasks.
    %This paper uses semantic constraints to represent this meaning.
    
-   Information systems are typically used by actors (both users and computers) who are distributed and work with data.
-   As a consequence, the data in a system changes continually.
+   Actors (both users and computers) are changing the data in a system continually.
    The state of the system is represented by a data set, typically represented in a persistent store or database.
    Events that the system detects may cause the state to change.
 \begin{figure}[bht]
