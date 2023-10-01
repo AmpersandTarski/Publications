@@ -202,15 +202,14 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    After they are built, they need to be upgraded at an ever-increasing pace to keep up with changing requirements in a dynamically evolving environment.
    Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
    Obviously, these deployments are mostly upgrades of existing systems.
-
-   A problem occurs when an upgrade involves a change in the schema of the deployed system:
-   The production data of the existing system must be migrated to fit the schema of the migrated system.
+   The need to do a data migration arises only if the schema of a new system differs from the existing one.
    Let us call that a "schema changing data migration" (SCDM).
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
-   For good reasons, most development teams will therefore try to avoid schema changes at all costs, fearing the risk and effort of the data migration.
+   We can expect more SCDMs as the deployment frequency increases.
 
-   During the lifetime of a system, schema changing data migrations cannot always be avoided, however.
+   For good reasons, most development teams will try to avoid schema changes at all costs, fearing the risk and effort of the data migration.
+   During the lifetime of a system, SCDMs cannot always be avoided, however.
    It is this problem that we address in this paper.
    Data migration for other purposes has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -227,25 +226,26 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    where the semantic integrity of data must be preserved across schema changes.
    Another use case is application integration for multiple dispersed data sources with explicit schemas.
 
-   To analyze this situation, we need to define the notion of schema and how it constrains the data.
+   To analyze data migrations with changing schemas, we need to define the notion of schema and how it constrains the data.
    To facilitate a formal analysis of the situation,
    we define an information system (section~\ref{sct:Information Systems}) as a pair of a schema and a dataset,
    so that we have the schema explicitly at our disposal.
-   The dataset is separate, so we may consider an analysis of the schema only as a compile-time activity.
+   The dataset is separate, so we may consider the analysis of just a schema as a compile-time activity.
    Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and rules.
    Relations are carriers of the data and concepts are needed to define them.
-   Rules serve as invariants on the dataset; they constrain the data to impose semantics on the data.
-   For experimental validation we use the language Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}
+   Rules constrain the data to impose semantics on the data.
+   These constraints must be satisfied all the time, so we call them {\em invariant}.
+   For experimental validation we have used the language Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}
    because its syntax and semantics correspond directly to these definitions.
-   It has a notion of rule, which implements the invariants on the dataset.
+   Ampersand has a notion of rule, which implements the invariants on the dataset.
    In this way, prototypes built in Ampersand have helped to refine the theory.
 
    In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
    for which many tools are available.
    However, invariants that change yield extra work for software engineers to write the transform code,
    for which ETL tools typically provide little support.
-   If automation can improve that, the frequency of SCDM's might well increase,
-   and downtime for the sake of migration will become less acceptable.
+   If automation can improve that, the frequency of SCDMs might well increase.
+   As a consequence, users will accept downtime for the sake of migration much less.
    So, our research aims for zero-downtime as perceived by end-users.
    Another practical problem is that of data quality.
    Migrations typically suffer from a backlog of deteriorated data, incurring work to clean up data.
@@ -257,68 +257,48 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    We cannot use always use invariants, however.
    An example is when a person has deliberately specified a false name, without violating any of the existing invariants.
 
-   To make the case for zero-downtime, we must distinguish between three types of constraint:
+   To make the case for zero-downtime, we must distinguish between two types of constraint:
 \begin{enumerate}
-\item Transactional invariant\\
-   A \define{transactional invariant} is a constraint is always true in a system.
-   This is the classical database transaction; it may be violated temporarily, but the outside world will never notice.
-   Thus, the zero-downtime requirement holds in the eyes of an end user.
-\item Business invariant\\
-   A \define{business invariant} is a constraint that that can be violated temporarily until the computer restores it.
-   Example: All purchase orders are reflected on an order sheet, but different representations of the order sheet may be out of sync.
-   On my smartphone, I see 7 purchase orders, but in my ERP system I see 6.
-   The inconsistency arises because the back end application is still working on the consistency of the two.
-   As a user, I must trust that the two will eventually be consistent.
-   In this paper, we assume that this delay can be kept short enough to be negligible for users,
-   so that the zero-downtime requirement is satisfied in their perception.
+\item Invariant\\
+   An \define{invariant} is a constraint that is always true in a system.
+   This is the classical database transaction.
+   Violation of an invariant means it has to be restored without the outside world noticing.
+   This requires either human intervention or an automated procedure.
+   If it is restored, the system commits to the new state, which satisfies the constraint.
+   If it cannot be restored, the system refuses the transaction and keeps the state as it was before starting the transaction.
+   In both cases, the invariant remains true.
 \item Business constraint\\
    A \define{business constraint} is a constraint that can be violated temporarily until a user restores it.
    Example: ``An authorized manager has to sign every purchase order.''
-   We consider business constraints not to be invariants because users can violate them temporarily.
-   This delay is definitely noticable for users.
-   To satisfy the zero-downtime requirement, the system must be up and running to let users restore business constraints.
+   We consider business constraints not to be invariants because users can violate them.
 \end{enumerate}
-   
+   Suppose some invariant of the desired system does not apply to the existing system,
+   and suppose it would be violated if applied to the data of the existing system.
+   However, spinning up the desired system on the data set of the existing system requires
+   that every constraint of the desired system is satisfied.
+   That is a problem.
+   In many cases, clearing out all violations before spinning up the desired system might take too much time and new violations will arise in the process.
+   So, keeping the existing system until the invariants of the desired system are satisfied is not an option.
+   To solve this problem, we implement every invariant in the migration system initially as a business constraint,
+   letting users restore invariance while the new system is running.
+   For this purpose, we must define an intermediate system, the \define{migration system},
+   which implements the invariants of the desired system as business constraints.
+   This migration system ensures that every violation that is fixed will not return as a violation.
+   In this way, the business constraint gradually turns into an invariant.
+   Since the number of violations is finite, it is up to the business to resolve these violations.
+   New violations that occur are under control of the desired system,
+   so the business experiences the migration system as the desired system.
+   In this way, our research realizes zero-downtime.
 
-Summarizing, the following requirements apply to SCDM'S
+   Summarizing, the following requirements apply to SCDMs
 \begin{enumerate}
-\item users must experience zero-downtime.
-   Delays caused by transactional invariants or business invariants are not considered as downtime.
-\item users must be able to fix business constraints, so they can be used
-\item 
+\item users must experience zero-downtime, to enable more frequent SCDMs.
+\item users must be able to fix business constraints, so they can be used to spin up a migration system and deliver zero-downtime.
+\item the number of violations that users must fix is finite and decreases (monotonically) over time.
 \end{enumerate}
-
-   We can also use invariants to signal data pollution and make the migration system fix that.
-   For that purpose we need to compute violations of invariants, so that we can restore them.
-   The most important use of invariants, however, is to ensure that the migration system preserves the semantics of the data as much as possible.
-   That prevents operational disruptions in the business caused by mistakes during the migration.
-
-
-------------
-oud
-
-   This paper proposes a theory for data migrations that is meant to be implemented in a software generator called Ampersand.
-   It aims at automating data migrations, so incremental changes can be done more reliably and faster.
-   This contributes to a more agile software development process.
-   We believe that users will experience a more organic evolution of the system because increments are smaller, occur more frequently and more reliably.
-      
-   We have not found any literature on schema changing data migrations.
-   Examples like these have convinced the authors to define a new method for data migration that is specifically meant for systems in production that are
-   deployed in increments.
-   
-   The contribution of this paper is to derive a migration schema from two artifacts: an existing system
-   (which has its own schema and data set) and the specification of a desired system (which has a different schema and will ``import'' relevant parts of the existing data).   
-   Our theory is based on the following assumptions and requirements:
-\begin{itemize}
-   \item {\em incremental deployment}\\The data migration is meant to deploy a software increment in production.
-   \item {\em data pollution}\\The existing data set may be polluted, but it satisfies its schema.
-   \item {\em human intervention}\\The data migration may require human interaction, which may take time.
-   %\item {\em semantic continuity}\\the meaning of data must be preserved.
-   \item {\em zero-downtime}\\The business continues during the migration without interruption.
-   \item {\em generative software development}\\A compiler exists to generate a system from a given schema.
-\end{itemize}
-   This paper focuses on the correctness of the migration.
-   Efficiency of the migration is beyond the scope.
+   An information system that is defined by constraints on a data set
+   can signal certain forms of data pollution by adding the proper constraints.
+   The mechanism of business constraints can help to clean that pollution.
 
 \section{Analysis}
 \label{sct:Analysis}
