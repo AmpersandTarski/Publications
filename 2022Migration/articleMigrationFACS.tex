@@ -202,16 +202,14 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    After they are built, they need to be upgraded at an ever-increasing pace to keep up with changing requirements in a dynamically evolving environment.
    Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
    Obviously, these deployments are mostly upgrades of existing systems.
-   The need to do a data migration arises only if the schema of a new system differs from the existing one.
-   Let us call that a "schema changing data migration" (SCDM).
+   If an upgrade does not change the schema, we don't need a data migration.
+   Yet, schema changes cannot always be avoided, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
-   We can expect more SCDMs as the deployment frequency increases.
+   So, development teams will try to avoid schema changes at all costs, fearing the risk and effort of the data migration,
+   and for a good reason.
 
-   For good reasons, most development teams will try to avoid schema changes at all costs, fearing the risk and effort of the data migration.
-   During the lifetime of a system, SCDMs cannot always be avoided, however.
-   It is this problem that we address in this paper.
-   Data migration for other purposes has been described in the literature.
+   Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
    migration engineers can and will avoid schema changes and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
@@ -228,7 +226,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 
    To analyze data migrations with changing schemas, we need to define the notion of schema and how it constrains the data.
    To facilitate a formal analysis of the situation,
-   we define an information system (section~\ref{sct:Information Systems}) as a pair of a schema and a dataset,
+   we define an information system (in section~\ref{sct:Information Systems}) as a pair of a schema and a dataset,
    so that we have the schema explicitly at our disposal.
    The dataset is separate, so we may consider the analysis of just a schema as a compile-time activity.
    Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and rules.
@@ -244,24 +242,25 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    for which many tools are available.
    However, invariants that change yield extra work for software engineers to write the transform code,
    for which ETL tools typically provide little support.
-   If automation can improve that, the frequency of SCDMs might well increase.
-   As a consequence, users will accept downtime for the sake of migration much less.
-   So, our research aims for zero-downtime as perceived by end-users.
+   The pressure on increasing deploy times calls for further automation of SCDMs.
+   Hence, we can expect more frequent SCDMs, and downtime for the sake of migration becomes less acceptable.
+   So, our research aims for zero-downtime.
    Another practical problem is that of data quality.
    Migrations typically suffer from a backlog of deteriorated data, incurring work to clean up data.
    Some of that must be done before the migration; some can wait till after the migration.
    We can define part of the data quality as satisfying semantic constraints.
    E.g. the constraint that the combination of street name, house number, postal code, and city occurs in
    a registration of valid addresses can be checked automatically.
-   We can actually use invariants to help find and correct data pollution.
-   We cannot use always use invariants, however.
-   An example is when a person has deliberately specified a false name, without violating any of the existing invariants.
+   An information system that is defined by constraints on a data set
+   can signal this type of data pollution by adding such constraints.
+   Some forms of data pollution cannot be detected in this way, however.
+   An example is when a person has deliberately specified a false name without violating any conceivable constraint.
 
    To make the case for zero-downtime, we must distinguish between two types of constraint:
 \begin{enumerate}
 \item Invariant\\
    An \define{invariant} is a constraint that is always true in a system.
-   This is the classical database transaction.
+   This corresponds to the classical database transaction.
    Violation of an invariant means it has to be restored without the outside world noticing.
    This requires either human intervention or an automated procedure.
    If it is restored, the system commits to the new state, which satisfies the constraint.
@@ -271,14 +270,14 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    A \define{business constraint} is a constraint that can be violated temporarily until a user restores it.
    Example: ``An authorized manager has to sign every purchase order.''
    We consider business constraints not to be invariants because users can violate them.
+   They are not true all the time.
 \end{enumerate}
-   Suppose some invariant of the desired system does not apply to the existing system,
+   Suppose some invariant, $u$, of the {\em desired system} does not apply to the {\em existing system},
    and suppose it would be violated if applied to the data of the existing system.
-   However, spinning up the desired system on the data set of the existing system requires
-   that every constraint of the desired system is satisfied.
-   That is a problem.
+   Now, when we spin up the desired system on the data set of the existing system, we have a problem.
+   Every invariant of the desired system must be satisfied but $u$ isn't.
+   So we cannot spin it up.
    In many cases, clearing out all violations before spinning up the desired system might take too much time and new violations will arise in the process.
-   So, keeping the existing system until the invariants of the desired system are satisfied is not an option.
    To solve this problem, we implement every invariant in the migration system initially as a business constraint,
    letting users restore invariance while the new system is running.
    For this purpose, we must define an intermediate system, the \define{migration system},
@@ -288,17 +287,15 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    Since the number of violations is finite, it is up to the business to resolve these violations.
    New violations that occur are under control of the desired system,
    so the business experiences the migration system as the desired system.
-   In this way, our research realizes zero-downtime.
+   In this way, the migration system bridges the gap and users get a zero-downtime SCDM.
 
    Summarizing, the following requirements apply to SCDMs
 \begin{enumerate}
 \item users must experience zero-downtime, to enable more frequent SCDMs.
-\item users must be able to fix business constraints, so they can be used to spin up a migration system and deliver zero-downtime.
-\item the number of violations that users must fix is finite and decreases (monotonically) over time.
+\item users must be able to fix business constraints, so we need an intermediate ``migration system'' to deliver zero-downtime.
+\item the number of violations that users must fix is finite and decreases (monotonically) over time,
+   to ensure that the migration system can be removed after the migration is done.
 \end{enumerate}
-   An information system that is defined by constraints on a data set
-   can signal certain forms of data pollution by adding the proper constraints.
-   The mechanism of business constraints can help to clean that pollution.
 
 \section{Analysis}
 \label{sct:Analysis}
