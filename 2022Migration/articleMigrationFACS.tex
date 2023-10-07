@@ -174,40 +174,36 @@ Ordina NV, Nieuwegein, the Netherlands}
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-Software generators can help increase the frequency of releases and their reliability.
-They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
-However, many generators do not support data migrations.
-Data migration is necessary when an incremental deployment changes the system's schema.
-Consequently, developers tend to avoid migrations or migrate data ``by hand''.
+   Software generators can help increase the frequency of releases and their reliability.
+   They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
+   However, many generators do not support data migrations.
+   Data migration is necessary when an incremental deployment changes the system's schema.
+   Consequently, developers tend to avoid migrations or migrate data ``by hand''.
 
-To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process.
-The problem at large is how to preserve the semantics of that data under a changing schema.
-This paper proposes a theory for deploying incremental change.
-The theory is applicable in general but will be implemented in a software generator called Ampersand.
+   To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process.
+   The problem at large is how to preserve the semantics of that data under a changing schema.
+   This paper proposes a theory for deploying incremental change.
+   The theory is applicable in general but will be implemented in a software generator called Ampersand.
 
-This paper defines a migration process that preserves the semantics of data by means of rules (constraints).
-The migration process is based on assumptions and requirements that aim to capture a large class of data migrations in practice.
-This paper focuses on correctness of the migration. Efficiency of the migration is outside its scope.
-
-\keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change.}
+   This paper defines a migration process that preserves the semantics of data by means of invariants (constraints)
+   with zero downtime for users.
+   The migration process is based on assumptions and requirements that aim to capture a large class of data migrations in practice.
+   This paper focuses on correctness of the migration. Efficiency of the migration is outside its scope.
+\keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change. \and Invariants \and Zero downtime.}
 \end{abstract}
-%
-%
-%
+
 \section{Introduction}
 \label{sct:Introduction}
    In practice, information systems%
    \footnote{In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.}
    may live for many years.
-   After they are built, they need to be upgraded at an ever-increasing pace to keep up with changing requirements in a dynamically evolving environment.
+   After they are built, they need to be upgraded regularly to keep up with changing requirements in a dynamically evolving environment.
    Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
    Obviously, these deployments are mostly upgrades of existing systems.
-   If an upgrade does not change the schema, we don't need a data migration.
-   Yet, schema changes cannot always be avoided, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
+   In upgrades, schema changes cannot always be avoided, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
-   So, development teams will try to avoid schema changes at all costs, fearing the risk and effort of the data migration,
-   and for a good reason.
+   The risk and effort of such data migrations explains why development teams try to avoid schema changes at all costs.
 
    Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -218,7 +214,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    This does not cater for schema changes, however.
    Then there are SCDMs in situations without a schema or an implicit schema, e.g.~\cite{Hillenbrand2022}.
    If the schema is not available at compile time, the work will have to be done at runtime.
-   This leads to versioned storage and an overhead in performance.
+   This requires versioned storage of production data and an overhead in performance.
    This paper focuses on SCDMs in situations with an explicit schema that changes with the data migration.
    The prototypical use case for that is to frequently release upgrades of information systems in production,
    where the semantic integrity of data must be preserved across schema changes.
@@ -226,46 +222,50 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 
    To analyze data migrations with changing schemas, we need to define the notion of schema and how it constrains the data.
    To facilitate a formal analysis of the situation,
-   we define an information system (in section~\ref{sct:Information Systems}) as a pair of a schema and a dataset,
+   we define an information system (in section~\ref{sct:Information Systems}) as a pair of a schema and a data set,
    so that we have the schema explicitly at our disposal.
-   The dataset is separate, so we may consider the analysis of just a schema as a compile-time activity.
-   Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and rules.
+   The data set is separate, so we may consider the analysis of just a schema as a compile-time activity.
+   Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and invariants.
    Relations are carriers of the data and concepts are needed to define them.
-   Rules constrain the data to impose semantics on the data.
-   These constraints must be satisfied all the time, so we call them {\em invariant}.
+   Invariants are constraints on the data to impose semantics.
+   These constraints must be satisfied all the time.
    For experimental validation we have used the language Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}
    because its syntax and semantics correspond directly to these definitions.
-   Ampersand has a notion of rule, which implements the invariants on the dataset.
+   Ampersand has a notion of rule, which implements the invariants on the data set.
    In this way, prototypes built in Ampersand have helped to refine the theory.
 
    In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
    for which many tools are available.
    However, invariants that change yield extra work for software engineers to write the transform code,
    for which ETL tools typically provide little support.
-   The pressure on increasing deploy times calls for further automation of SCDMs.
-   Hence, we can expect more frequent SCDMs, and downtime for the sake of migration becomes less acceptable.
-   So, our research aims for zero-downtime.
+   The pressure to decrease deploy times calls for further automation of SCDMs.
+   Hence, we can expect more frequent SCDMs, so downtime for the sake of migration becomes less acceptable.
+   That is why our research aims for zero downtime.
+
    Another practical problem is that of data quality.
    Migrations typically suffer from a backlog of deteriorated data, incurring work to clean up data.
    Some of that must be done before the migration; some can wait till after the migration.
-   We can define part of the data quality as satisfying semantic constraints.
+   We can capture part of the data quality problem as a requirement to satisfy semantic constraints.
    E.g. the constraint that the combination of street name, house number, postal code, and city occurs in
    a registration of valid addresses can be checked automatically.
-   An information system that is defined by constraints on a data set
-   can signal this type of data pollution by adding such constraints.
+   In a formalism like Ampersand, which allows us to express such constraints, we can add constraints for data quality to the schema.
+   This allows us to signal the data pollution at runtime.
    Some forms of data pollution cannot be detected in this way, however.
    An example is when a person has deliberately specified a false name without violating any conceivable constraint.
 
-   To make the case for zero-downtime, we must distinguish between two types of constraint:
+   To make the case for zero downtime, we must distinguish between two types of constraint:
 \begin{enumerate}
 \item Invariant\\
    An \define{invariant} is a constraint that is always true in a system.
    This corresponds to the classical database transaction.
    Violation of an invariant means it has to be restored without the outside world noticing.
    This requires either human intervention or an automated procedure.
-   If it is restored, the system commits to the new state, which satisfies the constraint.
+   Once it is restored, the system commits to the new state, which satisfies the constraint.
    If it cannot be restored, the system refuses the transaction and keeps the state as it was before starting the transaction.
    In both cases, the invariant remains true.
+
+   A special case of an invariant is the \define{enforcement rule}.
+   As soon as an enforce rule is violated, the system restores it automatically, without human intervention.
 \item Business constraint\\
    A \define{business constraint} is a constraint that can be violated temporarily until a user restores it.
    Example: ``An authorized manager has to sign every purchase order.''
@@ -274,25 +274,25 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \end{enumerate}
    Suppose some invariant, $u$, of the {\em desired system} does not apply to the {\em existing system},
    and suppose it would be violated if applied to the data of the existing system.
-   Now, when we spin up the desired system on the data set of the existing system, we have a problem.
+   Now, if we try to spin up the desired system on the data set of the existing system, we have a problem.
    Every invariant of the desired system must be satisfied but $u$ isn't.
    So we cannot spin it up.
-   In many cases, clearing out all violations before spinning up the desired system might take too much time and new violations will arise in the process.
+   In many cases, clearing out all violations before spinning up the desired system might take too much time and new violations will arise in the meantime.
    To solve this problem, we implement every invariant in the migration system initially as a business constraint,
    letting users restore invariance while the new system is running.
    For this purpose, we must define an intermediate system, the \define{migration system},
    which implements the invariants of the desired system as business constraints.
-   This migration system ensures that every violation that is fixed will not return as a violation.
+   This migration system must ensure that every violation that is fixed will not return as a violation.
    In this way, the business constraint gradually turns into an invariant.
-   Since the number of violations is finite, it is up to the business to resolve these violations.
+   Since the number of violations is finite, the business can resolve these violations in finite time.
    New violations that occur are under control of the desired system,
    so the business experiences the migration system as the desired system.
-   In this way, the migration system bridges the gap and users get a zero-downtime SCDM.
+   In this way, the migration system bridges the gap and users get a zero downtime SCDM.
 
    Summarizing, the following requirements apply to SCDMs
 \begin{enumerate}
-\item users must experience zero-downtime, to enable more frequent SCDMs.
-\item users must be able to fix business constraints, so we need an intermediate ``migration system'' to deliver zero-downtime.
+\item users must experience zero downtime, to enable more frequent SCDMs.
+\item users must be able to fix business constraints, so we need an intermediate ``migration system'' to deliver zero downtime.
 \item the number of violations that users must fix is finite and decreases (monotonically) over time,
    to ensure that the migration system can be removed after the migration is done.
 \end{enumerate}
@@ -309,7 +309,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    %This paper uses semantic constraints to represent this meaning.
    
    Actors (both users and computers) are changing the data in a system continually.
-   The state of the system is represented by a data set, typically represented in a persistent store or database.
+   The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
 \begin{figure}[bht]
    \begin{center}
@@ -318,17 +318,17 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \caption{Anatomy of an information system}
 \label{fig:pre-migration}
 \end{figure}
-   To keep our theory technology independent, data sets are assumed to contain triples.
+   To keep our theory technology independent, we assume data sets to contain triples.
    This makes our theory valid for any kind of database that triples can represent,
    including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
-   An important aspect of the system's semantics are the constraints, sometimes known as invariants or integrity rules.
+   An important aspect of the system's semantics are the invariants, sometimes known as integrity rules.
    %The purpose of these rules is to keep all constraints satisfied.
 
-   Like most software generators, Ampersand is a compiler that generates information systems from a script.
-   Ampersand uses a form of heterogeneous relation algebra,
+   Ampersand is a compiler that generates information systems from a script.
+   It uses a form of heterogeneous relation algebra,
    which works with relations in a way similar to Alloy~\cite{Alloy2006}.
    A system is then described by a set of rules (aka constraint / invariant), which the system keeps satisfied.
-   So all constraints are explicitly available as rules in the Ampersand code.
+   As a result, all invariants are explicit in the source code of a system specified in Ampersand.
 
    This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
    It also allows us to be explicit about ``preserving the meaning as much as possible''.
@@ -349,16 +349,17 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \caption{Migration phase}
 \label{fig:migration phase}
 \end{figure}
-   To automate the migration as much as possible,
-   we also deploy a migration system,
-   which has its own schema to specify the migration itself.
-   The migration system comprises the schemas of both the existing system and the desired system,
-   to implement the copying of data.
-   To fully automate every data migration is unrealistic.
-   A migration engineer can minimize manual work by minimizing the size of the increments,
-   but she cannot eliminate it completely.
-   Data pollution, new business rules, or known issues in the existing system
-   may occasionally require the migration engineer to tailor the migration script to specific needs.
+   To automate the migration as much as possible and to achieve zero downtime,
+   we also deploy a migration system.
+   The migration system has its own schema.
+   It comprises the schemas of both the existing system and the desired system,
+   so the migration system can copy the data from the existing to the desired system.
+   Some of the migration work, however, cannot be automated.
+   A migration engineer can minimize manual work by minimizing the size of the increments.
+   But data pollution, new business rules, or known issues in the existing system
+   may occasionally require tailoring the migration script to specific needs
+   that require action of users in production.
+   In Ampersand, she can use business constraints to implement these needs.
 
    A data migration has the following distinct moments\footnote{Completion can also be done gradually, but that is outside the scope of this paper.}:
 \begin{enumerate}
@@ -394,7 +395,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \section{Terminology}
 \label{sct:Terminology}
    An {\em information system} is a combination of data set, schema, and functionality.
-   For the purpose of this paper, functionality captured in user interfaces are ignored because it does not impact the migration.
+   For the purpose of this paper, we ignore functionality captured in user interfaces because it does not impact the migration.
    Section~\ref{sct:Data sets} desribes data sets. Schemas are treated in section~\ref{sct:Schemas}.
    Then section~\ref{sct:Information Systems} defines information systems.
 
@@ -427,7 +428,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
    %Since $\instance$ is a relation and every relation is a set of pairs,
    %set operators $\cup$, $\cap$, and $-$ can be used on $\instance$.
 
-   Relations serve to organize and store data, to allow a developer to represent facts.
+   Relations serve to organize and store data, allowing developers to represent facts.
    In this paper, variables $r$, $s$, and $d$ represent relations\footnote{Some readers might like to read `relation symbol' where we write `relation'.}.
    All relations are taken from an infinite set $\Rels$.
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
@@ -466,7 +467,7 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 %
    We overload the notation $\popF{}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
-   and expressions.
+   and expressions. We also define the difference of populations, both for relations and concepts:
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
 \label{eqn:pop-concept}\\
@@ -474,24 +475,44 @@ This paper focuses on correctness of the migration. Efficiency of the migration 
 \label{eqn:pop-expr}
 \end{align}
 
+\subsection{Violations}
+\label{sct:Violations}
+   To satisfy a constraint $u$ means that it is true for all triples in the data set.
+   Let us assume that we can represent each violation of a constraint $u$ as a pair
+   and let the function $\violC{u}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$ produce these violations.
+   Note that this assumption implies that rules have a signature, just like a relations.
+   So, we can represent an invariant $u$ as a triple $\triple{\violC{u}}{A}{B}$
+   that satisfies:
+\begin{equation}
+   \pair{a}{b}\in\viol{\triple{\violC{u}}{A}{B}}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
+\end{equation}
+   We represent an enforce rule $u$ as a pair $\pair{\declare{n}{A}{B}}{\violC{u}}$,
+   where relation $\declare{n}{A}{B}$ is used to restore invariance of the enforce rule.
+   The enforce rule satisfies:
+\begin{equation}
+   \pair{a}{b}\in\viol{u}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B\ \wedge\ \viol{u}{\dataset\cup\triple{a}{\declare{n}{A}{B}}{b}}=\emptyset
+\end{equation}
+
 \subsection{Schemas}
 \label{sct:Schemas}
    Schemas serve to capture the semantics of a system~\cite{Spivak2012}.
-   We consider a schema to represent the static part of a system, defining concepts, relations, and rules.
-   A software engineer defines a schema on design time, so that semantic checks can be implemented at compile time.
+   It defines concepts, relations, and invariants.
+   We assume that a software engineer defines a schema on design time, and a compiler checks whether the semantics are consistent.
+   Error messages from the compiler are prohibitive for generating code,
+   which prevents a substantial class of mistakes to ever reach end users.
 
    We describe a schema $\schema$ via a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
-   $\rules\subseteq \Triple{(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}})}{\Concepts}{\Concepts}$ is a finite set of rules,
+   $\rules\subseteq \Triple{(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}})}{\Concepts}{\Concepts}$ is a finite set of invariants,
    and $\enforces\subseteq \Pair{\Rels}{\left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)}$ is a finite set of enforcement rules.
    
-   Each rule in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
-   Every rule is an element of an infinite set called $\Rules$.
+   Each invariant in a schema serves to constrain the data set at runtime, to ensure its semantic integrity.
+   Every invariant is an element of an infinite set called $\Rules$.
    In this paper, variables $u$ and $v$ represent rules.
-   A rule $u$ in the schema is a triple $\triple{\violC{u}}{A}{B}$ such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
+   A invariant $u$ in the schema is a triple $\triple{\violC{u}}{A}{B}$ such that $\viol{u}{\dataset}$ represents any violations to $u$ in data set $\dataset$.
    In Ampersand, rules are well-typed, just like relations:
-   Every violation $\pair{a}{b}$ of a rule $\triple{\violC{u}}{A}{B}$ must satisfy $a\instance A$ and $b\instance B$.
+   Every violation $\pair{a}{b}$ of a invariant $\triple{\violC{u}}{A}{B}$ must satisfy $a\instance A$ and $b\instance B$.
    % For every data set $\dataset$, the set $\viol{u}{\dataset}$ is a subset of $\pop{A}{\dataset}\times\pop{B}{\dataset}$.
    If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
    
@@ -791,7 +812,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
    Then we define the migration systems $\migrsys$ and the events as follows:
 \begin{enumerate}
-\item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the dataset of the old system and the rules of the new system:
+\item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the data set of the old system and the rules of the new system:
    \begin{align}
    \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
    \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
@@ -830,7 +851,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    Hence, the MoT can happen after the enforcement rules have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
    
-   The MoC is reached for dataset $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
+   The MoC is reached for data set $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
    This should happen after a finite number of inserting events: let $I = \{{\tt fixed}_u \mid u\in\rules_{\schema'}\}$ be the relations that keep track of which violations have been fixed, then there is no infinite chain of systems $\migrsys' = \migrsys_0, \migrsys_1,\ldots$ such that $\migrsys_i\xrightarrowdbl[I]{\overrightarrow\rels_{\schema'}}\migrsys_{i+1}$.
    This shows that when users get rid of violations, there is real progress: they can only do this a finite number of times.
    Next we ask ourselves: does this mean we always reach the MoC?
@@ -842,8 +863,8 @@ The prefix {\tt new.} refers to items from the desired system.}:
    
    For this last question, we need to add a condition:
    There needs to be a system that has the desired schema $\schema'$.
-   If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the dataset, no such system exists and we have no hope of reaching it.
-   We assume that the rules of $\schema'$ are intended to prevent data pollution, such that a dataset $\dataset'$ describing the `real world' would be one that satisfies them.
+   If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the data set, no such system exists and we have no hope of reaching it.
+   We assume that the rules of $\schema'$ are intended to prevent data pollution, such that a data set $\dataset'$ describing the `real world' would be one that satisfies them.
    So let $\pair{\dataset'}{\schema'}$ be a system, then we can get to it through our migration system.
    To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{{\tt fixed}_u}{\dataset_{\migrsys^C}}=\pop{{\tt viols}_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
    We can do so by simply stating its triples, since the schema is determined by $\migrsys'$:
@@ -876,9 +897,9 @@ The prefix {\tt new.} refers to items from the desired system.}:
    For now, our next step is to implement the approach shown here into Ampersand.
 
    This work does not consider what to do about (user) interfaces.
-   Instead, it models events by assuming that any change to the dataset can be achieved.
+   Instead, it models events by assuming that any change to the data set can be achieved.
    In practice, such changes need to be achieved through interfaces.
-   Most Ampersand systems indeed allow the users of the system to edit the dataset quite freely through the interfaces.
+   Most Ampersand systems indeed allow the users of the system to edit the data set quite freely through the interfaces.
    However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break.
    In the spirit of the approach outlined here, we hope to generate migration interfaces that can replace any broken interfaces until the Moment of Transition.
    How to do this is future work.
