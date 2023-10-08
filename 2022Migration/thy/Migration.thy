@@ -545,12 +545,13 @@ proof (subst Rep_dataset_inject[symmetric])
 qed
 
 locale rule_violations =
-  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> ('a,'v) labeled_graph"
+  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> 'x :: {order_bot}"
   and   relevant_labels :: "'u \<Rightarrow> 'l set"
 assumes filter[simp]:"violation u (filter_with_labelset (relevant_labels u) g) = violation u g"
 begin
+
 fun satisfies where
-  "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+  "satisfies u ds \<longleftrightarrow> violation u ds = bot"
 lemma satisfies_relevant[simp]:
   "satisfies u (filter_with_labelset (relevant_labels u) g) = satisfies u g"
   by simp
@@ -586,5 +587,42 @@ proof(standard)
 qed
 
 end
+
+locale enforced = rule_violations +
+  fixes repair :: "'e \<Rightarrow> ('b, 'c, 'd) dataset \<Rightarrow> ('b, 'c, 'd) dataset"
+  assumes "let viol1 = (violation u ds) in 
+           let viol2 = violation u (repair viol1 ds) in
+           viol1 > viol2"
+begin
+
+end
+
+(*
+ Bewijslijn aantekeningen
+  in het migratie verhaal zijn diverse stappen:
+   stap: migratie systeem wordt aangezet.
+     bewijslasten:
+      - alle invarianten van het migratiesysteem gelden
+      - migratiesysteem copieert data uit het oude systeem
+         (zonder invarianten te overtreden)
+      - de business constraints die in het nieuwe systeem invariant zijn,
+        leveren een eindige lijst werk (aanname?)
+
+   stap: werk wordt gedaan in het migratie systeem door de business
+      - in de business constraints die in het nieuwe systeem invariant zijn,
+        nemen de overtredingen monotoon af
+      - (corollary) als een business constraint die in het nieuwe systeem invariant is, overtredings vrij is,
+        is deze invariant.
+      - na voldoende werk zijn alle business constraints die in het nieuwe systeem invariant zijn, invariant.
+      - aanname: de enforce regels voor bovenstaande reageren 'snel genoeg'.
+      - enforce regels uit het nieuwe systeem mogen gewoon mee doen
+        (vraag: mogen ze sneller zijn dan de enforce regels uit bovengenoemde
+         punt?)
+
+   stap: als alle business constraints die in het nieuwe systeem invariant zijn, invariant zijn,
+        kan het nieuwe systeem in gebruik genomen worden. (thm: mapped_rule_violations.mapped)
+        (ihb: ik kan de oude data en het migratie-systeem laten vallen)
+
+*)
 
 end
