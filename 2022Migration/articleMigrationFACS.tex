@@ -55,7 +55,9 @@
 \newcommand{\tgt}[1]{\id{tgt}(#1)}
 \newcommand{\viol}[2]{\violC{#1}(#2)}
 \newcommand{\violC}[1]{\id{viol}_{#1}}
-\newcommand{\sign}[1]{\id{sign}(#1)}
+\newcommand{\sign}[1]{\id{sign}_{#1}}
+\newcommand{\enfRel}[1]{\id{enf}_{#1}}
+\newcommand{\signature}[2]{\langle{#1},{#2}\rangle}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
 \newcommand{\la}{\langle}
 \newcommand{\ra}{\rangle}
@@ -394,7 +396,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    because these changes are copied by the migration system too.
    However, after the MoT there must be no new changes in the existing system
    to avoid violations of new invariants that the migration system has already fixed.
-   
+
    The following section introduces the definitions required to migrate data from one system to another.
 
 \section{Definitions}
@@ -447,7 +449,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
    
    \begin{definition}[Data set]
-   A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with finite $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance \subseteq  {\Pair{\Atoms}{\Concepts}}$ that satisfies:
+   A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with finite $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance\subseteq\Pair{\Atoms}{\Concepts}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\instance A\ \wedge\ b\instance B
    \label{eqn:wellTypedEdge}
@@ -483,25 +485,23 @@ Ordina NV, Nieuwegein, the Netherlands}
 \subsection{Violations}
 \label{sct:Violations}
    To satisfy a constraint $u$ means that it is true for all triples in the data set.
-   Let us assume that we can represent each violation of a constraint $u$ as a pair
-   and let the function $\violC{u}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$ produce these violations.
+   Let us assume that we can represent each violation of a constraint $u$ as a pair.
+   Let the function $\violC{u}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$ produce these violations
+   and let the function $\sign{u}:\Pair{\Concepts}{\Concepts}$ tell their signature:
+\begin{equation}
+   \pair{a}{b}\in\viol{u}{\dataset}\ \wedge\ \sign{u}=\pair{A}{B}\Rightarrow\ a\instance A\ \wedge\ b\instance B
+\end{equation}
    Note that $\viol{u}{\dataset}=\emptyset$ means that $\dataset$ satisfies $u$.
-   Now we can represent an invariant $u$ as a triple $\triple{\violC{u}}{A}{B}$.
-   It must be well-typed, just like a relation:
+
+   In case $u$ is an enforced invariant,
+   the system will keep it satisfied by adding the violations to relation $\declare{n}{A}{B}$:
 \begin{equation}
-   \pair{a}{b}\in\viol{\triple{\violC{u}}{A}{B}}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
+   \viol{u}{\pair{\triples\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}{\instance\cup\instance'}}=\emptyset
 \end{equation}
-   We represent an enforced invariant $u$ as a pair $\pair{\declare{n}{A}{B}}{\violC{u}}$,
-   where relation $\declare{n}{A}{B}$ is used to restore invariance of the enforced invariant.
-   The enforced invariant must be well-typed:
+   Let us call $\declare{n}{A}{B}$ the {enforced relation} of $u$, defined by $\enfRel$:
 \begin{equation}
-   \pair{a}{b}\in\viol{\pair{\declare{n}{A}{B}}{\violC{u}}}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
+   \enfRel{u}=\declare{n}{A}{B}
 \end{equation}
-   Besides, an enforced invariant must be automatically restorable by adding the violations to relation $\declare{n}{A}{B}$:
-\begin{equation}
-   \viol{u}{\dataset\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}=\emptyset
-\end{equation}
-   (TODO: define $\cup$ for data sets.)
    The language Ampersand has more types of enforced invariants than just this one,
    but to define this one only is sufficient for this paper.
 
