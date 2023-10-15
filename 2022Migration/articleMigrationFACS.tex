@@ -220,13 +220,13 @@ Ordina NV, Nieuwegein, the Netherlands}
    where the semantic integrity of data must be preserved across schema changes.
    Another use case is application integration for multiple dispersed data sources with explicit schemas.
 
-
    In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
    for which many tools are available.
-   However, invariants that change yield extra work for software engineers to write the transform code,
+   However, invariants that change require writing code in the transform phase,
    for which ETL tools typically provide little support.
-   The ubiquitous pressure to decrease deploy times and increase release frequencies calls for further automation of SCDMs.
-   Hence, any downtime for the sake of migration becomes less and less acceptable.
+   This yields extra work for software engineers, and it increases the risk of software errors.
+   The ubiquitous pressure to decrease deploy times calls for further automation of SCDMs.
+   With the release frequencies increasing and deploy times decreasing, any downtime for the sake of migration becomes less and less acceptable.
    That is why our research aims for zero downtime.
 
    Another practical problem is that of data quality.
@@ -240,9 +240,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    Some forms of data pollution cannot be detected in this way, however.
    An example is when a person has deliberately specified a false name without violating any constraint in the system.
 
-   To analyze data migrations with changing schemas, we need to define the notion of schema and how it constrains the data.
-   To facilitate a formal analysis of the situation,
-   we define an information system (in section~\ref{sct:Information Systems}) as a pair of a schema and a data set,
+   The next chapter analyzes SCDMs with an eye on zero downtime and data quality.
+   To prevent mistakes, this analysis takes a formal approach.
+   We define an information system (in section~\ref{sct:Information Systems}) as a pair of a schema and a data set,
    so that we have the schema explicitly at our disposal.
    The data set is separate, so we may consider the analysis of just a schema as a compile-time activity.
    Section~\ref{sct:Schemas} formalizes schemas as a combination of concepts, relations and invariants.
@@ -256,7 +256,8 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Analysis}
 \label{sct:Analysis}
-   This section analyzes information systems, so we can formally define the migration procedure from one system to another.
+   This section analyzes information systems qualitatively, to prepare for a formal treatment in section~\ref{sct:Definitions}.
+   The current section yields a procedure for migrating data from one system to another.
 \subsection{Information Systems}
    The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
    Multiple users, working from different locations and on different moments, constitute what we will loosely call ``the business''.
@@ -275,46 +276,55 @@ Ordina NV, Nieuwegein, the Netherlands}
    The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
    To keep our theory technology independent, we assume data sets to contain triples.
-   This makes our theory valid for any kind of database that triples can represent,
+   This makes our theory valid for every kind of database that triples can represent,
    including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
 
    We assume that the semantics of the data is ensured by means of constraints.
-   In figure~\ref{fig:pre-migration} they are depicted in the schema s rules.
-   We distinguish two types of constraint:
+   Figure~\ref{fig:pre-migration} depicts them as rules.
+   Some constraints must be satisfied through human intervention, while others are being satisfied by the system.
+   So, we distinguish between two types of constraint:
 \begin{enumerate}
-\item Invariant\\
-   An \define{invariant} is a constraint that is always true in a system.
+\item Blocking invariant\\
+   A \define{blocking invariant} is a constraint that is always true in a system.
    It serves to constrain the data set at runtime, to ensure its semantic integrity.
-   % Violation of an invariant means it has to be restored without the outside world noticing.
-   % This requires either human intervention or an automated procedure.
-   % Once it is restored, the system commits to the new state, which satisfies the constraint.
-   % If it cannot be restored, the system refuses the transaction and keeps the state as it was before starting the transaction.
-   % In both cases, the invariant remains true.
-
-   A special case of an invariant is the \define{enforcement rule}.
-   This corresponds to the classical database transaction.
-   As soon as an enforcement rule is violated, the system restores it automatically, without human intervention,
+   When it is violated, the system produces an error message and refuses the transaction.
+\item Enforced invariant\\
+   An enforced invariant corresponds to the classical database transaction.
+   As soon as the data violates an enforced invariant, the system restores it automatically without human intervention,
    so the outside world will never notice that it was violated.
 \item Business constraint\\
-   A \define{business constraint} is a constraint that can be violated temporarily until a user restores it.
+   A \define{business constraint} is a constraint that users can violate temporarily until someone restores it.
    Example: ``An authorized manager has to sign every purchase order.''
-   We consider business constraints not to be invariants because users can violate them.
-   They are not true all the time.
+   A business constraint is not true all the time, so we do not consider it to be an invariant%
+\footnote{The business may impose a business constraint, but that doesn't make it satisfied.
+   Every violation requires some form of human action to satisfy the business constraint (e.g. "sign the purchase order").}.
 \end{enumerate}
+   Summarizing, in our notion of information systems, concepts, relations, and constraints carry the business semantics.  
+
+\subsection{Ampersand}
+   Ampersand is a language that specifies information systems as a system of concepts, relations, and constraints.
+   It features the types of constraints that we need for this paper, so we have used it to try our theory in practice.
+   Ampersand has a compiler that generates the information system from a script.
+   A developer specifies constraints in heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}.
+   The generated system keeps the invariants satisfied and signals violations of business constraints to a user.
+   Having all invariants explicit in the Ampersand source code makes Ampersand a suitable platform on which to implement our theory.
+   The absence of imperative code in an Ampersand script makes it easier to reason about the system.
+   Constraints carry the business semantics, so they allow us to be explicit about ``preserving the meaning as much as possible''.
+   An Ampersand script contains just enough information to generate a complete system,
+   which means that a classical database schema (i.e.\ data structure plus constraints) can be extracted from the Ampersand script.
 
 \subsection{Zero downtime}
    To make the case for zero downtime, consider this problem:
-   Suppose we have an invariant, $u$, in the {\em desired system}, which is absent in the {\em existing system}.
-   And suppose the data in the existing system does not satisfy $u$.
-   When spinning up the desired system on the data set of the existing system, $u$ must be satisfied.
-   If $u$ is an enforcement rule, the desired system will restore it automatically.
-   But otherwise, the system will refuse to spin up.
-   In many cases, clearing out all violations before spinning up the desired system might take too long, while new violations may arise in the meantime.
-   So, the problem lies with invariants that are not enforced automatically.
-   To solve this problem, we must implement such invariants initially as a business constraint,
-   letting users restore invariance while the new system is running.
+   Suppose we have an invariant, $u$, in the {\em desired system}, which is not required in the {\em existing system}.
+   In the sequel, let us call this a {\em new invariant}.
+   Now, suppose the data in the existing system does not satisfy $u$.
+   If $u$ is an enforced invariant, the desired system will restore it automatically.
+   But if it is a blocking invariant, the desired system cannot spin up because all of its invariants must be satisfied.
+   To avoid downtime, we must implement new invariants initially as a business constraint,
+   to let users do the work.
+
    For this purpose, we must define an intermediate system, the \define{migration system},
-   which implements the invariants of the desired system as business constraints, unless they are enforcement rules.
+   which implements the blocking invariants of the desired system as business constraints.
    This migration system must also ensure that every violation that is fixed will not return as a violation.
    In this way, the business constraint eventually becomes an invariant, satisfying the specification of the desired system.
    Since the number of violations is finite, the business can resolve these violations in finite time.
@@ -325,28 +335,19 @@ Ordina NV, Nieuwegein, the Netherlands}
    Summarizing, the following requirements apply to SCDMs
 \begin{enumerate}
 \item users must experience zero downtime, to enable more frequent SCDMs.
-\item users must be able to fix business constraints, so we need an intermediate ``migration system'' to deliver zero downtime.
+\item users must be able to fix invariants in the new system.
+   So, we need an intermediate ``migration system'' that implements blocking constraints of the desired system as business constraints,
+   in order to deliver zero downtime.
 \item the number of violations that users must fix is finite and decreases (monotonically) over time,
-   to ensure that the migration system can be removed after the migration is done.
+   to ensure that the migration system does not need to live ever after.
 \end{enumerate}
-
-   Ampersand is a compiler that generates information systems from a script.
-   It uses a form of heterogeneous relation algebra,
-   which works with relations in a way similar to Alloy~\cite{Alloy2006}.
-   A system is then described by a set of rules (aka constraint / invariant), which the system keeps satisfied.
-   As a result, all invariants are explicit in the source code of a system specified in Ampersand.
-
-   This, and the absence of imperative code in an Ampersand script, makes Ampersand a suitable platform on which to implement the theory.
-   It also allows us to be explicit about ``preserving the meaning as much as possible''.
-   An Ampersand script contains just enough information to generate a complete system,
-   which means that a classical database schema (i.e.\ data structure plus constraints) can be extracted from the Ampersand script.
 
 \subsection{Data Migrations}
    Data migration occurs when a desired system replaces an existing one,
    while preserving the meaning of the present data as much as possible~\cite{Spivak2012}.
    %Just copying the set of data from the existing system to the desired system is obviously wrong if the schemas of both systems differ.
    %
-   In practice, data migrations are done by deploying the desired system and the existing system side-by-side,
+   In practice, data migrations typically deploy the existing system and the desired system side-by-side,
    while transferring data in a controlled fashion, as shown in Figure~\ref{fig:migration phase}.
 \begin{figure}[bht]
    \begin{center}
@@ -356,53 +357,51 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{fig:migration phase}
 \end{figure}
    To automate the migration as much as possible and to achieve zero downtime,
-   we also deploy a migration system.
-   The migration system has its own schema.
+   we must deploy a third system: the migration system.
+   This system has its own schema.
    It comprises the schemas of both the existing system and the desired system,
    so the migration system can copy the data from the existing to the desired system.
-   Some of the migration work, however, cannot be automated.
-   A migration engineer can minimize manual work by minimizing the size of the increments.
-   But data pollution, new business rules, or known issues in the existing system
+   It uses enforced invariants to copy the data and to resolve some forms of data pollution.
+   Not all migration work, however, can be automated.
+   Data pollution, new business rules, or known issues in the existing system
    may occasionally require tailoring the migration script to specific needs
    that require action of users in production.
-   In Ampersand, she can use business constraints to implement these needs.
+   For that purpose, the migration engineer specifies business constraints in the migration system.
+   In Ampersand, a developer can use business constraints to implement such needs.
 
-   A data migration has the following distinct moments\footnote{Completion can also be done gradually, but that is outside the scope of this paper.}:
-\begin{enumerate}
-   \item the moment of transition (the MoT), after which users experience changed functionality;
-   \item the moment of completion (the MoC), after which the migration engineer removes the migration system and the old system, including its data.
-\end{enumerate}
+   Before a migration starts we assume that the existing system is up and running and all of its invariants are satisfied.
+   The ingress is directing traffic to the existing system.
+   The data migration has three distinct steps:
+\begin{description}
+\item[Pre-deploy]
+      The migration engineer deploys both the migration system and the desired system with their initial data, to allow both systems to satisfy their initial invariants before going live.
+      The existing data is still in the existing system and the ingress still directs all traffic to the existing system.
+      So, users notice no difference yet.
+      The migration system starts copying data from the existing system.
+\item[moment of transition (MoT)]
+      After the migration system is done copying data, the migration engineer switches all traffic to the migration system.
+      From this moment on, users experience the changed functionality on the existing data.
+      However, the invariants of the desired system may not yet be satisfied.
+      So, users are working on the migration system, which looks like the desired system but relaxes some of its invariants.
+      Since the existing system receives no more traffic, its activity will come to a halt and its data will become static.
+      The migration system stays active until all invariants of the desired system are satisfied and it can take over the work from the migration system.
+\item[moment of completion (MoC)]
+      Once the invariants of the desired system are satisfied, the migration engineer switches all traffic to the desired system.
+      After that, she can safely remove the migration system and the existing system, including their data.
+\end{description}
 
-   Before the migration, the data in the existing system satisfies its invariants (by definition).
-   When the migration system compiles correctly, it satisfies its own invariants,
-   so it can be deployed in production.
-   That is the MoT.
-   The task of the migration system is to satisfy the invariants of the desired system
-   so that it can be deployed in production.
-   For some of these invariants, enforcement rules can satisfy them automatically.
-   There may be invariants, however, that require human interaction to resolve.
-   Once all invariants of the desired system are satisfied, the migration is ready for the MoC.
-   So, the schema of the migration system must contain the rules to satisfy all invariants of the desired system.
-
-   During the migration phase, transactions in the existing system are allowed because the migration engine will transport them to the desired system.
-   However, after the MoT there must be no new changes in the existing system,
-   to allow the system to finish transactions while the desired system is up and running.
+   Transactions in the existing system that happen during the time that the migration system is copying data cause no problem,
+   because these changes are copied by the migration system too.
+   However, after the MoT there must be no new changes in the existing system
+   to avoid violations of new invariants that the migration system has already fixed.
    
-\begin{figure}[bht]
-   \begin{center}
-     \includegraphics[scale=.35]{figures/datamigration-Post-migration.png}
-   \end{center}
-\caption{The system after the data migration}
-\label{fig:post-migration}
-\end{figure}
-
    The following section introduces the definitions required to migrate data from one system to another.
 
-\section{Terminology}
-\label{sct:Terminology}
+\section{Definitions}
+\label{sct:Definitions}
    An {\em information system} is a combination of data set, schema, and functionality.
    For the purpose of this paper, we ignore functionality captured in user interfaces because it does not impact the migration.
-   Section~\ref{sct:Data sets} desribes data sets. Schemas are treated in section~\ref{sct:Schemas}.
+   Section~\ref{sct:Data sets} describes how we define data sets. Section~\ref{sct:Violations} defines violations. Schemas are treated in section~\ref{sct:Schemas}.
    Then section~\ref{sct:Information Systems} defines information systems.
 
 \subsection{Data sets}
@@ -473,7 +472,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 %
    We overload the notation $\popF{}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
-   and expressions. We also define the difference of populations, both for relations and concepts:
+   and expressions. We also define the difference of populations, in equation~\ref{eqn:pop-expr}, both for relations and concepts:
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
 \label{eqn:pop-concept}\\
@@ -492,17 +491,18 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{equation}
    \pair{a}{b}\in\viol{\triple{\violC{u}}{A}{B}}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
 \end{equation}
-   We represent an enforcement rule $u$ as a pair $\pair{\declare{n}{A}{B}}{\violC{u}}$,
-   where relation $\declare{n}{A}{B}$ is used to restore invariance of the enforcement rule.
-   The enforcement rule must be well-typed:
+   We represent an enforced invariant $u$ as a pair $\pair{\declare{n}{A}{B}}{\violC{u}}$,
+   where relation $\declare{n}{A}{B}$ is used to restore invariance of the enforced invariant.
+   The enforced invariant must be well-typed:
 \begin{equation}
    \pair{a}{b}\in\viol{\pair{\declare{n}{A}{B}}{\violC{u}}}{\dataset}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
 \end{equation}
-   Besides, an enforcement rule must be automatically restorable by adding the violations to relation $\declare{n}{A}{B}$:
+   Besides, an enforced invariant must be automatically restorable by adding the violations to relation $\declare{n}{A}{B}$:
 \begin{equation}
    \viol{u}{\dataset\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}=\emptyset
 \end{equation}
-   The language Ampersand has more types of enforcement rules than just this one,
+   (TODO: define $\cup$ for data sets.)
+   The language Ampersand has more types of enforced invariants than just this one,
    but to define this one only is sufficient for this paper.
 
 \subsection{Schemas}
@@ -510,37 +510,33 @@ Ordina NV, Nieuwegein, the Netherlands}
    Schemas serve to capture the semantics of a system~\cite{Spivak2012}.
    They define concepts, relations, and invariants.
    We assume that a software engineer defines a schema on design time, and a compiler checks whether the semantics are consistent.
-   Error messages from the compiler are prohibitive for generating code,
-   which prevents a substantial class of mistakes to ever reach end users.
+   Errors the compiler detects are prohibitive for generating code,
+   to prevent a substantial class of mistakes to ever reach end users.
 
-   We describe a schema $\schema$ via a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$,
+   We describe a schema $\schema$ as a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq \Rels$ is a finite set of relations,
    $\rules\subseteq \Triple{(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}})}{\Concepts}{\Concepts}$ is a finite set of invariants,
-   and $\enforces\subseteq \Pair{\Rels}{\left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)}$ is a finite set of enforcement rules.
+   and $\enforces\subseteq \Pair{\Rels}{\left(\Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}\right)}$ is a finite set of enforced invariants.
    
    Every invariant is an element of an infinite set called $\Rules$.
-   In this paper, variables $u$ and $v$ represent rules.
-   In Ampersand, rules are well-typed, just like relations:
-   Every violation $\pair{a}{b}$ of a invariant $\triple{\violC{u}}{A}{B}$ must satisfy $a\instance A$ and $b\instance B$.
-   % For every data set $\dataset$, the set $\viol{u}{\dataset}$ is a subset of $\pop{A}{\dataset}\times\pop{B}{\dataset}$.
-   If there are no violations, that is: $\viol{u}{\dataset} = \emptyset{}$, then we say that $u$ is satisfied.
+   In this paper, variables $u$ and $v$ represent constraints, both invariants and business constraints.
    
    For a different kind of constraint, the system is told what to do in order to fix it.
-   Such constraints are called enforcement rules.
-   We use just one type of enforcement rule\footnote{Ampersand has several types of enforcement rules.} in this work.
+   Such constraints are called enforced invariants.
+   We use just one type of enforced invariant\footnote{Ampersand has several types of enforced invariants.} in this work.
    Its syntax in Ampersand is as follows:
 \begin{align}
       \text{\tt ENFORCE}\ r\ \text{\tt >:}\ \id{term}\label{enforce ins}
 \end{align}
 
-   Adding an enforcement rule to the script of a system specifies a function $\violC{u} : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$
+   Adding an enforced invariant to the script of a system specifies a function $\violC{u} : \Dataset \to \powerset{\Pair{\Atoms}{\Atoms}}$
    with $\viol{u}{\dataset} = \pop{\id{term} - r}{\dataset}$.
    The system ensures that the rule is satisfied by adding a triple $\triple{x}{r}{y}$ for each $\pair{x}{y} \in \viol{u}{\dataset}$.
    Thus the system maintains $\pop{r}{\dataset} \supseteq \pop{\id{term}}{\dataset}$ as an invariant.
    
-   Formally, enforcement rules are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom t$ or equivalently $r \mapsfrom \lambda \dataset.~ t(\dataset)$.
-   The set of enforcement rules in a schema is $\enforces$.
+   Formally, enforced invariants are pairs with $u$ a function and $r$ a relation, written $r \mapsfrom t$ or equivalently $r \mapsfrom \lambda \dataset.~ t(\dataset)$.
+   The set of enforced invariants in a schema is $\enforces$.
    
    \begin{definition}[Schema]
    A schema is a tuple $\quadruple{\concepts}{\rels}{\rules}{\enforces}$ that satisfies:
@@ -556,7 +552,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    Requirement~\ref{eqn:relationsIntroduceConcepts} ensures that concepts mentioned in a relation are defined in the schema.
    This is also known as static typing, which has well established advantages for the software engineering process~\cite{HanenbergKRTS14,Petersen2014}.
    Requirements~\ref{eqn:rule-has-type} and~\ref{eqn:rule-well-typed} ensure that violations in a rule correspond to the type of that rule. 
-   Requirements~\ref{eqn:enforcement-has-type} and~\ref{eqn:enforcement-well-typed} ensure the same for enforcement rules. 
+   Requirements~\ref{eqn:enforcement-has-type} and~\ref{eqn:enforcement-well-typed} ensure the same for enforced invariants. 
    The type system of Ampersand~\cite{vdWoude2011} ensures that every system it generates satisfies requirements~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-well-typed}.
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\enforces_{\schema}$
    for $\concepts$, $\rels$, $\rules$, and $\enforces$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\enforces}$.
@@ -570,7 +566,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{itemize}
    \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
    \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\enforces}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-well-typed}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\enforces_\infsys=\enforces$;
-   \item All rules and enforcement rules are satisfied:
+   \item All rules and enforced invariants are satisfied:
    \begin{align}
    \forall u\in\rules&.~\viol{u}{\dataset}=\emptyset\\
    \forall (r\mapsfrom t)\in\enforces&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
@@ -619,7 +615,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    $t \in \triples_{\dataset'} \cap (\Triple{\Atoms}{I}{\Atoms})$ and $t \not\in \triples_{\dataset}$ for some triple $t$.
 \end{definition}
    
-   We use inserting events to model the effect of enforcement rules.
+   We use inserting events to model the effect of enforced invariants.
 %   If $R$ is a set of relations that covers those that occur in the rule, then changes to an system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
 
 \subsection{Example}
@@ -831,7 +827,7 @@ The prefix {\tt new.} refers to items from the desired system.}:
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
    %&\rules_\theenumi &= \rules_\schema
    \end{align}
-\item We create enforcement rules to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
+\item We create enforced invariants to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
@@ -856,9 +852,9 @@ The prefix {\tt new.} refers to items from the desired system.}:
 \end{enumerate}
    
 \subsection{Validation}
-   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\enforces_\migrsys}}$ is a system after application of the enforcement rules:
-   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and enforcement rules from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
-   Hence, the MoT can happen after the enforcement rules have been applied, giving us $\migrsys'$.
+   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\enforces_\migrsys}}$ is a system after application of the enforced invariants:
+   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and enforced invariants from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
+   Hence, the MoT can happen after the enforced invariants have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
    
    The MoC is reached for data set $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
