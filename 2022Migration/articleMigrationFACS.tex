@@ -619,52 +619,59 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Generating a Migration Script}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
-   This section presents a general approach for generating a migration script.
-   Let $\overleftarrow{\infsys}$ be the existing system, and let $\overrightarrow{\infsys}$ be the desired system.
-   Consequently, we define $\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}=\overleftarrow{\infsys}$ and $\pair{\overrightarrow{\dataset}}{\overrightarrow{\schema}}=\overrightarrow{\infsys}$ as the data set and schema of the existing and desired system, respectively.
-   We also define $\quadruple{\overleftarrow{\concepts}}{\overleftarrow{\rels}}{\overleftarrow{\rules}}{\overleftarrow{\transactions}}=\overleftarrow{\schema}$
-   and $\quadruple{\overrightarrow{\concepts}}{\overrightarrow{\rels}}{\overrightarrow{\rules}}{\overrightarrow{\transactions}}=\overrightarrow{\schema}$.
+\subsection{Generating a migration script}
+   In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
+   For this purpose, we relabel those items.
+   We use a left arrow to denote relabeling by prefixing the name of the item with ``old.'', and a right arrow to denote prefixing with ``new.''.
+\begin{equation}
+   \begin{array}[m]{rcl}
+      \overleftarrow{\pair{\dataset}{\schema}}&=&\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}\\
+      \overleftarrow{\pair{\triples}{\instance}}&=&\pair{\overleftarrow{\triples}}{\instance}\\
+      \overleftarrow{\quadruple{\concepts}{\rels}{\rules}{\transactions}}&=&\quadruple{\concepts}{\overleftarrow{\rels}}{\overleftarrow{\rules}}{\overleftarrow{\transactions}}\\
+      \overleftarrow{\triples}&=&\{\triple{a}{\overleftarrow{r}}{b}\mid\triple{a}{r}{b}\in\triples\}\\
+      \overleftarrow{\declare{n}{A}{B}}&=&\declare{old.n}{A}{B}\\
+      \overleftarrow{X}&=&\{\overleftarrow{x}\mid x\in X\}\\
+      \viol{\overleftarrow{u}}{\overleftarrow{\dataset}}&=&\viol{u}{\dataset}\\
+      \sign{\overleftarrow{u}}&=&\sign{u}\\
+      \enfRel{\overleftarrow{u}}&=&\overleftarrow{\enfRel{u}}
+   \end{array}
+\end{equation}
+   The notation $\overrightarrow{\infsys}$ is defined similarly, using prefix ``new.'' instead of ``old.''.
 
-   Then we define the migration schema $\schema_\migrsys$ as follows:
-
-   Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
-   Then we define the migration systems $\migrsys$ and the events as follows:
+   Then we define the migration system $\migrsys$ as follows:
+   Let $\pair{\dataset}{\schema}$ be the existing system, and let $\pair{\dataset'}{\schema'}$ be the desired system in its initial state.
 \begin{enumerate}
-\item We take a disjoint union of the relations, defining $\overleftarrow~$ and $\overrightarrow~$ as (overloaded) notation to generate new names, keeping the data set of the old system and the rules of the new system:
+\item We take a disjoint union of the data sets by relabeling relation names:
    \begin{align}
-   \overleftarrow{\declare{n}{x}{y}}&=\declare{(\id{old}.n)}{x}{y}&\overleftarrow{X} &= \{\overleftarrow{x}\mid x\in X\}\\
-   \overrightarrow{\declare{n}{x}{y}}&=\declare{(\id{new}.n)}{x}{y}& \overrightarrow{X} &= \{\overrightarrow{x}\mid x\in X\}\\
-   \triples_\migrsys &= \{\triple{a}{\overleftarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_\dataset\}&
-   \instance_\migrsys &= \instance_\dataset\\
-   \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
-   %&\rules_\theenumi &= \rules_\schema
+      \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
 \item We create transactions to copy equal relations:
    \begin{align}
-   \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
-   \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-   \transactions_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
+      \widetilde{\declare{n}{A}{B}}={}&\declare{(\id{copied}.n)}{A}{B}\\
+      \begin{split}
+         \transactions_1={}&\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
+         &\cup\{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}
+      \end{split}
    \end{align}
-\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}.
+\item For each new blocking invariant $u$, we generate two helper relations: ${\tt viols}_u$ and ${\tt fixed}_u$, and two corresponding transactions.
    \begin{align}
-   \overleftarrow{\dataset'} &= \pair{\{\triple{x}{{r}}{y}\mid \triple{x}{\overleftarrow{r}}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
-   \overrightarrow{\dataset'} &= \pair{\{\triple{a}{{r}}{b} \mid \triple{a}{\overrightarrow{r}}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
-   \rels_\theenumi &= \{{\tt viols}_u\mid u \in \rules_{\schema'}\} \cup \{{\tt fixed}_u\mid u \in \rules_{\schema'}\}\\
-   \rules_\migrsys &= \{\lambda {\dataset'}.~ \viol{u}{\overrightarrow{\dataset'}} - \pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'} \mid u\in\rules_{\schema'}\}\label{eqn:migrsysrules}\\
-   \transactions_{\theenumi} &=\{{\tt viols}_u \mapsfrom \lambda \dataset'.~ \viol{u}{\overleftarrow{\dataset'}}\} \cup
-    \{{\tt fixed}_u \mapsfrom \lambda \dataset'.~ {\tt viols}_u - \viol{u}{\overrightarrow{\dataset'}}\}\label{eqn:enforceForRules}
+      \rels_\theenumi={}& \{{\tt viols}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\} \cup \{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
+      \begin{split}
+         \transactions_2={}& \{{\tt viols}_u \mapsfrom \violC{\overrightarrow{u}}\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
+         &\cup \{{\tt fixed}_u \mapsfrom \lambda \dataset'.~ {\tt viols}_u - \viol{\overrightarrow{u}}{\dataset'}\mid u \in \rules_{\schema'}-\rules_{\schema}\}
+      \end{split}\label{eqn:enforceForRules}
    \end{align}
-\item Combining the above into a single migration system:
+\item Let us combine the above into a single migration schema, $\schema_\migrsys$:
    \begin{align}
-   \concepts_\migrsys &= \concepts_\dataset \cup  \concepts_{\dataset'}\\
-   \rels_\migrsys &= \rels_1\cup\rels_2\cup \rels_3\\
-   %\rules_\migrsys &= \rules_1\cup \rules_3\\
-   \transactions_\migrsys &= \transactions_1\cup\transactions_2\cup\transactions_3
+      \concepts_\migrsys ={}& \concepts_\dataset \cup  \concepts_{\dataset'}\\
+      \rels_\migrsys ={}& \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'} \cup \rels_3\\
+      \rules_\migrsys={}& \emptyset\label{eqn:migrsysrules}\\
+      \transactions_\migrsys ={}& \transactions_1\cup\transactions_2
    \end{align}
 \end{enumerate}
    
 \subsection{Validation}
-   We first observe that $\migrsys = \pair{\pair{\triples_\migrsys}{\instance_\migrsys}}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\transactions_\migrsys}}$ is a system after application of the transactions:
+   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\transactions_\migrsys}}$ is a system after application of the transactions:
    the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactions from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
    Hence, the MoT can happen after the transactions have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
