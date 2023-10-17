@@ -619,92 +619,6 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Generating a Migration Script}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
-   Sections~\ref{sec:loading} and~\ref{sec:violations on invariants} illustrate how this works by example, using the Ampersand syntax.
-   Then, section~\ref{General migration script} defines what this means in general terms.
-
-\subsection{Loading Data}\label{sec:loading}
-   Let us study how to migrate data from $\dataset$ to $\dataset'$.
-   It would be tempting to state that a relation from the example system, say {\tt isPartOf}, could be copied by the following code fragment%
-\footnote{The prefix {\tt old.} refers to concepts, relations, and rules from the existing system (section~\ref{sct:Example existing IS}).
-The prefix {\tt new.} refers to items from the desired system.}:
-\begin{verbatim}
-   ENFORCE new.isPartOf >: old.isPartOf
-\end{verbatim}
-   The relation {\tt old.isPartOf} resides in the existing system and will not change after the MoT.
-   
-   This means, however, that anything in {\tt old.isPartOf} cannot be deleted from {\tt new.isPartOf}.
-   This is undesirable because it prevents us from changing data in the migration system.
-   The desired behavior is that all pairs in {\tt old.isPartOf} are copied to {\tt new.isPartOf} when the system is first initialized, but that {\tt new.isPartOf} can be changed freely after that.
-   An extra relation (\ref{extraRelation}) achieves this behavior by remembering which pairs have been copied:
-\begin{eqnarray}
-   &&\verb#RELATION copied_isPartOf[Student*Course]#\label{extraRelation}\\
-   &&\verb#ENFORCE new.isPartOf >: old.isPartOf - copied_isPartOf#\label{difference}\\
-   &&\verb#ENFORCE copied_isPartOf >: new.isPartOf#\label{fill copies with new.isPartOf}
-\end{eqnarray}
-   
-   Let us look what happens at runtime.
-   Initially, when {\tt copied\_isPartOf} is still empty, the difference between {\tt old.isPartOf} and {\tt copied\_isPartOf} equals {\tt old.isPartOf}.
-   So, {\tt new.isPartOf} will contain the pairs of {\tt old.isPartOf} by rule~\ref*{difference}.
-   Then, the engine inserts the same pairs into {\tt copied\_isPartOf} because of rule~\ref*{fill copies with new.isPartOf}.
-   After this, triples with the relation {\tt new.isPartOf} can be inserted and deleted freely.
-   Once all triples have been copied, {\tt copied\_isPartOf} will contain all pairs of {\tt old.isPartOf} and rule~\ref*{difference} will no longer insert any triples in {\tt new.isPartOf}.
-   So, this rule can be removed after the copying has taken place.
-   Consequently, declarations~\ref{extraRelation} thru~\ref{fill copies with new.isPartOf} can be removed from the migration script at the MoC.
-
-\subsection{Dealing with violations on invariants}\label{sec:violations on invariants}
-   Suppose the script for the desired system adds an invariant that is not present in the existing system:
-   
-\begin{verbatim}
-   RELATION isPartOf[Module*Course] [UNI]
-\end{verbatim}
-   
-   The \verb=UNI= annotation requires that each \verb=Module= is part of at most one \verb=Course=.
-   The violations are given by:
-\begin{eqnarray}
-   \viol{\tt UNI}{\dataset} = \{\pair{x}{y} \mid x \neq y \wedge \exists z.~ \pair{z}{x}, \pair{z}{y}\in\pop{\tt isPartOf}{\dataset} \}
-\end{eqnarray}
-   In Ampersand, the term that gives these violations is: \verb=isPartOf~;isPartOf - I=.
-   
-   While the \verb=UNI= requirement holds for the population in the original script, that population may have changed.
-   Therefore, we must assume that we cannot expect that \verb=new.isPartOf= satisfies the \verb=UNI= requirement in the desired system.
-   The migration system allows for this by simply not requiring that they hold at the MoT.
-   A challenge lies in ensuring that they do hold at the MoC, and that users that help the migration forward can achieve a state in which all requirements hold.
-   
-   Two extra relations are used: one to track the violations that occur in the original data (\ref{violRelation}), and one to track the violations that have been fixed (\ref{fixedRelation}) which prevents them from recurring.
-\begin{align}
-   &\text{\tt RELATION viols\_UNI[Course*Course]}\label{violRelation}\\
-   &\text{\tt RELATION fixed\_UNI[Course*Course]}\label{fixedRelation}\\
-   &\text{\tt ENFORCE viols\_UNI >: old.isPartOf\textasciitilde;old.isPartOf - I}\label{fill viols}\\
-   &\text{\tt ENFORCE fixed\_UNI >: viols\_UNI - (new.isPartOf\textasciitilde;new.isPartOf - I)}\label{fill fixed}\\
-   &\begin{aligned}
-   \text{\tt RULE isPartOf\_UNI: new.isPartOf\textasciitilde;new.isPartOf}\\
-   \quad\text{\tt |- I \textbackslash/ (viols\_UNI - fixed\_UNI)}
-   \end{aligned}\label{rule uni}
-\end{align}
-   
-   We again look at what happens at runtime:
-   Enforcement rule~\ref{fill viols} adds all violations present in the old system to {\tt viols\_UNI}.
-   Until the MoT, rule~\ref{fill fixed} does nothing, since {\tt viols\_UNI} equals $\viol{\tt UNI}{\dataset}$.
-   At that point, rule~\ref{rule uni} is satisfied, since the right-hand side of equation~\ref{rule uni} is empty.
-   As violations are fixed, rule~\ref{fill fixed} records this by adding to {\tt fixed\_UNI}.
-   This way, previously fixed errors cannot recur.
-   Once {\tt viols\_UNI} is equal to {\tt fixed\_UNI}, the \verb=UNI= requirement holds and the system is ready for the MoC in regard to this rule.
-   
-   We also wish to alert users with the role `migration helper' to violations that need to be fixed.
-   For the original \verb=UNI= requirement, this means specifying:
-   
-\begin{align}
-   \begin{aligned}
-   \text{\tt RULE isPartOf\_UNI\_warn: new.isPartOf\textasciitilde;new.isPartOf |- I}\\
-   \quad\text{\tt ROLE MigrationHelper}
-   \end{aligned}\label{warnings}
-\end{align}
-   
-   Despite the syntax, Line~{\ref{warnings}} is not a rule of the generated system in the formal sense:
-   By assigning a role, the responsibility of maintaining the rule no longer lies with the system.
-   Instead, users with the migration helper role can see the violations and act on it as they see fit, so the only effect of Line~{\ref{warnings}} is that such users will be shown its violations.
-
-\subsection{General migration script}\label{General migration script}
    This section presents a general approach for generating a migration script.
    Let $\overleftarrow{\infsys}$ be the existing system, and let $\overrightarrow{\infsys}$ be the desired system.
    Consequently, we define $\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}=\overleftarrow{\infsys}$ and $\pair{\overrightarrow{\dataset}}{\overrightarrow{\schema}}=\overrightarrow{\infsys}$ as the data set and schema of the existing and desired system, respectively.
@@ -725,13 +639,13 @@ The prefix {\tt new.} refers to items from the desired system.}:
    \rels_\theenumi &= \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'}
    %&\rules_\theenumi &= \rules_\schema
    \end{align}
-\item We create transactions to copy equal relations, corresponding to equation~\ref{extraRelation} through~\ref{fill copies with new.isPartOf} in Section~\ref{sec:loading}:
+\item We create transactions to copy equal relations:
    \begin{align}
    \widetilde{\declare{n}{x}{y}} &= \declare{(\id{copied}.n)}{x}{y}\\
    \rels_\theenumi &= \{\widetilde{r}\mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
    \transactions_\theenumi &= \{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid \widetilde{r} \in \rels_2\} \cup \{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid \widetilde{r} \in \rels_2\}
    \end{align}
-\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}. Note that Rule~\ref{warnings} only influences the user interface and therefore is not modeled here. This corresponds to equation~\ref{violRelation} through~\ref{rule uni}.
+\item For each rule, we generate two helper relations, {\tt viols} and {\tt fixed}.
    \begin{align}
    \overleftarrow{\dataset'} &= \pair{\{\triple{x}{{r}}{y}\mid \triple{x}{\overleftarrow{r}}{y} \in \triples_{\dataset'}\}}{\instance_{\dataset'}}\\
    \overrightarrow{\dataset'} &= \pair{\{\triple{a}{{r}}{b} \mid \triple{a}{\overrightarrow{r}}{b}\in\triples_\dataset\}}{\instance_{\dataset'}} \\
