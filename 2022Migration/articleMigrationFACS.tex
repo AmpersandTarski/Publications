@@ -459,7 +459,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with finite $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance\subseteq\Pair{\Atoms}{\Concepts}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\instance A\ \wedge\ b\instance B
-   \label{eqn:wellTypedEdge}
+\label{eqn:wellTypedEdge}
 \end{eqnarray}
 \end{definition}
    Looking at the example,
@@ -547,36 +547,35 @@ Ordina NV, Nieuwegein, the Netherlands}
    \declare{n}{A}{B}\in\rels&~\Rightarrow~ A\in\concepts\,\wedge\, B\in\concepts
    \label{eqn:relationsIntroduceConcepts}\\
    u\in\rules\cup\transactions\ \wedge\ \sign{u}=\pair{A}{B}&~\Rightarrow~A\in\concepts\,\wedge\, B\in\concepts\label{eqn:invariant-has-type}\\
-   u\in\rules\cup\transactions\wedge\sign{u}=\pair{A}{B}\wedge\pair{a}{b}\in\viol{u}{\dataset}&~\Rightarrow~a\instance A\ \wedge\ b\instance B\label{eqn:rule-has-type}\\
    (\declare{n}{A}{B}\mapsfrom t)\in\mathcal\transactions&~\Rightarrow~ \declare{n}{A}{B}\in \rels\label{eqn:enforcement-has-type}
 \end{align}
    \end{definition}
    Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concepts mentioned in relations and in the signature of rules are part of the schema.
-   Requirement~\ref{eqn:rule-has-type} ensures that violations in a rule correspond to the type of that rule. 
    Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transaction is declared in the schema. 
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\transactions_{\schema}$
    for $\concepts$, $\rels$, $\rules$, and $\transactions$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\transactions}$.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
-   Let us now define the notion of an information system.
+   Let us now define information systems by enumerating the requirements.
 \begin{definition}[information system]
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
-   \item $\dataset=\pair{\triples}{\instance}$ is a data set (satisfies equation~\ref{eqn:wellTypedEdge}), we write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
-   \item $\schema=\quadruple{\concepts}{\rels}{\rules}{\transactions}$ is a schema (satisfies equation~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}), we write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\transactions_\infsys=\transactions$;
-   \item All rules and transactions are satisfied:
-   \begin{align}
-   \forall u\in\rules&.~\viol{u}{\dataset}=\emptyset\\
-   \forall (r\mapsfrom t)\in\transactions&.~\viol{u}{\dataset} - \pop{r}{\dataset}=\emptyset
-   \label{eqn:satisfaction}
-   \end{align}
-   \item Triples in the data set have their relation mentioned in the schema:
+\item $\dataset=\pair{\triples}{\instance}$ is a data set (so it must satisfy equation~\ref{eqn:wellTypedEdge}). We write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
+\item Triples in the data set must have their relation mentioned in the schema:
    \begin{eqnarray}
-   \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
+      \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
    \end{eqnarray}
+\item $\schema=\quadruple{\concepts}{\rels}{\rules}{\transactions}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}). We write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\transactions_\infsys=\transactions$;
+\item All violations must have a type, which follows from  (\ref{eqn:wellTypedViolation}).
+\item All blocking invariants and transactions must remain satisfied:
+   \begin{align}
+      \forall u\in\rules\cup\transactions&.~\viol{u}{\dataset}=\emptyset
+   \label{eqn:satisfaction}
+   \end{align}
+\item Transactions remain satisfied by adding violations to a specific relation (\ref{eqn:transaction}).
 \end{itemize}
 \end{definition}
    % A \define{role} is a name that identifies a group of users.
@@ -604,7 +603,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    %    \triples_{\dataset} - (\Triple{\Atoms}{R}{\Atoms}) &\subseteq \triples_{\dataset'} - (\Triple{\Atoms}{R}{\Atoms})
    % \label{eqn:eventInsert}
    % \end{align}
-   We say that event $\infsys\xrightarrow[I]{R} \infsys'$ brings the system $\infsys$ to $\infsys'$ inserting pairs in relations from $I$ and deleting pairs in relations from $R$.
+   We say that event $\infsys\xrightarrow[I]{R} \infsys'$ brings the system $\infsys$ to $\infsys'$ by inserting pairs in relations from $I$ and deleting pairs in relations from $R$.
 \end{definition}
    
    Equation~\ref{eqn:eventUnchanged} and~\ref{eqn:eventInsert} state that the triples of those for relations in $I$ or $R$ are the only ones that can be changed, and that only triples in $R$ can be removed.
@@ -617,112 +616,6 @@ Ordina NV, Nieuwegein, the Netherlands}
    
    We use inserting events to model the effect of transactions.
 %   If $R$ is a set of relations that covers those that occur in the rule, then changes to an system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
-
-\subsection{Example}
-\label{sct:Example existing IS}
-   Having defined information systems in mathematical terms, let us discuss a small example.
-   It is written in the language Ampersand to make it more appealing to read.
-   Let us first define a data set of just a handful of triples and three relations.
-\begin{verbatim}
-RELATION takes[Student*Course] =
-[ ("Peter", "Management")
-; ("Susan", "Business IT")
-; ("John", "Business IT")
-]
-\end{verbatim}
-   This declaration introduces a relation with the name \verb#takes#,
-   source concept \verb#Student#, and
-   target concept \verb#Course#.
-   The informal meaning of this relation is that it states which students are taking which courses.
-
-   The example system also has a second relation that states which modules are part of which course.
-\begin{verbatim}
-RELATION isPartOf[Module*Course] =
-[ ("Finance", "Management")
-; ("Business Rules", "Business IT")
-; ("Business Analytics", "Business IT")
-; ("IT-Governance", "Management")
-]
-\end{verbatim}
-   The third relation states which students are enrolled for which module.
-   It is left without population for now.
-\begin{verbatim}
-RELATION isEnrolledFor[Student*Module]
-\end{verbatim}
-
-   A rule, {\tt EnrollRule} completes the script.
-   It states that a student can enroll for any module that is part of a course she takes.
-   % In Ampersand, which is a syntactically sugared form of relation algebra~\cite{JoostenRAMiCS2017},
-   % each rule has a name and each rule has a role to maintain its invariance:
-\begin{verbatim}
-RULE EnrollRule: isEnrolledFor |- takes;isPartOf~
-\end{verbatim}
-   The Ampersand compiler defines $\viol{\tt EnrollRule}{\dataset}$ as
-\begin{equation}
-   \pop{\tt isEnrolledFor}{\dataset}-\{\pair{s}{m} \mid\exists c.~s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c\}
-\end{equation}
-   This rule is satisfied if $\viol{\tt EnrollRule}{\dataset}=\emptyset$, which means that
-\begin{equation}
-   \begin{array}{l}
-   \forall \pair{s}{m}\in\pop{\tt isEnrolledFor}{\dataset}.~ \exists c\in\text{\tt Course}~.\\
-   s\ \text{\tt isEnrolledFor}\ m\ \rightarrow\ s\ \text{\tt takes}\ c\ \wedge\ m\ \text{\tt isPartOf}\ c
-   \end{array}
-\label{eqn:example isEnrolledFor}
-\end{equation}
-   In this example, relation $\declare{\tt isEnrolledFor}{\tt Student}{\tt Module}$ is empty, so the rule is satisfied.
-
-   Now let us check the requirements to verify that this example defines an information system.
-   % Requirement~\ref{eqn:specialization} is satisfied because this example contains no specialization.
-   The Ampersand compiler generates a data set $\dataset$, which contains a set of triples and a relation $\instance$.
-   It defines the set of triples $\triples$ as:
-\[\begin{array}[t]{l}
-   \triple{\text{\tt "Peter"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-   \triple{\text{\tt "Susan"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "John"}}{\declare{\text{\tt takes}}{\text{\tt Student}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "Finance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}\\
-   \triple{\text{\tt "Business Rules"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "Business Analytics"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Business IT"}}\\
-   \triple{\text{\tt "IT-Governance"}}{\declare{\text{\tt isPartOf}}{\text{\tt Module}}{\text{\tt Course}}}{\text{\tt "Management"}}
-\end{array}\]
-The relation $\instance$ contains the pairs:
-\[\begin{array}{l}
-   \pair{\text{\tt "Finance"}}{\tt Module}\\
-   \pair{\text{\tt "Business Rules"}}{\tt Module}\\
-   \pair{\text{\tt "Business Analytics"}}{\tt Module}\\
-   \pair{\text{\tt "IT-Governance"}}{\tt Module}\\
-   \pair{\text{\tt "Management"}}{\tt Course}\\
-   \pair{\text{\tt "Business IT"}}{\tt Course}\\
-   \pair{\text{\tt "Peter"}}{\tt Student}\\
-   \pair{\text{\tt "Susan"}}{\tt Student}\\
-   \pair{\text{\tt "John"}}{\tt Student}
-\end{array}\]
-   The pair $\pair{\triples}{\instance}$ satisfies requirement~\ref{eqn:wellTypedEdge} so this is a data set $\dataset$ as introduced in section~\ref{sct:Data sets}.
-
-   The Ampersand compiler generates a schema $\schema$, which contains concepts, a specialization relation, relations, and rules.
-   It defines the sets of concepts, relations, and rules to obtain a schema $\schema$:
-\[\begin{array}{rcl}
-   \concepts&=&\{ {\tt Module}, {\tt Course}, {\tt Student}\}\\
-   \rels&=&\{\begin{array}[t]{@{}l@{}}
-               \declare{\tt takes}{\tt Student}{\tt Course},\\
-               \declare{\tt isPartOf}{\tt Module}{\tt Course},\\
-               \declare{\tt isEnrolledFor}{\tt Student}{\tt Module}\}
-             \end{array}\\
-   \rules&=&\{ {\tt EnrollRule}\}\\
-   \transactions&=&\emptyset
-  \end{array}
-\]
-   % The user has defined no specializations.
-   % This means that $\isa$ equals the identity relation on $\concepts$ and requirements~\ref{eqn:isasIntroduceConcepts} and~\ref{eqn:isasPartialOrder} are satisfied.
-   % The script defines the set of rules $\rules$ to contain just one rule: \verb-EnrollRule-.
-   % The (nonempty) data set satisfies this rule, which meets requirement~\ref{eqn:consistentRules}.
-   So, the schema $\schema=\quadruple{\concepts}{\rels}{\rules}{\transactions}$ satisfies all requirements from section~\ref{sct:Schemas}.
-
-   Now let us check the definition of information system.
-   Requirement~\ref{eqn:satisfaction} is satisfied because the only rule, {\tt EnrollRule} is satisfied.
-   This satisfies definition~\ref{def:information system}, which establishes that $\infsys$ is an information system.
-   % The set of roles is empty and so is the relation $\maintain$.
-   % This meets all requirements for $\infsys=\triple{\dataset}{\schema}{\roles}{\maintain}$ from definition~\ref{def:information system}.
-   % This concludes the argument that $\infsys$ is an information system.
 
 \section{Generating a Migration Script}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
@@ -812,9 +705,14 @@ The prefix {\tt new.} refers to items from the desired system.}:
    Instead, users with the migration helper role can see the violations and act on it as they see fit, so the only effect of Line~{\ref{warnings}} is that such users will be shown its violations.
 
 \subsection{General migration script}\label{General migration script}
-   So far, we illustrated how to do migration by giving two concrete examples.
-   This section generalizes those ideas by giving a general approach for generating a migration script.
-   
+   This section presents a general approach for generating a migration script.
+   Let $\overleftarrow{\infsys}$ be the existing system, and let $\overrightarrow{\infsys}$ be the desired system.
+   Consequently, we define $\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}=\overleftarrow{\infsys}$ and $\pair{\overrightarrow{\dataset}}{\overrightarrow{\schema}}=\overrightarrow{\infsys}$ as the data set and schema of the existing and desired system, respectively.
+   We also define $\quadruple{\overleftarrow{\concepts}}{\overleftarrow{\rels}}{\overleftarrow{\rules}}{\overleftarrow{\transactions}}=\overleftarrow{\schema}$
+   and $\quadruple{\overrightarrow{\concepts}}{\overrightarrow{\rels}}{\overrightarrow{\rules}}{\overrightarrow{\transactions}}=\overrightarrow{\schema}$.
+
+   Then we define the migration schema $\schema_\migrsys$ as follows:
+
    Let $\pair{\dataset}{\schema}$ be the existing system, and let ${\schema'}$ be the schema of the desired system.
    Then we define the migration systems $\migrsys$ and the events as follows:
 \begin{enumerate}
