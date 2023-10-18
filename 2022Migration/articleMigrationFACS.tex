@@ -619,10 +619,10 @@ Ordina NV, Nieuwegein, the Netherlands}
 For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transaction to produce its population.
 We also generate a transaction to populate the relation $\overrightarrow{r}$ (in the desired system).
 % \begin{verbatim}
-%    RELATION copied_r[A*B]
+%    RELATION copy_r[A*B]
 %    RELATION new_r[A*B] [UNI]
-%    ENFORCE copied_r >: new_r /\ old_r
-%    ENFORCE new_r >: old_r - copied_r
+%    ENFORCE copy_r >: new_r /\ old_r
+%    ENFORCE new_r >: old_r - copy_r
 % \end{verbatim}
    \begin{align}
       \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\\
