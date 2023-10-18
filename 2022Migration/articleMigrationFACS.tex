@@ -646,20 +646,35 @@ Ordina NV, Nieuwegein, the Netherlands}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
 \item We create transactions to copy equal relations:
+% \begin{verbatim}
+%    RELATION copied_r[A*B]
+%    RELATION new_r[A*B] [UNI]
+%    ENFORCE copied_r >: new_r /\ old_r
+%    ENFORCE new_r >: old_r - copied_r
+% \end{verbatim}
    \begin{align}
       \widetilde{\declare{n}{A}{B}}={}&\declare{(\id{copied}.n)}{A}{B}\\
       \begin{split}
-         \transactions_1={}&\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-         &\cup\{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}
+         \transactions_1={}&\{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
+         &\cup\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}
       \end{split}
    \end{align}
-\item For each new blocking invariant $u$, we generate two helper relations: ${\tt viols}_u$ and ${\tt fixed}_u$, and two corresponding transactions.
+\item For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, and a transaction to produce its population:
+% \begin{verbatim}
+%    RELATION fixed_TOTr[A*A]
+%    ENFORCE fixed_TOTr >: I /\ new_r;new_r~
+%    RULE Block_TOTr : fixed_TOTr |- new_r;new_r~
+%    MESSAGE "Relation r[A*B] must remain total."
+%    VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
+   
+%    ROLE User MAINTAINS TOTr
+%    RULE TOTr : I - fixed_TOTr |- new_r;new_r~
+%    MESSAGE "Please, make relation r[A*B] total."
+%    VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
+% \end{verbatim}
    \begin{align}
-      \rels_\theenumi={}& \{{\tt viols}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\} \cup \{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
-      \begin{split}
-         \transactions_2={}& \{{\tt viols}_u \mapsfrom \violC{\overrightarrow{u}}\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
-         &\cup \{{\tt fixed}_u \mapsfrom \lambda \dataset'.~ {\tt viols}_u - \viol{\overrightarrow{u}}{\dataset'}\mid u \in \rules_{\schema'}-\rules_{\schema}\}
-      \end{split}\label{eqn:enforceForRules}
+      \rels_\theenumi={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
+      \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset'.~\viol{\overleftarrow{u}}{\dataset'}-\viol{\overrightarrow{u}}{\dataset'}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
    \end{align}
 \item Let us combine the above into a single migration schema, $\schema_\migrsys$:
    \begin{align}
@@ -669,7 +684,18 @@ Ordina NV, Nieuwegein, the Netherlands}
       \transactions_\migrsys ={}& \transactions_1\cup\transactions_2
    \end{align}
 \end{enumerate}
-   
+   After the migration system has been deployed, we must wait until the business has resolved all violations.
+   This is something the system must signal, so the migration engineer can switch all traffic to the desired system:
+% \begin{verbatim}
+   % ROLE User MAINTAINS CleanUp_TOTr
+   % RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
+   % MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
+% \end{verbatim}
+\begin{equation}
+   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset'}={\tt fixed}_u
+\end{equation}
+   After this, the migration system is no longer needed and can be removed.
+
 \subsection{Validation}
    We first observe that $\migrsys = \pair{\dataset_\migrsys}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\transactions_\migrsys}}$ is a system after application of the transactions:
    the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactions from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
