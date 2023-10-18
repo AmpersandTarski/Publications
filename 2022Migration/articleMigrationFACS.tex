@@ -73,7 +73,7 @@
 \newcommand{\Pair}[2]{#1\times#2}
 \newcommand{\pairs}[1]{\id{pairs}(#1)}
 \newcommand{\triple}[3]{\langle{#1},{#2},{#3}\rangle}
-\newcommand{\quadruple}[4]{\langle{#1},{#2},{#3},{#4}\rangle}
+\newcommand{\quintuple}[5]{\langle{#1},{#2},{#3},{#4},{#5}\rangle}
 \newcommand{\atom}[1]{{\tt\small #1}}
 \newcommand{\atoms}{\mathcal{A}}
 \newcommand{\Atoms}{\mathbb{A}}
@@ -90,8 +90,9 @@
 \newcommand{\Triples}{\mathbb{T}}
 \newcommand{\Triple}[3]{#1\times#2\times#3}
 \newcommand{\vertices}{N}
-\newcommand{\transactions}{\mathcal{E}}
 \newcommand{\rules}{\mathcal{U}}
+\newcommand{\transactions}{\mathcal{E}}
+\newcommand{\busConstraints}{\mathcal{B}}
 \newcommand{\Constraints}{\mathbb{U}}
 \newcommand{\specrules}{\mathcal{S}}
 \newcommand{\roles}{\mathcal{O}}
@@ -531,29 +532,29 @@ Ordina NV, Nieuwegein, the Netherlands}
    Errors the compiler detects are prohibitive for generating code,
    to prevent a substantial class of mistakes to ever reach end users.
 
-   We describe a schema $\schema$ as a tuple $\quadruple{\concepts}{\rels}{\rules}{\transactions}$,
+   We describe a schema $\schema$ as a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$,
    in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
    $\rels\subseteq\Rels$ is a finite set of relations,
    $\rules\subseteq\Constraints$ is a finite set of blocking invariants,
-   and $\transactions\subseteq\Constraints$ is a finite set of transactions.
-   
+   $\transactions\subseteq\Constraints$ is a finite set of transactions,
+   and $\busConstraints\subseteq\Constraints$ is a finite set of business constraints.
+
    Let us denote a transaction as $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$,
    in which $r=\enfRel{u}$.
-   The set of transactions in a schema is $\transactions$.
    
    \begin{definition}[Schema]
-   A schema is a tuple $\quadruple{\concepts}{\rels}{\rules}{\transactions}$ that satisfies:
+   A schema is a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ that satisfies:
 \begin{align}
    \declare{n}{A}{B}\in\rels&~\Rightarrow~ A\in\concepts\,\wedge\, B\in\concepts
    \label{eqn:relationsIntroduceConcepts}\\
-   u\in\rules\cup\transactions\ \wedge\ \sign{u}=\pair{A}{B}&~\Rightarrow~A\in\concepts\,\wedge\, B\in\concepts\label{eqn:invariant-has-type}\\
+   u\in\rules\cup\transactions\cup\busConstraints\ \wedge\ \sign{u}=\pair{A}{B}&~\Rightarrow~A\in\concepts\,\wedge\, B\in\concepts\label{eqn:invariant-has-type}\\
    (\declare{n}{A}{B}\mapsfrom t)\in\mathcal\transactions&~\Rightarrow~ \declare{n}{A}{B}\in \rels\label{eqn:enforcement-has-type}
 \end{align}
    \end{definition}
    Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concepts mentioned in relations and in the signature of rules are part of the schema.
    Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transaction is declared in the schema. 
-   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, and $\transactions_{\schema}$
-   for $\concepts$, $\rels$, $\rules$, and $\transactions$ corresponding to $\schema = \quadruple{\concepts}{\rels}{\rules}{\transactions}$.
+   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, $\transactions_{\schema}$, and $\busConstraints_{\schema}$
+   for $\concepts$, $\rels$, $\rules$, $\transactions$, and $\busConstraints$ corresponding to $\schema = \quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -568,7 +569,7 @@ Ordina NV, Nieuwegein, the Netherlands}
       \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
    \end{eqnarray}
-\item $\schema=\quadruple{\concepts}{\rels}{\rules}{\transactions}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}). We write $\concepts_\infsys = \concepts$, $\rels_\infsys = \rels$, $\rules_\infsys=\rules$, and $\transactions_\infsys=\transactions$;
+\item $\schema=\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}).
 \item All violations must have a type, which follows from  (\ref{eqn:wellTypedViolation}).
 \item All blocking invariants and transactions must remain satisfied:
    \begin{align}
@@ -621,13 +622,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
 \subsection{Generating a migration script}
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
-   For this purpose, we relabel those items.
-   We use a left arrow to denote relabeling by prefixing the name of the item with ``old.'', and a right arrow to denote prefixing with ``new.''.
+   We use a prime symbol to denote the elements of the desired system, so $\infsys$ is the existing system and $\infsys'$ is the desired system.
+   We also have to relabel items with prefixes to avoid name clashes in the migration system.
+   We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
 \begin{equation}
    \begin{array}[m]{rcl}
       \overleftarrow{\pair{\dataset}{\schema}}&=&\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}\\
       \overleftarrow{\pair{\triples}{\instance}}&=&\pair{\overleftarrow{\triples}}{\instance}\\
-      \overleftarrow{\quadruple{\concepts}{\rels}{\rules}{\transactions}}&=&\quadruple{\concepts}{\overleftarrow{\rels}}{\overleftarrow{\rules}}{\overleftarrow{\transactions}}\\
+      \overleftarrow{\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}}&=&\quintuple{\concepts}{\overleftarrow{\rels}}{\overleftarrow{\rules}}{\overleftarrow{\transactions}}{\overleftarrow{\busConstraints}}\\
       \overleftarrow{\triples}&=&\{\triple{a}{\overleftarrow{r}}{b}\mid\triple{a}{r}{b}\in\triples\}\\
       \overleftarrow{\declare{n}{A}{B}}&=&\declare{old.n}{A}{B}\\
       \overleftarrow{X}&=&\{\overleftarrow{x}\mid x\in X\}\\
@@ -639,7 +641,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    The notation $\overrightarrow{\infsys}$ is defined similarly, using prefix ``new.'' instead of ``old.''.
 
    Then we define the migration system $\migrsys$ as follows:
-   Let $\pair{\dataset}{\schema}$ be the existing system, and let $\pair{\dataset'}{\schema'}$ be the desired system in its initial state.
+   Let $\pair{\dataset}{\schema}$ be the existing system.
+   Let $\pair{\dataset'}{\schema'}$ be the desired system in its initial state.
 \begin{enumerate}
 \item We take a disjoint union of the data sets by relabeling relation names:
    \begin{align}
@@ -664,11 +667,6 @@ Ordina NV, Nieuwegein, the Netherlands}
 % \begin{verbatim}
 %    RELATION fixed_TOTr[A*A]
 %    ENFORCE fixed_TOTr >: I /\ new_r;new_r~
-   
-%    ROLE User MAINTAINS TOTr
-%    RULE TOTr : I - fixed_TOTr |- new_r;new_r~
-%    MESSAGE "Please, make relation r[A*B] total."
-%    VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
 % \end{verbatim}
    \begin{align}
       \rels_\theenumi={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
@@ -685,22 +683,38 @@ Ordina NV, Nieuwegein, the Netherlands}
       \begin{array}[t]{l}
          \text{\bf where}\\
          \sign{v}=\sign{u}\\
-         \viol{v}{\dataset}={\tt fixed}_u\cap\viol{\overrightarrow{u}}{\dataset}
+         \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}\cap{\tt fixed}_u
+      \end{array}\\
+      &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
+   \end{align}
+\item To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
+% \begin{verbatim}
+%    ROLE User MAINTAINS TOTr
+%    RULE TOTr : I - fixed_TOTr |- new_r;new_r~
+%    MESSAGE "Please, make relation r[A*B] total."
+%    VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
+% \end{verbatim}
+   \begin{align}
+      \busConstraints_\text{fix}={}&\{v\ 
+      \begin{array}[t]{l}
+         \text{\bf where}\\
+         \sign{v}=\sign{u}\\
+         \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}-{\tt fixed}_u
       \end{array}\\
       &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
    \end{align}
 \item Let us combine the above into a single migration schema:
    \begin{align}
-      \schema_\migrsys=\quadruple{\concepts_\dataset\cup\concepts_{\dataset'}}{\overleftarrow\rels_{\schema}\cup\overrightarrow\rels_{\schema'}\cup\rels_3}{\rules_\text{block}}{\transactions_1\cup\transactions_2}
+      \schema_\migrsys=\quintuple{\concepts_\dataset\cup\concepts_{\dataset'}}{\overleftarrow\rels_{\schema}\cup\overrightarrow\rels_{\schema'}\cup\rels_3}{\rules_\text{block}}{\transactions_1\cup\transactions_2}{\busConstraints_\text{fix}\cup\busConstraints_{\schema'}}
    \end{align}
 \end{enumerate}
    The migration engineer can switch all traffic to the desired system
    after resolving the violations that prohibit deploying the desired system.
    That is the case when violations of new invariants on the old population have all been fixed:
 % \begin{verbatim}
-   % ROLE User MAINTAINS CleanUp_TOTr
-   % RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
-   % MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
+%    ROLE User MAINTAINS CleanUp_TOTr
+%    RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
+%    MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
 % \end{verbatim}
 \begin{equation}
    \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset_\migrsys}={\tt fixed}_u
