@@ -620,7 +620,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Generating a Migration Script}
    A migration script takes care of two things: copying data and ensuring that the migration system is a proper information system.
-\subsection{Generating a migration script}
+\subsection{Algorithm for generating a migration script}
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
    We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
@@ -648,6 +648,8 @@ Ordina NV, Nieuwegein, the Netherlands}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
 \item We create transactions to copy equal relations:
+For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transaction to produce its population.
+We also generate a transaction to populate the relation $\overrightarrow{r}$ (in the desired system).
 % \begin{verbatim}
 %    RELATION copied_r[A*B]
 %    RELATION new_r[A*B] [UNI]
@@ -655,20 +657,19 @@ Ordina NV, Nieuwegein, the Netherlands}
 %    ENFORCE new_r >: old_r - copied_r
 % \end{verbatim}
    \begin{align}
-      \widetilde{\declare{n}{A}{B}}={}&\declare{(\id{copied}.n)}{A}{B}\\
-      \begin{split}
-         \transactions_1={}&\{\widetilde{r}\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}\\
-         &\cup\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}
-      \end{split}
+      \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\\
+      \transactions_1={}&\{{\tt copy}_r\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in\rels_1\}\cup\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r}-{\tt copy}_r} \mid r \in\rels_1\}
    \end{align}
+   The helper relation is needed to ensure that the copying process terminates.
 \item The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
-   For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, and a transaction to produce its population:
+   For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
+   We also need a transaction to produce its population:
 % \begin{verbatim}
 %    RELATION fixed_TOTr[A*A]
 %    ENFORCE fixed_TOTr >: I /\ new_r;new_r~
 % \end{verbatim}
    \begin{align}
-      \rels_\theenumi={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
+      \rels_2={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
       \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset.~\viol{\overleftarrow{u}}{\dataset}-\viol{\overrightarrow{u}}{\dataset}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
    \end{align}
 \item For each new blocking invariant $u$, we generate another blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
@@ -686,6 +687,7 @@ Ordina NV, Nieuwegein, the Netherlands}
       \end{array}\\
       &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
    \end{align}
+   Note that the blocking invariants from $\schema'\cap\schema$ are also used in $\migrsys$ to ensure continuity.
 \item To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 % \begin{verbatim}
 %    ROLE User MAINTAINS TOTr
@@ -704,7 +706,11 @@ Ordina NV, Nieuwegein, the Netherlands}
    \end{align}
 \item Let us combine the above into a single migration schema:
    \begin{align}
-      \schema_\migrsys=\quintuple{\concepts_\dataset\cup\concepts_{\dataset'}}{\overleftarrow\rels_{\schema}\cup\overrightarrow\rels_{\schema'}\cup\rels_3}{\rules_\text{block}}{\transactions_1\cup\transactions_2}{\busConstraints_\text{fix}\cup\busConstraints_{\schema'}}
+      \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\\
+      &\overleftarrow{\rels_{\schema}}\cup\overrightarrow{\rels_{\schema'}}\cup\rels_1\cup\rels_2,\notag\\
+      &\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'}),\notag\\
+      &\transactions_1\cup\transactions_2,\notag\\
+      &\busConstraints_\text{fix}\cup\busConstraints_{\schema'}\rangle\notag
    \end{align}
 \end{enumerate}
    The migration engineer can switch all traffic to the desired system
