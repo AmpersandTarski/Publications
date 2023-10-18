@@ -553,8 +553,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    \end{definition}
    Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concepts mentioned in relations and in the signature of rules are part of the schema.
    Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transaction is declared in the schema. 
-   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, $\transactions_{\schema}$, and $\busConstraints_{\schema}$
-   for $\concepts$, $\rels$, $\rules$, $\transactions$, and $\busConstraints$ corresponding to $\schema = \quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$.
+   When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, $\transactions_{\schema}$, $\busConstraints_{\schema}$
+   for $\concepts$, $\rels$, $\rules$, $\transactions$, $\busConstraints$ corresponding to $\schema = \quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$.
 
 \subsection{Information Systems}
 \label{sct:Information Systems}
@@ -563,7 +563,8 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{def:information system}
 \item An information system $\infsys$ is a tuple $\pair{\dataset}{\schema}$, in which
 \begin{itemize}
-\item $\dataset=\pair{\triples}{\instance}$ is a data set (so it must satisfy equation~\ref{eqn:wellTypedEdge}). We write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$;
+\item $\dataset=\pair{\triples}{\instance}$ is a data set (so it must satisfy equation~\ref{eqn:wellTypedEdge}).
+   We write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$ if needed;
 \item Triples in the data set must have their relation mentioned in the schema:
    \begin{eqnarray}
       \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
@@ -660,7 +661,12 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
       \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\\
       \transactions_1={}&\{{\tt copy}_r\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in\rels_1\}\cup\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r}-{\tt copy}_r} \mid r \in\rels_1\}
    \end{align}
-   The helper relation is needed to ensure that the copying process terminates.
+   The helper relation is needed to ensure that the copying process terminates,
+   which is the case when:
+   \begin{align}
+      \forall r\in\rels_1.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
+   \end{align}
+
 \item The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
    For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
    We also need a transaction to produce its population:
@@ -671,6 +677,11 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{align}
       \rels_2={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
       \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset.~\viol{\overleftarrow{u}}{\dataset}-\viol{\overrightarrow{u}}{\dataset}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
+   \end{align}
+   The helper relation is needed to ensure that the fixing of violations terminates,
+   which is the case when:
+   \begin{align}
+      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}={\tt fixed}_u\label{eqn:fixingTerminates}
    \end{align}
 \item For each new blocking invariant $u$, we generate another blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
 % \begin{verbatim}
@@ -709,7 +720,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
       \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\\
       &\overleftarrow{\rels_{\schema}}\cup\overrightarrow{\rels_{\schema'}}\cup\rels_1\cup\rels_2,\notag\\
       &\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'}),\notag\\
-      &\transactions_1\cup\transactions_2,\notag\\
+      &\transactions_1\cup\transactions_2\cup\transactions_{\schema'},\notag\\
       &\busConstraints_\text{fix}\cup\busConstraints_{\schema'}\rangle\notag
    \end{align}
 \end{enumerate}
@@ -726,6 +737,32 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
 \end{equation}
    After this, the migration engineer can remove the migration system and the old system.
 
+\subsection{Proof Obligations}
+\begin{enumerate}
+\item Assume that $\infsys$ and $\infsys'$ are information systems, so they satisfy definition~\ref{def:information system}.
+      This means that equations~\ref{eqn:wellTypedEdge}, \ref{eqn:wellTypedViolation}, \ref{eqn:transaction}, \ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}, \ref{eqn:define R}, \ref{eqn:satisfaction} hold for both systems.
+\item Prove that $\migrsys=\pair{\dataset_\migrsys}{\schema_\migrsys}$ is an information system,
+      so the migration engineer can deploy the migration system.
+\item Prove that $\overrightarrow{r}$ contains all triples from the existing data set in a finite time after deploying $\migrsys$,
+      to ensure that the existing data is migrated to the desired system.
+\item Prove that equation~\ref{eqn:satisfaction} holds for $\migrsys$ when the copying of relations is done (just before MoT),
+      to ensure that a valid information system is presented to users at the moment of transition.
+\item Prove that equation~\ref{eqn:copyingTerminates} represents the condition for terminating the copying process.
+\item Prove that equation~\ref{eqn:fixingTerminates} represents the condition for terminating the fixing of violations.
+\item Prove that the migration engineer can switch the ingress from the existing system to the migration system
+      when equations~\ref{eqn:copyingTerminates} and~\ref{eqn:fixingTerminates} are true,
+      so the computer can let the migration engineer know that it is safe to switch.
+\item Assuming that the business can fix each violation in finite time,
+      prove that the number of violations to be fixed by the business is finite,
+      and that it decreases monotonically, so the business can reach the MoC in finite time.
+\item Prove that $\rules_\text{block}$ is free of violations, so it is redundant after the MoC.
+\item Prove that $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC, so $\rels_1$ and $\transactions_1$ are redundant after the MoC.
+\item Prove that $\transactions_2$ will never more add any violations to any ${\tt fixed}_u$ at the MoC, so that $\rels_2$ and $\transactions_2$ are redundant after the MoC.
+\item Prove that $\busConstraints_\text{fix}$ is free of violations, so it is redundant after the MoC.
+\item Prove that $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ are redundant after the MoC.
+\item Prove that, given the redundancies proven above, the migration system is equivalent to $\infsys'$ after the MoC,
+      so the migration engineer can switch the ingress to the desired system and remove the existing system and the migration system.
+\end{enumerate}
 \subsection{Validation}
    We first observe that $\migrsys = \pair{\dataset_\migrsys}{\schema_\migrsys}$ is a system after application of the transactions:
    the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactions from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
