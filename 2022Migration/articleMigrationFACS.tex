@@ -659,13 +659,11 @@ Ordina NV, Nieuwegein, the Netherlands}
          &\cup\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r} - \widetilde{r}} \mid r \in \rels_\schema \cap \rels_{\schema'}\}
       \end{split}
    \end{align}
-\item For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, and a transaction to produce its population:
+\item The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
+   For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, and a transaction to produce its population:
 % \begin{verbatim}
 %    RELATION fixed_TOTr[A*A]
 %    ENFORCE fixed_TOTr >: I /\ new_r;new_r~
-%    RULE Block_TOTr : fixed_TOTr |- new_r;new_r~
-%    MESSAGE "Relation r[A*B] must remain total."
-%    VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
    
 %    ROLE User MAINTAINS TOTr
 %    RULE TOTr : I - fixed_TOTr |- new_r;new_r~
@@ -674,30 +672,43 @@ Ordina NV, Nieuwegein, the Netherlands}
 % \end{verbatim}
    \begin{align}
       \rels_\theenumi={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
-      \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset'.~\viol{\overleftarrow{u}}{\dataset'}-\viol{\overrightarrow{u}}{\dataset'}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
+      \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset.~\viol{\overleftarrow{u}}{\dataset}-\viol{\overrightarrow{u}}{\dataset}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
    \end{align}
-\item Let us combine the above into a single migration schema, $\schema_\migrsys$:
+\item For each new blocking invariant $u$, we generate another blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
+% \begin{verbatim}
+%    RULE Block_TOTr : fixed_TOTr |- new_r;new_r~
+%    MESSAGE "Relation r[A*B] must remain total."
+%    VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
+% \end{verbatim}
    \begin{align}
-      \concepts_\migrsys ={}& \concepts_\dataset \cup  \concepts_{\dataset'}\\
-      \rels_\migrsys ={}& \overleftarrow\rels_{\schema} \cup \overrightarrow\rels_{\schema'} \cup \rels_3\\
-      \rules_\migrsys={}& \emptyset\label{eqn:migrsysrules}\\
-      \transactions_\migrsys ={}& \transactions_1\cup\transactions_2
+      \rules_\text{block}={}&\{v\ 
+      \begin{array}[t]{l}
+         \text{\bf where}\\
+         \sign{v}=\sign{u}\\
+         \viol{v}{\dataset}={\tt fixed}_u\cap\viol{\overrightarrow{u}}{\dataset}
+      \end{array}\\
+      &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
+   \end{align}
+\item Let us combine the above into a single migration schema:
+   \begin{align}
+      \schema_\migrsys=\quadruple{\concepts_\dataset\cup\concepts_{\dataset'}}{\overleftarrow\rels_{\schema}\cup\overrightarrow\rels_{\schema'}\cup\rels_3}{\rules_\text{block}}{\transactions_1\cup\transactions_2}
    \end{align}
 \end{enumerate}
-   After the migration system has been deployed, we must wait until the business has resolved all violations.
-   This is something the system must signal, so the migration engineer can switch all traffic to the desired system:
+   The migration engineer can switch all traffic to the desired system
+   after resolving the violations that prohibit deploying the desired system.
+   That is the case when violations of new invariants on the old population have all been fixed:
 % \begin{verbatim}
    % ROLE User MAINTAINS CleanUp_TOTr
    % RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
    % MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
 % \end{verbatim}
 \begin{equation}
-   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset'}={\tt fixed}_u
+   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset_\migrsys}={\tt fixed}_u
 \end{equation}
-   After this, the migration system is no longer needed and can be removed.
+   After this, the migration engineer can remove the migration system and the old system.
 
 \subsection{Validation}
-   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\quadruple{\concepts_\migrsys}{\rels_\migrsys}{\rules_\migrsys}{\transactions_\migrsys}}$ is a system after application of the transactions:
+   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\schema_\migrsys}$ is a system after application of the transactions:
    the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactions from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
    Hence, the MoT can happen after the transactions have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
