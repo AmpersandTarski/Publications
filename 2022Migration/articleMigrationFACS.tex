@@ -577,6 +577,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    \end{align}
 \end{itemize}
 \end{definition}
+   We assume that a deployment will fail if these requirements are not satisfied.
+   We will write $\text{isIS}(\infsys)$ to denote that $\infsys$ is an information system.
 
 \section{Generating a Migration Script}
 \label{sct:Generating}
@@ -589,6 +591,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    Then we discuss its proof of correctness.
 
 \subsection{Algorithm for generating a migration script}
+   (\@Bas, I have added the relevant portions of {\tt Kurk.adl} as \LaTeX\ comments near every equation in the \LaTeX\ source,
+   so we can guard their correspondence.)
+
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
    We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
@@ -615,14 +620,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    \begin{align}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
-\item We create transactions to copy the population of relations from $\dataset$ to $\dataset'$:
+\item\label{step2} We create transactions to copy the population of relations from $\dataset$ to $\dataset'$:
 For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transaction to produce its population.
 We also generate a transaction to populate the relation $\overrightarrow{r}$ (in the desired system).
 % \begin{verbatim}
-%    RELATION copy_r[A*B]
-%    RELATION new_r[A*B] [UNI]
-%    ENFORCE copy_r >: new_r /\ old_r
-%    ENFORCE new_r >: old_r - copy_r
+%    RELATION copy.r[A*B]
+%    RELATION new.r[A*B] [UNI]
+%    ENFORCE copy.r >: new.r /\ old.r
+%    ENFORCE new.r >: old.r - copy.r
 % \end{verbatim}
    \begin{align}
       \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\\
@@ -633,13 +638,14 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{align}
       \forall r\in\rels_1.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
    \end{align}
+   (Step~\ref{step2} contains a problem: How can we be sure that last minute deletes in the existing system are propagated to the desired system?)
 
 \item The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
    For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
    We also need a transaction to produce its population:
 % \begin{verbatim}
 %    RELATION fixed_TOTr[A*A]
-%    ENFORCE fixed_TOTr >: I /\ new_r;new_r~
+%    ENFORCE fixed_TOTr >: I /\ new.r;new.r~
 % \end{verbatim}
    \begin{align}
       \rels_2={}&\{{\tt fixed}_u\mid u \in \rules_{\schema'}-\rules_{\schema}\}\\
@@ -652,7 +658,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \end{align}
 \item For each new blocking invariant $u$, we generate another blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
 % \begin{verbatim}
-%    RULE Block_TOTr : fixed_TOTr |- new_r;new_r~
+%    RULE Block_TOTr : fixed_TOTr |- new.r;new.r~
 %    MESSAGE "Relation r[A*B] must remain total."
 %    VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
 % \end{verbatim}
@@ -669,7 +675,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
 \item To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 % \begin{verbatim}
 %    ROLE User MAINTAINS TOTr
-%    RULE TOTr : I - fixed_TOTr |- new_r;new_r~
+%    RULE TOTr : I - fixed_TOTr |- new.r;new.r~
 %    MESSAGE "Please, make relation r[A*B] total."
 %    VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
 % \end{verbatim}
