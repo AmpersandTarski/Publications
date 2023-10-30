@@ -583,16 +583,15 @@ Ordina NV, Nieuwegein, the Netherlands}
 \section{Generating a Migration Script}
 \label{sct:Generating}
    The complexity of migrating data to date yields expensive and error-prone migration projects.
-   For that reason, we want to generate this code.
-   To ensure the correctness of the generator is even more challenging.
-   That is why we have proven the correctness of the generator in Isabelle/HOL.
+   By generating this code we can eliminate human induced errors.
+   We enhance the quality of the generator further by proving its correctness in Isabelle/HOL.
    
    This section starts with a presentation of the algorithm.
    Then we discuss its proof of correctness.
 
 \subsection{Algorithm for generating a migration script}
-   (\@Bas, I have added the relevant portions of {\tt Kurk.adl} as \LaTeX\ comments near every equation in the \LaTeX\ source,
-   so we can guard their correspondence.)
+   (\@Bas, ik heb de relevante delen van {\tt Kurk.adl} als \LaTeX\ commentaar bij elke equation in de \LaTeX\ broncode toegevoegd,
+   zodat we in de gaten kunnen houden dat ze met elkaar overeenkomen.)
 
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
