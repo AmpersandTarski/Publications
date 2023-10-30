@@ -712,7 +712,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
 \end{equation}
    After this, the migration engineer can remove the migration system and the old system.
 
-\subsection{Proof}
+\subsection{Proof Obligations}
 \label{sct:Proof}
    A theorem prover, Isabelle/HOL, is used to establish the correctness of the presented algorithm.
    This section discusses the proof obligations. The proof is available online.
@@ -720,26 +720,72 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    This means that equations~\ref{eqn:wellTypedEdge}, \ref{eqn:wellTypedViolation}, \ref{eqn:transaction}, \ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}, \ref{eqn:define R}, \ref{eqn:satisfaction} hold for both systems.
 \begin{enumerate}
 \item Prove that $\migrsys$ is an information system,
-      so the migration engineer can deploy the migration system.
-\item For every relation $r\in\rels_{\schema}\cap\rels_{\schema'}$, prove that $\overrightarrow{r}$ contains all triples from the existing data set in a finite time after deploying $\migrsys$,
-      to ensure that the existing data is migrated to the desired system.
-\item Prove that equation~\ref{eqn:satisfaction} holds for $\migrsys$ when the copying of relations is done (just before MoT),
-      to ensure that a valid information system is presented to users at the moment of transition.
-\item Prove that equation~\ref{eqn:copyingTerminates} represents the condition for terminating the copying process.
-\item Prove that equation~\ref{eqn:fixingTerminates} represents the condition for terminating the fixing of violations.
-\item Prove that the migration engineer can switch the ingress from the existing system to the migration system
-      when equations~\ref{eqn:copyingTerminates} and~\ref{eqn:fixingTerminates} are true,
-      so the computer can let the migration engineer know that it is safe to switch.
+      so the migration engineer can be sure it deploys without failure.
+   \begin{equation}
+      \text{isIS}\pair{\dataset_\infsys}{\schema_\infsys}\ \Rightarrow\ \text{isIS}\pair{\dataset_\infsys}{\schema_\migrsys}
+   \end{equation}
+\item For every relation $r\in\rels_1$ (i.e. in $\rels_{\schema}\cap\rels_{\schema'}$), prove that $\overrightarrow{r}$ contains all triples from the existing data set in a finite time after deploying $\migrsys$,
+      to ensure that the existing data is migrated to the desired system:
+   \begin{equation}
+      \triple{a}{\overleftarrow{r}}{b}\in\triples_\infsys\ \Rightarrow\ \triple{a}{\overrightarrow{r}}{b}\in\triples_\migrsys
+   \end{equation}
+\item Prove that the copying process leaves all rules from $\transactions_1$ satisfied forever:
+   \begin{equation}
+      \forall u\in\transactions_1\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
+   \end{equation}
+      This implies that transactions in $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC,
+      and they need not exist in the desired system.
+      So, $\rels_1$ and $\transactions_1$ are redundant after the MoC.
+      (\@Bas, is dat voldoende bewijs dat $\rels_1$ redundant is na de MoT?)
+\item Prove that equation~\ref{eqn:copyingTerminates} represents the condition for terminating the copying process,
+      so we can use this condition to safeguard that the migration system is ready for the MoT.
+\item $\rels_2$ contains all violations of new blocking invariants.
+      Prove that the fixing process leaves all rules from $\transactions_2$ satisfied forever:
+   \begin{equation}
+      \forall u\in\transactions_2\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
+   \end{equation}
+      This implies that transactions in $\transactions_2$ need not exist in the desired system.
+      So, $\rels_2$ and $\transactions_2$ are redundant after the MoC.
+\item Prove that equation~\ref{eqn:fixingTerminates} represents the condition for terminating the fixing of violations,
+      so we can use this condition to safeguard that the migration system and desired system are ready for the MoC.
+\item Prove that after the MoC, for every blocking invariant $u\in\rules_{\schema'}$ of the desired system,
+      there is a blocking invariant $v\in\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$
+      with exactly the same signature and violations in the data set of the desired system:
+   \begin{equation}
+      \viol{u}{\dataset'}=\viol{v}{\dataset'}
+   \end{equation}
+      And also vice versa, for every blocking invariant $v\in\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$
+      there must be a blocking invariant $u\in:\rules_{\schema'}$ such that $\viol{u}{\dataset'}=\viol{v}{\dataset'}$.
+      This implies that $\rules_{\schema'}$ can replace $\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$ on the MoC
+      without users noticing the difference.
 \item Assuming that the business can fix each violation in finite time,
       prove that the number of violations to be fixed by the business is finite,
       and that it decreases monotonically, so the business can reach the MoC in finite time.
-\item Prove that $\rules_\text{block}$ is free of violations, so it is redundant after the MoC.
-\item Prove that $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC, so $\rels_1$ and $\transactions_1$ are redundant after the MoC.
+\item Prove that the copying process leaves all rules from $\rules_\text{block}$ satisfied forever,
+      so these rules need not exist in the desired system:
+   \begin{equation}
+      \forall u\in\rules_\text{block}\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
+   \end{equation}
+      Note that
+\item Prove that $\rels_2$ is redundant after the MoT,
+      so the desired system can do without it.
+   \begin{equation}
+      TBD
+   \end{equation}
+\item Prove that $\overleftarrow{\rels_{\schema}}$ is redundant after the MoT,
+      so the desired system can do without it.
+   \begin{equation}
+      TBD
+   \end{equation}
+\item 
 \item Prove that $\transactions_2$ will never more add any violations to any ${\tt fixed}_u$ at the MoC, so that $\rels_2$ and $\transactions_2$ are redundant after the MoC.
 \item Prove that $\busConstraints_\text{fix}$ is free of violations, so it is redundant after the MoC.
 \item Prove that $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ are redundant after the MoC.
 \item Prove that, given the redundancies proven above, the migration system is equivalent to $\infsys'$ after the MoC,
       so the migration engineer can switch the ingress to the desired system and remove the existing system and the migration system.
+   \begin{equation}
+      \text{isIS}\pair{\dataset}{\schema_\migrsys}\ \Rightarrow\ \text{isIS}\pair{\dataset}{\schema'}
+   \end{equation}
 \end{enumerate}
 \section{Validation}
    As the system responds to events, it changes its data set, while the schema remains the same.
