@@ -693,8 +693,8 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{align}
       \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\\
       &\overleftarrow{\rels_{\schema}}\cup\overrightarrow{\rels_{\schema'}}\cup\rels_1\cup\rels_2,\notag\\
-      &\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'}),\notag\\
-      &\transactions_1\cup\transactions_2\cup\transactions_{\schema'},\notag\\
+      &\rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}},\notag\\
+      &\transactions_1\cup\transactions_2\cup\overrightarrow{\transactions_{\schema'}},\notag\\
       &\busConstraints_\text{fix}\cup\busConstraints_{\schema'}\rangle\notag
    \end{align}
 \end{enumerate}
@@ -715,18 +715,19 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
 \label{sct:Proof}
    A theorem prover, Isabelle/HOL, is used to establish the correctness of the presented algorithm.
    This section discusses the proof obligations. The proof is available online.
-   Assume that $\infsys$ and $\infsys'$ are information systems, so they satisfy definition~\ref{def:information system}.
+   Assume that $\infsys=\pair{\dataset}{\schema}$ and $\infsys'=\pair{\dataset'}{\schema'}$ are information systems, so they satisfy definition~\ref{def:information system}.
    This means that equations~\ref{eqn:wellTypedEdge}, \ref{eqn:wellTypedViolation}, \ref{eqn:transaction}, \ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}, \ref{eqn:define R}, \ref{eqn:satisfaction} hold for both systems.
+   We also assume that $\migrsys=\pair{\dataset_\migrsys}{\schema_\migrsys}$ is the migration system generated from $\infsys$ and $\infsys'$.
 \begin{enumerate}
 \item Prove that $\migrsys$ is an information system,
       so the migration engineer can be sure it deploys without failure.
    \begin{equation}
-      \text{isIS}\pair{\dataset_\infsys}{\schema_\infsys}\ \Rightarrow\ \text{isIS}\pair{\dataset_\infsys}{\schema_\migrsys}
+      \text{isIS}\pair{\dataset}{\schema}\ \Rightarrow\ \text{isIS}\pair{\dataset}{\schema_\migrsys}
    \end{equation}
 \item For every relation $r\in\rels_1$ (i.e. in $\rels_{\schema}\cap\rels_{\schema'}$), prove that $\overrightarrow{r}$ contains all triples from the existing data set in a finite time after deploying $\migrsys$,
       to ensure that the existing data is migrated to the desired system:
    \begin{equation}
-      \triple{a}{\overleftarrow{r}}{b}\in\triples_\infsys\ \Rightarrow\ \triple{a}{\overrightarrow{r}}{b}\in\triples_\migrsys
+      \triple{a}{r}{b}\in\triples_\infsys\ \Rightarrow\ \triple{a}{\overrightarrow{r}}{b}\in\triples_\migrsys
    \end{equation}
 \item Prove that the copying process leaves all rules from $\transactions_1$ satisfied forever:
    \begin{equation}
@@ -765,25 +766,13 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{equation}
       \forall u\in\rules_\text{block}\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
    \end{equation}
-      Note that
-\item Prove that $\rels_2$ is redundant after the MoT,
-      so the desired system can do without it.
-   \begin{equation}
-      TBD
-   \end{equation}
-\item Prove that $\overleftarrow{\rels_{\schema}}$ is redundant after the MoT,
-      so the desired system can do without it.
-   \begin{equation}
-      TBD
-   \end{equation}
-\item 
 \item Prove that $\transactions_2$ will never more add any violations to any ${\tt fixed}_u$ at the MoC, so that $\rels_2$ and $\transactions_2$ are redundant after the MoC.
 \item Prove that $\busConstraints_\text{fix}$ is free of violations, so it is redundant after the MoC.
 \item Prove that $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ are redundant after the MoC.
 \item Prove that, given the redundancies proven above, the migration system is equivalent to $\infsys'$ after the MoC,
       so the migration engineer can switch the ingress to the desired system and remove the existing system and the migration system.
    \begin{equation}
-      \text{isIS}\pair{\dataset}{\schema_\migrsys}\ \Rightarrow\ \text{isIS}\pair{\dataset}{\schema'}
+      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}={\tt fixed}_u\ \Rightarrow\ (\text{isIS}\pair{\dataset}{\schema_\migrsys}\Leftrightarrow\text{isIS}\pair{\dataset}{\schema'})
    \end{equation}
 \end{enumerate}
 \section{Validation}
