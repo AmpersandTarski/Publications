@@ -287,9 +287,9 @@ Ordina NV, Nieuwegein, the Netherlands}
 \item Blocking invariant\\
    A \define{blocking invariant} is a constraint that is always true in a system.
    It serves to constrain the data set at runtime.
-   When it is about to be violated, the system produces an error message and refuses the transaction.
-\item Transaction\\
-   The classical database transaction can be seen as an invariant,
+   When the data set changes in a way that violates a blocking invariant, the system produces an error message and refuses the change.
+\item Transactional invariant\\
+   The classical database transaction can be understood as an invariant,
    which the system keeps satisfied by adding or deleting triples to the dataset.
    As soon as the data violates this constraint, the system restores it without human intervention.
    So, the outside world experiences a constraint that is always true, i.e.~an invariant.
@@ -301,7 +301,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    So, we do not consider business constraints to be invariant.
 \end{enumerate}
    Summarizing, in our notion of information systems, concepts, relations, and constraints carry the business semantics.
-   Of the three types of constraint, only blocking invariants and transactions are invariants. 
+   Of the three types of constraint, only two are invariants. 
 
 \subsection{Ampersand}
    Ampersand is a language that specifies information systems as a system of concepts, relations, and constraints.
@@ -322,7 +322,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    Suppose we have an invariant, $u$, in the {\em desired system}, which is not part of the {\em existing system}.
    In the sequel, let us call this a {\em new invariant}.
    Now, suppose the data in the existing system does not satisfy $u$.
-   If $u$ is a transaction, the desired system will restore it automatically.
+   If $u$ is a transactional invariant, the desired system will restore it automatically.
    But if it is a blocking invariant, the desired system cannot spin up because all of its invariants must be satisfied.
    To avoid downtime, we must implement new blocking invariants initially as a business constraint,
    to let users do the work.
@@ -502,7 +502,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \end{equation}
    Note that $\viol{u}{\dataset}=\emptyset$ means that $\dataset$ satisfies $u$.
 
-   In case $u$ is a transaction,
+   In case $u$ is a transactional invariant,
    the system will keep it satisfied by adding the violations to a specific relation $\declare{n}{A}{B}$.
 \begin{equation}
    \begin{array}[t]{l}
@@ -512,14 +512,17 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{eqn:transaction}
 \end{equation}
    It is obvious that not every conceivable constraint can satisfy this equation.
-   So, we assume that the compiler restricts the set of transactions to those that satisfy equation~\ref{eqn:transaction}.
+   So, we assume that the compiler restricts the set of transactional invariants to those that satisfy equation~\ref{eqn:transaction}.
    As $\declare{n}{A}{B}$ is specific for $u$, we can write $\enfRel{u}$ for it.
-   We call this the {\em enforced relation} of transaction $u$:
+   We call this the {\em enforced relation} of transactional invariant $u$:
 \begin{equation}
    \enfRel{u}=\declare{n}{A}{B}
 \end{equation}
-   The language Ampersand has more types of transactions than just this one,
-   but to define this one only is sufficient for this paper.
+   Let us denote a transactional invariant as $r\mapsfrom\violC{u}$ or equivalently $r \mapsfrom \lambda \dataset.~\viol{u}{\dataset}$,
+   in which $r=\enfRel{u}$.
+   
+   The language Ampersand has more types of transactional invariants than just this one,
+   but this is sufficient for this paper.
 
 \subsection{Schemas}
 \label{sct:Schemas}
@@ -530,15 +533,12 @@ Ordina NV, Nieuwegein, the Netherlands}
    to prevent a substantial class of mistakes to ever reach end users.
 
    We describe a schema $\schema$ as a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$,
-   in which $\concepts\subseteq \Concepts$ is a finite set of concepts,
+   in which $\concepts\subseteq\Concepts$ is a finite set of concepts,
    $\rels\subseteq\Rels$ is a finite set of relations,
    $\rules\subseteq\Constraints$ is a finite set of blocking invariants,
-   $\transactions\subseteq\Constraints$ is a finite set of transactions,
+   $\transactions\subseteq\Constraints$ is a finite set of transactional invariants,
    and $\busConstraints\subseteq\Constraints$ is a finite set of business constraints.
 
-   Let us denote a transaction as $r \mapsfrom u$ or equivalently $r \mapsfrom \lambda \dataset.~ u(\dataset)$,
-   in which $r=\enfRel{u}$.
-   
    \begin{definition}[Schema]
    A schema is a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ that satisfies:
 \begin{align}
@@ -549,7 +549,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \end{align}
    \end{definition}
    Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concepts mentioned in relations and in the signature of rules are part of the schema.
-   Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transaction is declared in the schema. 
+   Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transactional invariant is declared in the schema. 
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, $\transactions_{\schema}$, $\busConstraints_{\schema}$
    for $\concepts$, $\rels$, $\rules$, $\transactions$, $\busConstraints$ corresponding to $\schema = \quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$.
 
@@ -569,8 +569,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    \label{eqn:define R}
    \end{eqnarray}
 \item All violations must have a type, which follows from  (\ref{eqn:wellTypedViolation}).
-\item Transactions remain satisfied by adding violations to a specific relation (\ref{eqn:transaction}).
-\item All blocking invariants and transactions must remain satisfied:
+\item Transactional invariants remain satisfied by adding violations to a specific relation (\ref{eqn:transaction}).
+\item All invariants must remain satisfied:
    \begin{align}
       \forall u\in\rules\cup\transactions&.~\viol{u}{\dataset}=\emptyset
    \label{eqn:satisfaction}
@@ -619,9 +619,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    \begin{align}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
-\item\label{step2} We create transactions to copy the population of relations from $\dataset$ to $\dataset'$:
-For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transaction to produce its population.
-We also generate a transaction to populate the relation $\overrightarrow{r}$ (in the desired system).
+\item\label{step2} We create transactional invariants to copy the population of relations from $\dataset$ to $\dataset'$:
+For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transactional invariant to produce its population.
+We also generate a transactional invariant to populate the relation $\overrightarrow{r}$ (in the desired system).
 % \begin{verbatim}
 %    RELATION copy.r[A*B]
 %    RELATION new.r[A*B] [UNI]
@@ -641,7 +641,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
 
 \item The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
    For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
-   We also need a transaction to produce its population:
+   We also need a transactional invariant to produce its population:
 % \begin{verbatim}
 %    RELATION fixed_TOTr[A*A]
 %    ENFORCE fixed_TOTr >: I /\ new.r;new.r~
@@ -688,7 +688,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
       &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
    \end{align}
    In some cases, a migration engineer can invent ways to satisfy these invariants automatically.
-   For this purpose, the generator should produce source code (as opposed to compiled code) to allow the migration engineer to replace a business constraint with transactions of her own making.
+   For this purpose, the generator should produce source code (as opposed to compiled code) to allow the migration engineer to replace a business constraint with transactional invariants of her own making.
 \item Let us combine the above into a single migration schema:
    \begin{align}
       \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\\
@@ -733,7 +733,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{equation}
       \forall u\in\transactions_1\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
    \end{equation}
-      This implies that transactions in $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC,
+      This implies that invariants in $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC,
       and they need not exist in the desired system.
       So, $\rels_1$ and $\transactions_1$ are redundant after the MoC.
       (\@Bas, is dat voldoende bewijs dat $\rels_1$ redundant is na de MoT?)
@@ -744,7 +744,7 @@ We also generate a transaction to populate the relation $\overrightarrow{r}$ (in
    \begin{equation}
       \forall u\in\transactions_2\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
    \end{equation}
-      This implies that transactions in $\transactions_2$ need not exist in the desired system.
+      This implies that invariants in $\transactions_2$ need not exist in the desired system.
       So, $\rels_2$ and $\transactions_2$ are redundant after the MoC.
 \item Prove that equation~\ref{eqn:fixingTerminates} represents the condition for terminating the fixing of violations,
       so we can use this condition to safeguard that the migration system and desired system are ready for the MoC.
@@ -806,13 +806,13 @@ t  hen $\infsys\xrightarrow[I]{R} \infsys'$ is an event if and only if:
    $t \in \triples_{\dataset'} \cap (\Triple{\Atoms}{I}{\Atoms})$ and $t \not\in \triples_{\dataset}$ for some triple $t$.
 \end{definition}
 
-W  e use inserting events to model the effect of transactions.
+We use inserting events to model the effect of transactional invariants.
 %   If $R$ is a set of relations that covers those that occur in the rule, then changes to an system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
 
 
-   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\schema_\migrsys}$ is a system after application of the transactions:
-   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactions from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
-   Hence, the MoT can happen after the transactions have been applied, giving us $\migrsys'$.
+   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\schema_\migrsys}$ is a system after application of the transactional invariants:
+   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactional invariants from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
+   Hence, the MoT can happen after the transactional invariants have been applied, giving us $\migrsys'$.
    The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
    
    The MoC is reached for data set $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
