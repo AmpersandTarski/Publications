@@ -177,11 +177,12 @@ Ordina NV, Nieuwegein, the Netherlands}
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-   Software generators can help increase the frequency of releases and their reliability.
-   They save on time spent on development and fixing human-induced mistakes by compiling a specification into a working information system.
+   Software generators compile a specification into a working information system.
+   This can help increase the frequency of releases and their reliability
+   because the generator saves on development time and prevents human-induced mistakes.
    However, many generators do not support data migrations.
    Data migration is necessary when an incremental deployment changes the system's schema.
-   Consequently, developers tend to avoid migrations or migrate data ``by hand''.
+   As a result, developers tend to avoid migrations or migrate data ``by hand''.
 
    To address this problem, this paper proposes a theory for data migrations aimed at automating the migration process.
    The problem at large is how to preserve the semantics of that data under a changing schema.
@@ -192,7 +193,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    with zero downtime for users.
    The migration process is based on assumptions and requirements that aim to capture a large class of data migrations in practice.
    This paper focuses on correctness of the migration. Efficiency of the migration is outside its scope.
-\keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change. \and Invariants \and Zero downtime.}
+\keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change \and Invariants \and Zero downtime}
 \end{abstract}
 
 \section{Introduction}
@@ -206,7 +207,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    Schema changes cannot always be avoided when updating software, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
-   The risk and effort of such data migrations explains why development teams try to avoid schema changes at all costs.
+   The risk and effort of such data migrations explains why development teams try to avoid schema changes.
 
    Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -783,7 +784,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
 \begin{definition}[Event]
    Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations,
    and let $\infsys=\pair{\schema}{\dataset}$ and  $\infsys'=\pair{\schema}{\dataset'}$ be information systems,
-t  hen $\infsys\xrightarrow[I]{R} \infsys'$ is an event if and only if:
+   then $\infsys\xrightarrow[I]{R} \infsys'$ is an event if and only if:
 \begin{align}
    \triple{a}{r}{b}\in\triples_{\dataset}-\triples_{\dataset'}&\Rightarrow\ r\in R\label{eqn:eventUnchanged}\\
    \triple{a}{r}{b}\in\triples_{\dataset'}-\triples_{\dataset}&\Rightarrow\ r\in(R \cup I)\label{eqn:eventInsert}
