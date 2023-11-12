@@ -15,33 +15,33 @@ Totality has the form `a=I` and `c=r;r~`, so it has the right form.
 
 POPULATION A CONTAINS [ "a1", "a2" , "a3" ]
 POPULATION B CONTAINS [ "b1", "b2" , "b3" ]
-RELATION old.r[A*B] [UNI] = [ ("a1", "b1") ]
+RELATION old_r[A*B] [UNI] = [ ("a1", "b1") ]
 -- The totality of r applies in the migration system, not in the existing situation.
--- So `RULE I |- old.r;old.r~` is not satisfied, but `RULE I |- new.r;new.r~` is.
+-- So `RULE I |- old_r;old_r~` is not satisfied, but `RULE I |- new_r;new_r~` is.
 
 REPRESENT B TYPE ALPHANUMERIC -- This is only here to smoothen the demo.
 
--- The following copies `old.r` to `new.r`. `copy_r` is needed to ensure that `new.r` can be edited after copying.
+-- The following copies `old_r` to `new_r`. `copy_r` is needed to ensure that `new_r` can be edited after copying.
 -- For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and a transaction to produce its population.
 RELATION copy_r[A*B]
-RELATION new.r[A*B] [UNI]
--- We create a transactions (enforcement rules) to copy the population of relations from `old.r` to `new.r`.
-ENFORCE copy_r >: new.r /\ old.r
-ENFORCE new.r >: old.r - copy_r
+RELATION new_r[A*B] [UNI]
+-- We create a transactions (enforcement rules) to copy the population of relations from `old_r` to `new_r`.
+ENFORCE copy_r >: new_r /\ old_r
+ENFORCE new_r >: old_r - copy_r
 
 -- For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
 -- The helper relation is needed to ensure that the fixing of violations terminates.
 RELATION fixed_TOTr[A*A]
 -- We also need a transaction to produce its population:
-ENFORCE fixed_TOTr >: I /\ new.r;new.r~
+ENFORCE fixed_TOTr >: I /\ new_r;new_r~
 -- The following blocks a violation from reoccurring, but allows fixing any remaining violation.
-RULE Block_TOTr : fixed_TOTr |- new.r;new.r~
+RULE Block_TOTr : fixed_TOTr |- new_r;new_r~
 MESSAGE "Relation r[A*B] must remain total."
 VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
 
 -- To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 ROLE User MAINTAINS TOTr
-RULE TOTr : I - fixed_TOTr |- new.r;new.r~
+RULE TOTr : I |- new_r;new_r~
 MESSAGE "Please, make relation r[A*B] total."
 VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
 
@@ -52,25 +52,25 @@ ROLE User MAINTAINS CleanUp_TOTr
 RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
 MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
 
-INTERFACE Migrationsystem LABEL "Migration system" : "_SESSION" cRud BOX<TABS>
+INTERFACE "Migration system" : "_SESSION" cRud BOX<TABS>
     [ "end user functionality" : V[SESSION*A] cRud BOX<TABLE>
-        [ "old.r" : I cRud BOX<TABLE>
+        [ "old_r" : I cRud BOX<TABLE>
            [ "A" : I                        cRud
-           , "B" : old.r                    cRud
+           , "B" : old_r                    cRud
            ]
-        , "new.r" : I cRud BOX<TABLE>
+        , "new_r" : I cRud BOX<TABLE>
            [ "A" : I                        cRud
-           , "B": new.r                     CRUd
+           , "B": new_r                     CRUd
            ]
         ]
     , "details" : V[SESSION*A] cRud BOX<TABLE>
-        [ "old.r" : I cRud BOX<TABLE>
+        [ "old_r" : I cRud BOX<TABLE>
            [ "A" : I                        cRud
-           , "B" : old.r                    cRud
+           , "B" : old_r                    cRud
            ]
-        , "new.r" : I cRud BOX<TABLE>
+        , "new_r" : I cRud BOX<TABLE>
            [ "A" : I                        cRud
-           , "B": new.r                     CRUd
+           , "B": new_r                     CRUd
            ]
         , copy_r : copy_r                   cRud
         , "block" : fixed_TOTr              cRud

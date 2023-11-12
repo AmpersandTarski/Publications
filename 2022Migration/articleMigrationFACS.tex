@@ -675,7 +675,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
 \item To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 % \begin{verbatim}
 %    ROLE User MAINTAINS TOTr
-%    RULE TOTr : I - fixed_TOTr |- new.r;new.r~
+%    RULE TOTr : I |- new.r;new.r~
 %    MESSAGE "Please, make relation r[A*B] total."
 %    VIOLATION (TXT "Fix ", SRC I, TXT " by pairing it with an (any) atom from B.")
 % \end{verbatim}
