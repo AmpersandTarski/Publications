@@ -692,7 +692,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
    For this purpose, the generator should produce source code (as opposed to compiled code) to allow the migration engineer to replace a business constraint with transactional invariants of her own making.
 \item Let us combine the above into a single migration schema:
    \begin{align}
-      \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\\
+      \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\label{eqn:schema migrsys}\\
       &\overleftarrow{\rels_{\schema}}\cup\overrightarrow{\rels_{\schema'}}\cup\rels_1\cup\rels_2,\notag\\
       &\rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}},\notag\\
       &\transactions_1\cup\transactions_2\cup\overrightarrow{\transactions_{\schema'}},\notag\\
@@ -708,7 +708,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
 %    MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
 % \end{verbatim}
 \begin{equation}
-   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset_\migrsys}={\tt fixed}_u
+   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset_\migrsys}={\tt fixed}_u\label{eqn:readyForMoC}
 \end{equation}
    After this, the migration engineer can remove the migration system and the old system.
 
@@ -846,6 +846,37 @@ We use inserting events to model the effect of transactional invariants.
    
    Collectively, this shows that the MoC is and remains reachable after a finite number of inserting events by users in the migration helper role.
    
+\section{Proof of Concept}
+\label{sct:PoC}
+   By way of proof of concept (PoC), we have built a migration system in Ampersand.
+   To demonstrate it in the context of this paper, the existing system, $\pair{\dataset}{\schema}$, is rather trivial.
+   It has no constraints and just one relation, $\declare{r}{A}{B}$.
+   Its population is $A=\{a_1,a_2,a_3\}$, $B=\{b_1\}$, and $\pop{r}{\dataset}=\{\pair{a_1}{b_1}\}$.
+   The schema of the migration system, $\schema_\migrsys$, follows from definition~\ref{eqn:schema migrsys}.
+   Figure~\ref{fig:PoC} exhibits four successive screenshots,
+   featuring $\overleftarrow{r}$ as {\small\verb#old_r#},
+   $\overrightarrow{r}$ as {\small\verb#new_r#}.
+\begin{figure}[bht]
+   \begin{center}
+      \makebox[\textwidth][c]{\includegraphics[scale=.07]{figures/screenshots.drawio.png}}%
+   \end{center}
+\caption{Four successive screenshots in the PoC}
+\label{fig:PoC}
+\end{figure}
+
+   Exhibit A shows the migration system just after deployment, at the MoT.
+   It shows that the copying of {\small\verb#old_r#} to {\small\verb#new_r#} has worked.
+   The desired system contains one blocking invariant, which is the totality of $\declare{r}{A}{B}$.
+   The yellow message in exhibit A indicates that a user needs to fix totality for $a_2$ and $a_3$.
+   The column {\small\verb#fixed_u#} contains the elements for which totality is satisfied, so these fields are blocked from becoming empty.
+
+   Exhibit B shows an attempt to remove $\pair{a_1}{b_1}$ from {\small\verb#new_r#}
+   The red message blocks this from happening and the user gets a ``Cancel'' button to roll back the action.
+   Note that the fields for $a_2$ and $a_3$ are empty, which is fine because they will not be blocked until they are given some value.
+
+   Exhibit C shows that the user fills in ``Jill'', which means that $\pair{a_1}{Jill}$ is added to {\small\verb#new_r#}.
+   When the last atom of {tt A} is paired with an atom from {\tt B} (exhibit D), requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
+
 \section{Conclusions}
 \label{sct:Conclusions}
    In this paper, we describe the data migration as going from an existing system to a desired one, where the schema changes.

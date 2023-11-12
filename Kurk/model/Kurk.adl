@@ -52,18 +52,7 @@ ROLE User MAINTAINS CleanUp_TOTr
 RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
 MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
 
-INTERFACE "Migration system" : "_SESSION" cRud BOX<TABS>
-    [ "end user functionality" : V[SESSION*A] cRud BOX<TABLE>
-        [ "old_r" : I cRud BOX<TABLE>
-           [ "A" : I                        cRud
-           , "B" : old_r                    cRud
-           ]
-        , "new_r" : I cRud BOX<TABLE>
-           [ "A" : I                        cRud
-           , "B": new_r                     CRUd
-           ]
-        ]
-    , "details" : V[SESSION*A] cRud BOX<TABLE>
+INTERFACE "Migration system" : "_SESSION";V[SESSION*A] cRud BOX<TABLE>
         [ "old_r" : I cRud BOX<TABLE>
            [ "A" : I                        cRud
            , "B" : old_r                    cRud
@@ -73,9 +62,8 @@ INTERFACE "Migration system" : "_SESSION" cRud BOX<TABS>
            , "B": new_r                     CRUd
            ]
         , copy_r : copy_r                   cRud
-        , "block" : fixed_TOTr              cRud
+        , fixed_u : fixed_TOTr              cRud
         ]
-    ]
 
 ENDCONTEXT
 
