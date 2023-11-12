@@ -508,7 +508,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{equation}
    \begin{array}[t]{l}
       \viol{u}{\pair{\triples\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}{\instance\cup\instance'}}=\emptyset\\
-      \text{\bf where}\ \instance'=\{ \pair{a}{A}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\cup\{ \pair{b}{B}\mid\pair{a}{b}\in\viol{u}{\dataset}\}
+      \text{\bf with}\ \instance'=\{ \pair{a}{A}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\cup\{ \pair{b}{B}\mid\pair{a}{b}\in\viol{u}{\dataset}\}
    \end{array}
 \label{eqn:transaction}
 \end{equation}
@@ -665,7 +665,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
    \begin{align}
       \rules_\text{block}={}&\{v\ 
       \begin{array}[t]{l}
-         \text{\bf where}\\
+         \text{\bf with}\\
          \sign{v}=\sign{u}\\
          \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}\cap{\tt fixed}_u
       \end{array}\\
@@ -682,7 +682,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
    \begin{align}
       \busConstraints_\text{fix}={}&\{v\ 
       \begin{array}[t]{l}
-         \text{\bf where}\\
+         \text{\bf with}\\
          \sign{v}=\sign{u}\\
          \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}-{\tt fixed}_u
       \end{array}\\
@@ -712,7 +712,8 @@ We also generate a transactional invariant to populate the relation $\overrighta
 \end{equation}
    After this, the migration engineer can remove the migration system and the old system.
 
-\subsection{Proof Obligations}
+\subsection{System properties}
+% TODO: SJC
 \label{sct:Proof}
    A theorem prover, Isabelle/HOL, is used to establish the correctness of the presented algorithm.
    This section discusses the proof obligations. The proof is available online.
@@ -776,7 +777,7 @@ We also generate a transactional invariant to populate the relation $\overrighta
       \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}={\tt fixed}_u\ \Rightarrow\ (\text{isIS}\pair{\dataset}{\schema_\migrsys}\Leftrightarrow\text{isIS}\pair{\dataset}{\schema'})
    \end{equation}
 \end{enumerate}
-\section{Validation}
+\paragraph{Validation}
    As the system responds to events, it changes its data set, while the schema remains the same.
    In this paper, it suffices to define an event as a pair of systems for which the schema stays constant.
    Events are categorized by the part of the data set that changes.
