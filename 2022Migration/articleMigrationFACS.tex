@@ -207,7 +207,12 @@ Ordina NV, Nieuwegein, the Netherlands}
    Schema changes cannot always be avoided when updating software, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
-   The risk and effort of such data migrations explains why development teams try to avoid schema changes.
+   In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
+   for which many tools are available.
+   However, ETL tools typically provide little support for invariants that change, forcing development teams to write code.
+   The risk and effort of such data migrations explains why these teams try to avoid schema changes.
+   Our research aims at (partly) automating SCDMs to make them less risky and less costly,
+   so development teams can increase the frequency of releases and do schema changes with zero downtime.
 
    Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -224,24 +229,15 @@ Ordina NV, Nieuwegein, the Netherlands}
    where the semantic integrity of data must be preserved across schema changes.
    Another use case is application integration for multiple dispersed data sources with explicit schemas.
 
-   In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
-   for which many tools are available.
-   However, invariants that change require writing code in the transform phase,
-   for which ETL tools typically provide little support.
-   This yields extra work for software engineers, and it increases the risk of software errors.
-   The ubiquitous pressure to decrease deploy times calls for further automation of SCDMs.
-   With the release frequencies increasing and deploy times decreasing, any downtime for the sake of migration becomes less and less acceptable.
-   That is why our research aims for zero downtime.
-
    Another practical problem is that of data quality.
    Migrations typically suffer from a backlog of deteriorated data, incurring work to clean it up.
    Some of that work must be done before the migration; some can wait till after the migration.
-   We can capture part of the data quality problem as a requirement to satisfy semantic constraints.
+   We can capture the automatable part of the data quality problem by regarding it as a requirement to satisfy semantic constraints.
    E.g. the constraint that the combination of street name, house number, postal code, and city occurs in
    a registration of valid addresses can be checked automatically.
    In a formalism like Ampersand, which allows us to express such constraints, we can add constraints for data quality to the schema.
    This allows us to signal the data pollution at runtime.
-   Some forms of data pollution cannot be detected in this way, however.
+   Some forms of data pollution are not automatable, however.
    An example is when a person has deliberately specified a false name without violating any constraint in the system.
 
    The next section analyzes SCDMs with an eye on zero downtime and data quality.
@@ -264,14 +260,17 @@ Ordina NV, Nieuwegein, the Netherlands}
    Multiple users, working from different locations and on different moments, constitute what we will loosely call ``the business''.
    The data in the system constitutes the collective memory of the business,
    which relies on the semantics of the data to draw the right conclusions and carry out their tasks.
-\begin{figure}[bht]
-   \begin{center}
-     \includegraphics[scale=.45]{figures/datamigration-Pre-migration.png}
-   \end{center}
-\caption{Anatomy of an information system}
-\label{fig:pre-migration}
-\end{figure}
-
+   \begin{figure}[bht]
+      \begin{center}
+        \includegraphics[scale=0.8]{figures/existing system.pdf}
+      \end{center}
+   \caption{Anatomy of an information system}
+   \label{fig:pre-migration}
+   \end{figure}
+   
+   Figure~\ref{fig:pre-migration} depicts the situation before migration.
+   An existing application service ingests traffic through an ingress and persists data in a data set, which is typically a database.
+   This research assumes that the structure and business semantics are represented in a schema, from which the system is generated.
    Actors (both users and computers) are changing the data in a system continually.
    The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
@@ -355,7 +354,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    while transferring data in a controlled fashion, as shown in Figure~\ref{fig:migration phase}.
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.35]{figures/datamigration-Migration-phase.png}
+     \includegraphics[scale=.8]{figures/migration system deployed.pdf}
    \end{center}
 \caption{Migration phase}
 \label{fig:migration phase}
