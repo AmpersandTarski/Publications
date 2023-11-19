@@ -405,16 +405,16 @@ Ordina NV, Nieuwegein, the Netherlands}
       So, users notice no difference yet.
       The migration system starts copying data from the existing system.
 \item[moment of transition (MoT)]
-      After the migration system is done copying data, the migration engineer switches all traffic to the migration system
-      and deploys the new functionality at the same time.
-      This is the moment users will notice the difference.
-      Even though the migration system may look like the desired system in the eyes of an average user,
-      it relaxes the blocking invariants and keeps the system operational.
+      After the migration system is done copying data, the migration engineer switches all traffic to the migration system.
+      This is the moment users will notice the difference because the traffic switch also deploys the functionality of the desired system.
+      So, in the eyes of an average user, the migration system may look like the desired system.
+      However, the migration system relaxes the blocking invariants of the desired system until users resolve their violations.
       Since the existing system receives no more traffic, its activity will come to a halt and its data will become static.
       The migration system stays active until all invariants of the desired system are satisfied and it can take over the work from the migration system.
 \item[moment of completion (MoC)]
       Once the invariants of the desired system are satisfied, the migration engineer switches all traffic to the desired system.
-      After that, she can safely remove both the migration system and the existing system, including their data.
+      The blocking invariants of the desired system are now in effect, so users cannot violate them anymore.
+      After this switch, the migration engineer can safely remove both the migration system and the existing system.
 \end{description}
 
    Transactions in the existing system that happen during the time that the migration system is copying data cause no problem,
@@ -868,7 +868,7 @@ We use inserting events to model the effect of transactional invariants.
 \section{Proof of Concept}
 \label{sct:PoC}
    By way of proof of concept (PoC), we have built a migration system in Ampersand.
-   To demonstrate it in the context of this paper, the existing system, $\pair{\dataset}{\schema}$, is rather trivial.
+   To demonstrate it in the context of this paper, the existing system, $\pair{\dataset}{\schema}$, is almost trivial.
    It has no constraints and just one relation, $\declare{r}{A}{B}$.
    Its population is $A=\{a_1,a_2,a_3\}$, $B=\{b_1\}$, and $\pop{r}{\dataset}=\{\pair{a_1}{b_1}\}$.
    The schema of the migration system, $\schema_\migrsys$, follows from definition~\ref{eqn:schema migrsys}.
