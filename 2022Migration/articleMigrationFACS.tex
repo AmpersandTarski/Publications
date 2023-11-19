@@ -429,6 +429,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    An \define{information system} is a combination of data set, schema, and functionality.
    For the purpose of this paper, we ignore functionality captured in user interfaces because it does not impact the migration.
    Section~\ref{sct:Data sets} describes how we define data sets.
+   Since data sets are sets, we will use set operators $\cup$ (union), $\cap$ (intersect), $-$ (set difference), and an overline $\cmpl{x}$ as complement operator on sets.
    Section~\ref{sct:Constraints} defines constraints and their violations.
    Schemas are treated in section~\ref{sct:Schemas}.
    Then section~\ref{sct:Information Systems} defines information systems.
@@ -496,6 +497,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
 \label{eqn:pop-rel}
 \end{equation}
+   Note that the phrase ``pair $\pair{a}{b}$ is in relation $r$'' means that there is a dataset $\dataset$ in which $\pair{a}{b}\in\pop{r}{\dataset}$,
+   so the phrase ``triple $\triple{a}{r}{b}$ is in $\dataset$'' means the same thing.
 %   Equation~\ref{eqn:wellTypedEdge} implies that for every data set $\dataset$:
 %\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\instance_{\dataset}A\ \wedge\ b\instance_{\dataset}B\]
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
@@ -610,9 +613,6 @@ Ordina NV, Nieuwegein, the Netherlands}
    This section starts with a presentation of the algorithm.
 
 \subsection{Algorithm for generating a migration script}
-   (\@Bas, ik heb de relevante delen van {\tt Kurk.adl} als \LaTeX\ commentaar bij elke equation in de \LaTeX\ broncode toegevoegd,
-   zodat we in de gaten kunnen houden dat ze met elkaar overeenkomen.)
-
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
    We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
@@ -635,15 +635,15 @@ Ordina NV, Nieuwegein, the Netherlands}
    Let $\pair{\dataset}{\schema}$ be the existing system.
    Let $\pair{\dataset'}{\schema'}$ be the desired system in its initial state.
 \begin{enumerate}
-\item We take a disjoint union of the data sets by relabeling relation names:
+\item We take a disjoint union of the data sets by relabeling relation names, so the migration script can refer to relations from both systems:
    \begin{align}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
 \item\label{step2} We create transactional invariants to copy the population of relations from $\dataset$ to $\dataset'$:
    For every relation $r$ shared by the existing and desired systems, we generate a helper relation: ${\tt copy}_r$, and two transactional invariants.
-   The first transactional invariant populates relation $r$ and the second populates ${\tt copy}_r$.
-   The helper relation ${\tt copy}_r$ contains the triples that have been copied.
-   We use the helper relation to keep the transactional invariants from immediately repopulating $\overrightarrow{r}$ when a user deletes triples in it.
+   The first transactional invariant populates relation $\overrightarrow{r}$ and the second populates ${\tt copy}_r$.
+   The helper relation ${\tt copy}_r$ contains the pairs that have been copied.
+   We use the helper relation to keep the transactional invariants from immediately repopulating $\overrightarrow{r}$ when a user deletes triples in $\dataset'$.
 % \begin{verbatim}
 %    RELATION copy.r[A*B]
 %    RELATION new.r[A*B] [UNI]
@@ -659,8 +659,12 @@ Ordina NV, Nieuwegein, the Netherlands}
       \forall r\in\rels_1.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
    \end{align}
 
-\item\label{step3} For each new blocking invariant $u$, we generate another blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
+\item\label{step3}
+   The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
+   For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed,
+   and a blocking invariant $v$ in the migration system that blocks fixed violations from recurring:
 % \begin{verbatim}
+%    RELATION fixed_TOTr[A*A]
 %    RULE Block_TOTr : fixed_TOTr |- new.r;new.r~
 %    MESSAGE "Relation r[A*B] must remain total."
 %    VIOLATION (TXT "Atom ", SRC I, TXT " must remain paired with an atom from B.")
@@ -672,25 +676,18 @@ Ordina NV, Nieuwegein, the Netherlands}
          \text{\bf with}\\
          \sign{v}=\sign{u}\\
          \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}\cap{\tt fixed}_u
-      \end{array}\\
+      \end{array}\label{eqn:blockRule}\\
       &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
    \end{align}
-   Note that the blocking invariants from $\schema'\cap\schema$ are also used in $\migrsys$ to ensure continuity.
-\item\label{step4} The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
-   For each new blocking invariant $u$, we generate a helper relation: ${\tt fixed}_u$, to register all violations that are fixed.
-   We also need a transactional invariant to produce its population:
+   % Note that the blocking invariants from $\schema'\cap\schema$ are also used in $\migrsys$ to ensure continuity.
+\item\label{step4}
+   We use a transactional invariant to produce the population of the helper relation ${\tt fixed}_u$.
 % \begin{verbatim}
-%    RELATION fixed_TOTr[A*A]
 %    ENFORCE fixed_TOTr >: I /\ new.r;new.r~
 % \end{verbatim}
-   \begin{align}
-      \transactions_2={}&\{{\tt fixed}_u\mapsfrom\lambda\dataset.~\viol{\overleftarrow{u}}{\dataset}-\viol{\overrightarrow{u}}{\dataset}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
-   \end{align}
-   The helper relation is needed to keep violations from reoccurring after they have been fixed.
-   The process is complete when:
-   \begin{align}
-      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}={\tt fixed}_u\label{eqn:fixingTerminates}
-   \end{align}
+   \begin{equation}
+     \transactions_2\ =\ \{{\tt fixed}_u\mapsfrom\lambda\dataset.~\cmpl{\viol{\overrightarrow{u}}{\dataset}}\mid u\in\rules_{\schema'}-\rules_{\schema}\}\label{eqn:enforceForRules}
+   \end{equation}
 \item\label{step5} To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 % \begin{verbatim}
 %    ROLE User MAINTAINS TOTr
@@ -708,7 +705,18 @@ Ordina NV, Nieuwegein, the Netherlands}
       &\mid u\in\rules_{\schema'}-\rules_{\schema}\}\notag
    \end{align}
    In some cases, a migration engineer can invent ways to satisfy these invariants automatically.
-   For this purpose, the generator should produce source code (as opposed to compiled code) to allow the migration engineer to replace a business constraint with transactional invariants of her own making.
+   For this purpose, the generator must produce source code (as opposed to compiled code) to allow the migration engineer
+   to replace a business constraint with transactional invariants of her own making.
+   After all violations are fixed, i.e. when equation~\ref{eqn:fixingTerminates} is satisfied,
+   the migration engineer can switch the ingress to the desired system.
+   This occurs at MoC and
+   replaces $\rules_\text{block}$ in the migration system by the blocking invariants of the desired system.
+   This moment arrives when:
+   \begin{align}
+      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}\subseteq{\tt fixed}_u\label{eqn:fixingTerminates}
+   \end{align}
+   After this, the migration engineer can remove the migration system and the old system.
+
 \item Let us combine the above into a single migration schema:
    \begin{align}
       \schema_\migrsys=\langle{}&\concepts_\dataset\cup\concepts_{\dataset'},\label{eqn:schema migrsys}\\
@@ -717,19 +725,10 @@ Ordina NV, Nieuwegein, the Netherlands}
       &\transactions_1\cup\transactions_2\cup\overrightarrow{\transactions_{\schema'}},\notag\\
       &\busConstraints_\text{fix}\cup\busConstraints_{\schema'}\rangle\notag
    \end{align}
+   This schema represents the migration system.
+   In our reasoning, we have only used information from the schemas of the existing system and the desired system.
+   This shows that it can be generated from these schemas without using any knowledge of the data sets.
 \end{enumerate}
-   The migration engineer can switch all traffic to the desired system
-   after resolving the violations that prohibit deploying the desired system.
-   That is the case when violations of new invariants on the old population have all been fixed:
-% \begin{verbatim}
-%    ROLE User MAINTAINS CleanUp_TOTr
-%    RULE CleanUp_TOTr : V[ONE*A] ; (I - fixed_TOTr) ; V[A*ONE]
-%    MESSAGE "Now you can remove the migration system because relation r[A*B] is total."
-% \end{verbatim}
-\begin{equation}
-   \forall u\in\rules_{\schema'}-\rules_{\schema}.\ \viol{\overleftarrow{u}}{\dataset_\migrsys}={\tt fixed}_u\label{eqn:readyForMoC}
-\end{equation}
-   After this, the migration engineer can remove the migration system and the old system.
 
 \subsection{System properties}
 % TODO: SJC
