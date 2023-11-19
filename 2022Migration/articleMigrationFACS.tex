@@ -151,9 +151,6 @@
 \usepackage{color}
 \renewcommand\UrlFont{\color{blue}\rmfamily}
 %
-
-
-
 \begin{document}
 %
 
@@ -178,17 +175,17 @@ Ordina NV, Nieuwegein, the Netherlands}
 %
 \begin{abstract}
    Software generators that compile and deploy a specification into a functional information system
-   can help to increase the frequency of releases and their reliability.
+   can help to increase the frequency of releases in the software process.
    They achieve this by reducing development time and minimizing human-induced errors.
-   However, a common drawback is the lack of support for data migration,
-   which becomes essential during incremental deployments that alter the system's schema.
+   However, many software generators lack support for data migration.
+   This can inhibit a steady pace of releases, especially for increments that alter the system's schema in production.
    Consequently, schema-changing data migrations often face challenges, leading developers to resort to manual migration or employ workarounds.
-
 
    To address this issue, this paper proposes a foundational theory for data migration,
    aiming to generate migration scripts for automating the migration process.
    The overarching challenge is preserving the business semantics of data amidst schema changes.
-   Specifically, the paper tackles the task of generating a migration script based on the schemas of both the existing and the desired system with zero downtime.
+   Specifically, this paper tackles the task of generating a migration script based on the schemas of both the existing and the desired system,
+   under the condition of zero downtime.
    The proposed solution was validated by a prototype demonstrating its efficacy.
    Notably, the theory is technology-independent, articulating systems in terms of invariants, thereby ensuring applicability across various scenarios.
    The migration script generator will be implemented in a software generator named Ampersand.
@@ -201,29 +198,34 @@ Ordina NV, Nieuwegein, the Netherlands}
    \footnote{In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.}
    may live for many years.
    After they are built, they need to be updated regularly to keep up with changing requirements in a dynamically evolving environment.
-   Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
-   Obviously, these deployments are mostly updates of existing systems.
-   Schema changes cannot always be avoided when updating software, so a {\em schema changing data migration} (SCDM) will be neccessary from time to time.
+   Schema changes cannot always be avoided when updating software, so a \define{schema-changing data migration} (SCDM) will be neccessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
    In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
    for which many tools are available.
    However, ETL tools typically provide little support for invariants that change, forcing development teams to write code.
-   The risk and effort of such data migrations explains why these teams try to avoid schema changes.
-   Our research aims at (partly) automating SCDMs to make them less risky and less costly,
-   so development teams can increase the frequency of releases and do schema changes with zero downtime.
+   In a world where automation of the software process is resulting in higher productivity, more frequent releases, and better quality,
+   SCDM's should not stay behind.
+   Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
+   Obviously, these deployments are mostly updates of existing systems.
+   The risk and effort of SCDMs explains why these teams try to avoid schema changes in the first place.
+   Our research aims at automating SCDMs to make them less risky and less costly,
+   so development teams can deploy schema changes with zero downtime.
 
    Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
    e.g.~\cite{Gholami2016,Bisbal1999},
-   migration engineers can and will avoid schema changes and functionality changes to avoid introducing new errors in an otherwise error-prone migration process.
-   Another example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014}, defines a migration as a variation between two data structures.
+   migration engineers can and will avoid schema changes and functionality changes
+   to avoid introducing new errors in an otherwise error-prone migration process.
+   In another example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define a migration as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
    This does not cater for schema changes, however.
    Then there are SCDMs in situations without a schema or an implicit schema, e.g.~\cite{Hillenbrand2022}.
-   If the schema is not available at compile time, the work will have to be done at runtime.
+   Such situations lack the error preventing power that explicit schemas bring during the development of software.
+   All errors a schema can prevent at compile time must then be compensated by runtime checks,
+   which increases the likelyhood of end-users getting error messages.
    This requires versioned storage of production data and an overhead in performance.
-   This paper focuses on SCDMs in situations with an explicit schema that changes with the data migration.
+   That is why this paper focuses on SCDMs for systems with an explicit schema.
    The prototypical use case for that is to release updates of information systems in production,
    where the semantic integrity of data must be preserved across schema changes.
    Another use case is application integration for multiple dispersed data sources with explicit schemas.
@@ -242,11 +244,10 @@ Ordina NV, Nieuwegein, the Netherlands}
 
    The complexity of data migration has prompted us to develop a theory first,
    which we present in this contribution.
-   We have validated the theory by prototyping because a formal proof of correctness is beyond our reach.
-   This theory perceives an information system as a data set with constraints, so
-   The existence of a software generator 
+   We have validated the theory by prototyping because a formal proof of correctness is currently beyond our reach.
+   This theory perceives an information system as a data set with constraints,
+   so we can represent invariants (and thus the business semantics) directly as constraints.
 
-   for changing schemas in production systems before automating SCDMs.
    The next section analyzes SCDMs with an eye on zero downtime and data quality.
    It sketches the outline of a procedure for SCDMs.
    Section~\ref{sct:Definitions} formalizes the concepts that we need to define the procedure.
@@ -278,14 +279,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    Actors (both users and computers) are changing the data in a system continually.
    The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
-   To keep our theory technology independent, we assume data sets to contain triples.
+   To keep our theory technology independent, we assume that data sets contain triples.
    This makes our theory valid for every kind of database that triples can represent,
    including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
 
    We assume that constraints implement the business semantics of the data.
    Constraints represent business concerns formally, so they can be checked automatically and can be used to generate software.
    Some of the constraints require human intervention, while others require a system to intervene.
-   In this paper, we distinguish three different kinds of constraint:
+   In this paper, we distinguish three different kinds of constraints:
 \begin{enumerate}
 \item Blocking invariant\\
    A \define{blocking invariant} is a constraint that is always true in a system.
@@ -301,58 +302,54 @@ Ordina NV, Nieuwegein, the Netherlands}
    Example: ``An authorized manager has to sign every purchase order.''
    Every violation requires some form of human action to satisfy the business constraint (e.g. "sign the purchase order").
    That takes some time, during which the constraint is violated.
-   So, we do not consider business constraints to be invariant.
+   So, we do not consider business constraints to be invariants.
 \end{enumerate}
    Summarizing, in our notion of information systems, concepts, relations, and constraints carry the business semantics.
    Of the three types of constraint, only two are invariants. 
 
 \subsection{Ampersand}
-   We use Ampersand as a prototyping language to demonstrate our theory.
-   More importantly, we intend to enhance the Ampersand compiler with the theory presented in this paper,
+   We employ Ampersand as a prototyping language to demonstrate our theory.
+   More significantly, our intention is to augment the Ampersand compiler with the theory outlined in this paper
    to generate migration systems automatically.
 
-   Ampersand is a language that specifies information systems as a system of concepts, relations, and constraints.
-   It features the kinds of constraint we need for this paper, so we have used it to try our theory in practice.
-   Ampersand has a compiler that generates the information system from a script, so it satisfies our research requirement.
-   A developer specifies constraints in heterogeneous relation algebra~\cite{Hattensperger1999, Alloy2006}.
-   The generated system keeps the invariants satisfied and signals violations of business constraints to a user.
-   Having all invariants explicit in the Ampersand source code makes Ampersand a suitable platform on which to implement our theory.
-   The absence of imperative code in an Ampersand script makes it easier to reason about the system.
-   The type system of Ampersand~\cite{vdWoude2011} features static typing,
-   which has well-established advantages for the software engineering process~\cite{HanenbergKRTS14, Petersen2014}.
-   Constraints carry the business semantics, so they allow us to be explicit about ``preserving the meaning as much as possible''.
-   An Ampersand script contains just enough information to generate a complete system,
-   which means that a classical database schema (i.e.\ data structure plus constraints) can be extracted from the Ampersand script.
+   Ampersand serves as a language for specifying information systems through a framework of concepts, relations, and constraints.
+   It encompasses the necessary constraints discussed in this paper, making it an ideal platform for practical testing of our theory.
+   In Ampersand, developers articulate constraints using heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}
+   The systems they generate maintain invariants and alert users to violations of business constraints.
+   Ampersand's explicit representation of all invariants in its source code makes it well-suited for implementing our theory.
+   The absence of imperative code in Ampersand scripts enhances system reasoning,
+   while its static typing~\cite{vdWoude2011} yields the established benefits in software engineering processes~\cite{HanenbergKRTS14,Petersen2014}.
+   Constraints, which carry business semantics, make ``preserving the meaning as much as possible'' explicit.
+   An Ampersand script provides just enough information to generate a complete system,
+   allowing extraction of a classical database schema (i.e., data structure plus constraints) from the Ampersand script.
 
-   Ampersand has been used in practice both in education (Open University of the Netherlands)
-	and in industry (Ordina and TNO-ICT).
-	For example, Ordina designed a proof-of-concept in 2007 of the INDIGO-system.
-	This design was based on Ampersand, to obtain correct, detailed results in the least amount of time.
-	Today INDIGO is in use as the core information system of the Dutch immigration authority, IND.
-	More recently, Ampersand was used to design an information system called DTV for the Dutch Food Authority, NVWA.
-	A prototype of DTV was built in Ampersand and was used as a model to build the actual system.
-	TNO-ICT, a major Dutch industrial research laboratory, is using Ampersand for research purposes.
-	For example, TNO-ICT did a study of international standardization efforts such as
-	RBAC (Role Based Access Control) in 2003 and architecture (IEEE 1471-2000)~\cite{IEEE1471} in 2004.
-	Several inconsistencies were found in the last (draft) RBAC standard~\cite{RBAC}.
-	TNO-ICT has also used the technique in conceiving several patents%
-\footnote{e.g. patents DE60218042D, WO2006126875, EP1727327, WO2004046848, EP1563361, NL1023394C, EP1420323, WO03007571, and NL1013450C.}.
-	At the Open University of the Netherlands, Ampersand is being taught in a course called Rule-based Design~\cite{RBD}.
-	In this course, students use a platform called RAP, which has been built in Ampersand~\cite{Michels2015}.
-	RAP has been the first Ampersand application that has run in production.
+   Ampersand has seen practical use both in education (Open University of the Netherlands) and industry (Ordina and TNO-ICT).
+   For instance, Ordina developed a proof-of-concept of the INDIGO-system in 2007,
+   leveraging Ampersand for accurate results under tight deadlines.
+   Today, INDIGO serves as the core information system for the Dutch immigration authority (IND).
+   More recently, Ampersand played a role in designing the DTV information system for the Dutch Food Authority (NVWA),
+   with a prototype built in Ampersand serving as a model for the actual system.
+   TNO-ICT, a prominent Dutch industrial research laboratory, has utilized Ampersand for various research purposes,
+   including a study of international standardization efforts of RBAC (Role-Based Access Control) in 2003,
+   and a study of IT architecture (IEEE 1471-2000)\cite{IEEE1471} in 2004.
+   Ampersand has also been employed at the Open University of the Netherlands,
+   where it is taught in a course called Rule-Based Design\cite{RBD}.
+   Students in this course utilize a platform named RAP, constructed in Ampersand~\cite{Michels2015},
+   which represents the first Ampersand application to run in production.
 
-   
-\subsection{Zero downtime}
+   \subsection{Zero downtime}
    To make the case for zero downtime, consider this problem:
-   Suppose we have an invariant, $u$, in the {\em desired system}, which is not part of the {\em existing system}.
-   In the sequel, let us call this a {\em new invariant}.
+   Suppose we have an invariant, $u$, in the \define{desired system}, which is not part of the \define{existing system}.
+   In the sequel, let us call this a \define{new invariant}.
    Now, suppose the data in the existing system does not satisfy $u$.
    If $u$ is a transactional invariant, the desired system will restore it automatically.
    But if it is a blocking invariant, the desired system cannot spin up because all of its invariants must be satisfied.
    To avoid downtime, we must implement new blocking invariants initially as a business constraint,
-   to let users do the work.
+   to let users satisfy them.
+   The moment the last violation of $u$ is fixed, the business constraint can be removed and $u$ can be implemented as a blocking invariant.
+   This is the core idea of our theory.
 
-   For this purpose, we define an intermediate system, the \define{migration system},
+   The \define{migration system} to be generated is an intermediate system,
    which contains all concepts, relations, and constraints of both the existing and the desired system.
    However, it implements the blocking invariants of the desired system as business constraints.
    This migration system must also ensure that every violation that is fixed is blocked from recurring.
@@ -429,7 +426,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Definitions}
 \label{sct:Definitions}
-   An {\em information system} is a combination of data set, schema, and functionality.
+   An \define{information system} is a combination of data set, schema, and functionality.
    For the purpose of this paper, we ignore functionality captured in user interfaces because it does not impact the migration.
    Section~\ref{sct:Data sets} describes how we define data sets.
    Section~\ref{sct:Constraints} defines constraints and their violations.
@@ -471,7 +468,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
    Every relation $r$ has a name, a source concept, and a target concept.
    The notation $r=\declare{n}{A}{B}$ denotes that relation $r$ has name $n$, source concept $A$, and target concept $B$.
-   The part $\pair{A}{B}$ is called the {\em signature} of the relation.
+   The part $\pair{A}{B}$ is called the \define{signature} of the relation.
    
    Triples serve to represent data.
    A triple %\footnote{Please note that this paper uses the word {\em triple} in a more restricted way than in natural language.}
@@ -539,7 +536,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    It is obvious that not every conceivable constraint can satisfy this equation.
    So, we assume that the compiler restricts the set of transactional invariants to those that satisfy equation~\ref{eqn:transaction}.
    As $\declare{n}{A}{B}$ is specific for $u$, we can write $\enfRel{u}$ for it.
-   We call this the {\em enforced relation} of transactional invariant $u$:
+   We call this the \define{enforced relation} of transactional invariant $u$:
 \begin{equation}
    \enfRel{u}=\declare{n}{A}{B}
 \end{equation}
