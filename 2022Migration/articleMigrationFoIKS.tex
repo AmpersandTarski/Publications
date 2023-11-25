@@ -651,7 +651,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 %    ENFORCE new.r >: old.r - copy.r
 % \end{verbatim}
    \begin{align}
-      \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\\
+      \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\label{eqn:copy relations}\\
       \transactions_1={}&\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r}-{\tt copy}_r} \mid r \in\rels_1\}\cup\{{\tt copy}_r\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in\rels_1\}
    \end{align}
    The copying process terminates when:
@@ -698,7 +698,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    \begin{align}
       \busConstraints_\text{fix}={}&\{v\ 
       \begin{array}[t]{l}
-         \text{\bf with}\\
+         \text{\bf with}\label{eqn:Bfix}\\
          \sign{v}=\sign{u}\\
          \viol{v}{\dataset}=\viol{\overrightarrow{u}}{\dataset}-{\tt fixed}_u
       \end{array}\\
@@ -707,13 +707,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    In some cases, a migration engineer can invent ways to satisfy these invariants automatically.
    For this purpose, the generator must produce source code (as opposed to compiled code) to allow the migration engineer
    to replace a business constraint with transactional invariants of her own making.
-   After all violations are fixed, i.e. when equation~\ref{eqn:fixingTerminates} is satisfied,
+   After all violations are fixed, i.e. when equation~\ref{eqn:readyForMoC} is satisfied,
    the migration engineer can switch the ingress to the desired system.
    This occurs at MoC and
    replaces $\rules_\text{block}$ in the migration system by the blocking invariants of the desired system.
    This moment arrives when:
    \begin{align}
-      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}\subseteq{\tt fixed}_u\label{eqn:fixingTerminates}
+      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}\subseteq{\tt fixed}_u
+   \label{eqn:readyForMoC}
    \end{align}
    After this, the migration engineer can remove the migration system and the old system.
 
@@ -730,140 +731,6 @@ Ordina NV, Nieuwegein, the Netherlands}
    This shows that it can be generated from these schemas without using any knowledge of the data sets.
 \end{enumerate}
 
-\subsection{System properties}
-% TODO: SJC
-\label{sct:Proof}
-   A theorem prover, Isabelle/HOL, is used to establish the correctness of the presented algorithm.
-   This section discusses the proof obligations. The proof is available online.
-   Assume that $\infsys=\pair{\dataset}{\schema}$ and $\infsys'=\pair{\dataset'}{\schema'}$ are information systems, so they satisfy definition~\ref{def:information system}.
-   This means that equations~\ref{eqn:wellTypedEdge}, \ref{eqn:wellTypedViolation}, \ref{eqn:transaction}, \ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}, \ref{eqn:define R}, \ref{eqn:satisfaction} hold for both systems.
-   We also assume that $\migrsys=\pair{\dataset_\migrsys}{\schema_\migrsys}$ is the migration system generated from $\infsys$ and $\infsys'$.
-\begin{enumerate}
-\item Prove that $\migrsys$ is an information system,
-      so the migration engineer can be sure it deploys without failure.
-   \begin{equation}
-      \text{isIS}\pair{\dataset}{\schema}\ \Rightarrow\ \text{isIS}\pair{\dataset}{\schema_\migrsys}
-   \end{equation}
-\item For every relation $r\in\rels_1$ (i.e. in $\rels_{\schema}\cap\rels_{\schema'}$), prove that $\overrightarrow{r}$ contains all triples from the existing data set in a finite time after deploying $\migrsys$,
-      to ensure that the existing data is migrated to the desired system:
-   \begin{equation}
-      \triple{a}{r}{b}\in\triples_\infsys\ \Rightarrow\ \triple{a}{\overrightarrow{r}}{b}\in\triples_\migrsys
-   \end{equation}
-\item Prove that the copying process leaves all rules from $\transactions_1$ satisfied forever:
-   \begin{equation}
-      \forall u\in\transactions_1\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
-   \end{equation}
-      This implies that invariants in $\transactions_1$ will never more add any violations to any ${\tt copy}_u$ at the MoC,
-      and they need not exist in the desired system.
-      So, $\rels_1$ and $\transactions_1$ are redundant after the MoC.
-      (\@Bas, is dat voldoende bewijs dat $\rels_1$ redundant is na de MoT?)
-\item Prove that equation~\ref{eqn:copyingTerminates} represents the condition for terminating the copying process,
-      so we can use this condition to safeguard that the migration system is ready for the MoT.
-\item $\rels_2$ contains all violations of new blocking invariants.
-      Prove that the fixing process leaves all rules from $\transactions_2$ satisfied forever:
-   \begin{equation}
-      \forall u\in\transactions_2\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
-   \end{equation}
-      This implies that invariants in $\transactions_2$ need not exist in the desired system.
-      So, $\rels_2$ and $\transactions_2$ are redundant after the MoC.
-\item Prove that equation~\ref{eqn:fixingTerminates} represents the condition for terminating the fixing of violations,
-      so we can use this condition to safeguard that the migration system and desired system are ready for the MoC.
-\item Prove that after the MoC, for every blocking invariant $u\in\rules_{\schema'}$ of the desired system,
-      there is a blocking invariant $v\in\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$
-      with exactly the same signature and violations in the data set of the desired system:
-   \begin{equation}
-      \viol{u}{\dataset'}=\viol{v}{\dataset'}
-   \end{equation}
-      And also vice versa, for every blocking invariant $v\in\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$
-      there must be a blocking invariant $u\in:\rules_{\schema'}$ such that $\viol{u}{\dataset'}=\viol{v}{\dataset'}$.
-      This implies that $\rules_{\schema'}$ can replace $\rules_\text{block}\cup(\rules_{\schema}\cap\rules_{\schema'})$ on the MoC
-      without users noticing the difference.
-\item Assuming that the business can fix each violation in finite time,
-      prove that the number of violations to be fixed by the business is finite,
-      and that it decreases monotonically, so the business can reach the MoC in finite time.
-\item Prove that the copying process leaves all rules from $\rules_\text{block}$ satisfied forever,
-      so these rules need not exist in the desired system:
-   \begin{equation}
-      \forall u\in\rules_\text{block}\ \Rightarrow\ \viol{u}{\dataset_\migrsys}=\emptyset
-   \end{equation}
-\item Prove that $\transactions_2$ will never more add any violations to any ${\tt fixed}_u$ at the MoC, so that $\rels_2$ and $\transactions_2$ are redundant after the MoC.
-\item Prove that $\busConstraints_\text{fix}$ is free of violations, so it is redundant after the MoC.
-\item Prove that $\concepts_{\schema}$, $\rels_{\schema}$, and $\rules_{\schema}$ are redundant after the MoC.
-\item Prove that, given the redundancies proven above, the migration system is equivalent to $\infsys'$ after the MoC,
-      so the migration engineer can switch the ingress to the desired system and remove the existing system and the migration system.
-   \begin{equation}
-      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}={\tt fixed}_u\ \Rightarrow\ (\text{isIS}\pair{\dataset}{\schema_\migrsys}\Leftrightarrow\text{isIS}\pair{\dataset}{\schema'})
-   \end{equation}
-\end{enumerate}
-\paragraph{Validation}
-   As the system responds to events, it changes its data set, while the schema remains the same.
-   In this paper, it suffices to define an event as a pair of systems for which the schema stays constant.
-   Events are categorized by the part of the data set that changes.
-
-\begin{definition}[Event]
-   Let $R \subseteq \Rels$ and $I \subseteq \Rels$ be sets of relations,
-   and let $\infsys=\pair{\schema}{\dataset}$ and  $\infsys'=\pair{\schema}{\dataset'}$ be information systems,
-   then $\infsys\xrightarrow[I]{R} \infsys'$ is an event if and only if:
-\begin{align}
-   \triple{a}{r}{b}\in\triples_{\dataset}-\triples_{\dataset'}&\Rightarrow\ r\in R\label{eqn:eventUnchanged}\\
-   \triple{a}{r}{b}\in\triples_{\dataset'}-\triples_{\dataset}&\Rightarrow\ r\in(R \cup I)\label{eqn:eventInsert}
-\end{align}
-% was:
-% \begin{align}
-%    \triples_{\dataset} - (\Triple{\Atoms}{(R \cup I)}{\Atoms}) &= \triples_{\dataset'} - (\Triple{\Atoms}{(R \cup I)}{\Atoms})
-% \label{eqn:eventUnchanged}\\
-%    \triples_{\dataset} - (\Triple{\Atoms}{R}{\Atoms}) &\subseteq \triples_{\dataset'} - (\Triple{\Atoms}{R}{\Atoms})
-% \label{eqn:eventInsert}
-% \end{align}
-   We say that event $\infsys\xrightarrow[I]{R} \infsys'$ brings the system $\infsys$ to $\infsys'$ by inserting pairs in relations from $I$ and deleting pairs in relations from $R$.
-\end{definition}
-
-   Equation~\ref{eqn:eventUnchanged} and~\ref{eqn:eventInsert} state that the triples of those for relations in $I$ or $R$ are the only ones that can be changed, and that only triples in $R$ can be removed.
-%If $I$ or $R$ is the empty set, we omit it from the arrow, so $\infsys \xrightarrow{R} \infsys'$ is a notation for $\infsys \xrightarrow[\emptyset]{R} \infsys'$.
-
-\begin{definition}[Inserting event]
-   We write $\infsys \xrightarrowdbl[I]{R} \infsys'$ to state that some triple was inserted whose relation was in $I$, that is:
-   $t \in \triples_{\dataset'} \cap (\Triple{\Atoms}{I}{\Atoms})$ and $t \not\in \triples_{\dataset}$ for some triple $t$.
-\end{definition}
-
-We use inserting events to model the effect of transactional invariants.
-%   If $R$ is a set of relations that covers those that occur in the rule, then changes to an system $\infsys$ can be described by the event $\infsys \xrightarrow[\{r\}]{R} \infsys'$.
-
-
-   We first observe that $\migrsys = \pair{\dataset_\migrsys}{\schema_\migrsys}$ is a system after application of the transactional invariants:
-   the only rules are those introduced in equation~\ref{eqn:migrsysrules}, and transactional invariants from equation~\ref{eqn:enforceForRules} ensure that $\popF{{\tt viols}_u} = u$ initially, while $\popF{{\tt fixed}_u}$ is empty.
-   Hence, the MoT can happen after the transactional invariants have been applied, giving us $\migrsys'$.
-   The event $\migrsys \xrightarrow[\rels_2 \cup \rels_3]{\overrightarrow\rels_{\schema'}}\migrsys'$ represents the MoT.
-   
-   The MoC is reached for data set $\dataset'$ whenever $\pop{{\tt viols}_u - {\tt fixed}_u}{\dataset'}=\emptyset$ for all rules.
-   This should happen after a finite number of inserting events: let $I = \{{\tt fixed}_u \mid u\in\rules_{\schema'}\}$ be the relations that keep track of which violations have been fixed, then there is no infinite chain of systems $\migrsys' = \migrsys_0, \migrsys_1,\ldots$ such that $\migrsys_i\xrightarrowdbl[I]{\overrightarrow\rels_{\schema'}}\migrsys_{i+1}$.
-   This shows that when users get rid of violations, there is real progress: they can only do this a finite number of times.
-   Next we ask ourselves: does this mean we always reach the MoC?
-   
-   Suppose there is a system in which all violations have been fixed, that is, suppose there is a $\migrsys^C$ such that $\pop{{\tt fixed}_u}{\dataset_{\migrsys^C}}=\pop{{\tt viols}_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
-   In that case, after any steps done by users (both those with and without the migration helper role), we can reach it, that is: for any $\migrsys_i$, $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys_i$ implies $\migrsys_i\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
-   This implies that if the MoC is initially reachable through $\xrightarrow[I]{\overrightarrow\rels_{\schema'}}$ events, then it will remain reachable.
-   So is the MoC initially reachable?
-   
-   For this last question, we need to add a condition:
-   There needs to be a system that has the desired schema $\schema'$.
-   If rules in $\schema'$ are such that they cannot all be satisfied, regardless of the data set, no such system exists and we have no hope of reaching it.
-   We assume that the rules of $\schema'$ are intended to prevent data pollution, such that a data set $\dataset'$ describing the `real world' would be one that satisfies them.
-   So let $\pair{\dataset'}{\schema'}$ be a system, then we can get to it through our migration system.
-   To show this, we construct a migration system $\migrsys^C$ satisfying $\pop{{\tt fixed}_u}{\dataset_{\migrsys^C}}=\pop{{\tt viols}_u}{\dataset_{\migrsys^C}}$ and $\migrsys'\xrightarrow[I]{\overrightarrow\rels_{\schema'}} \migrsys^C$.
-   We can do so by simply stating its triples, since the schema is determined by $\migrsys'$:
-   
-\begin{align}
-   \begin{aligned}
-   \triples_{\migrsys^C} &= \triples_\migrsys 
-   \cup  \{\triple{a}{{\tt viols}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \} \\
-   &\cup \{\triple{a}{{\tt fixed}_u}{b} \mid \pair{a}{b}\in \viol{u}{\dataset}, u\in \rules_{\schema'} \}
-   \cup \{\triple{a}{\overrightarrow{r}}{b} \mid \triple{a}{r}{b}\in\triples_{\dataset'}\}   
-   \end{aligned}
-\end{align}
-   
-   Collectively, this shows that the MoC is and remains reachable after a finite number of inserting events by users in the migration helper role.
-   
 \section{Proof of Concept}
 \label{sct:PoC}
    By way of proof of concept (PoC), we have built a migration system in Ampersand.
@@ -895,6 +762,35 @@ We use inserting events to model the effect of transactional invariants.
    Exhibit C shows that the user fills in ``Jill'', which means that $\pair{a_1}{Jill}$ is added to {\small\verb#new_r#}.
    When the last atom of {tt A} is paired with an atom from {\tt B} (exhibit D), requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
 
+\subsection{Validation}
+   The proof of concept gives but one example of something that works.
+   To validate that this works in all cases, we must verify that:
+\begin{enumerate}
+\item The predeployment yields a migration system that copies the designated triples to the desired system in finite time.
+\item The migration system satisfies the definition of information system (\ref{def:information system}) at MoT, especially that it has no blocking violations (requirement~\ref{eqn:satisfaction}) to ensure a successful deployment.
+\item The violations that business actors must fix are finite in number and decrease monotonically, so the business can fulfil the condition for the MoC (requirement~\ref{eqn:readyForMoC}) in finite time.
+\item The behavior of the migration system and the desired system is identical, so moving the ingress from the migration system to the desired system is not noticable for end-users.
+\end{enumerate}
+   Let us discuss these points one by one.
+
+   The relations to be copied from the old system are those relations that the desired system retains ($\rels_{\schema'}\cap\rels_{\schema}$).
+   For each $r$, $\rels_1$ contains a relation ${\tt copy}_r$ (eqn.~\ref{eqn:copy relations}).
+   After the MoT, no more changes will occur in the existing system.
+   In other words, the population of every relation in $\rels_{\schema}$ becomes stable and so does every ${\tt copy}_r$.
+   When the migration system has copied those relations,
+   every ${\tt copy}_r$ is populated and eqn.~\ref{eqn:copyingTerminates}) is true.
+   Hence, the migration system will make no more changes to ${\tt copy}_r$ and the transactional invariants in $\transactions_1$ will cause no more changes. Effectively, $\transactions_1$ becomes redundant once the copying is done.
+
+   Then, the definition of the migration system, def.~\ref{dfn:migration system}, contains only blocking invariants that exist in the existing system as well.
+   For this reason, all blocking invariants of the migration system are satisfied on MoT.
+   Since it contains no other blocking invariants, the migration system satisfies requirement~\ref{eqn:satisfaction}.
+
+   Thirdly, the problematic constraints are the blocking invariants of the desired system that were not in the existing system ($\rules_{\schema'}-\rules_{\schema}$ in def.~\ref{eqn:Bfix}).
+   The migration engineer might introduce transactional invariants to satisfy these invariants automatically,
+   but otherwise, definition~\ref{eqn:Bfix} defines them as business constraints to be resolved by the business.
+   Each violation in those rules that a business actor resolves will never reappear,
+   because it is registered in ${\tt fixed}_r$.
+   So when all violations are resolved, the constraints in ... have effectively become blocking constraints.
 \section{Conclusions}
 \label{sct:Conclusions}
    In this paper, we describe the data migration as going from an existing system to a desired one, where the schema changes.
