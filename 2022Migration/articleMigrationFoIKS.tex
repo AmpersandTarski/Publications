@@ -45,9 +45,9 @@
 \newcommand{\relsIn}[1]{\id{relsIn}(#1)}    % maps a Term to a set of Relations
 \newcommand{\popF}[1]{\id{pop}_{#1}}
 \newcommand{\pop}[2]{\popF{#1}(#2)}
-\newcommand{\maintain}{\mathbin{\id{maint}}}
 \newcommand{\enf}{\mathbin{{\tt enforce}}}
 \newcommand{\enforce}[2]{{\tt enforce}_{#1}(#2)}
+\newcommand{\enforceC}[1]{{\tt enforce}_{#1}}
 \newcommand{\instance}{\mathbin{\id{inst}}}
 \newcommand{\relname}[1]{\id{relname}(#1)}
 \newcommand{\evt}[2]{\id{event}_{#1,#2}}
@@ -267,7 +267,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    which relies on the semantics of the data to draw the right conclusions and carry out their tasks.
    \begin{figure}[bht]
       \begin{center}
-        \includegraphics[scale=0.8]{figures/existing system.pdf}
+        \includegraphics[scale=0.8]{figures/existing_system.pdf}
       \end{center}
    \caption{Anatomy of an information system}
    \label{fig:pre-migration}
@@ -289,14 +289,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    In this paper, we distinguish three different kinds of constraints:
 \begin{enumerate}
 \item Blocking invariant\\
-   A \define{blocking invariant} is a constraint that is always true in a system.
+   A \define{blocking invariant} is a constraint that is always satisfied in a system.
    It serves to constrain the data set at runtime.
    When the data set changes in a way that violates a blocking invariant, the system produces an error message and refuses the change.
 \item Transactional invariant\\
    The classical database transaction can be understood as a \define{transactional invariant},
    which the system keeps satisfied by adding or deleting triples to the dataset.
    As soon as the data violates this constraint, the system restores it without human intervention.
-   So, the outside world experiences this as a constraint that is always true, i.e.~an invariant.
+   So, the outside world experiences this as a constraint that is always satisfied, i.e.~an invariant.
 \item Business constraint\\
    A \define{business constraint} is a constraint that users can violate temporarily until someone restores it.
    Example: ``An authorized manager has to sign every purchase order.''
@@ -313,13 +313,12 @@ Ordina NV, Nieuwegein, the Netherlands}
    to generate migration systems automatically.
 
    Ampersand serves as a language for specifying information systems through a framework of concepts, relations, and constraints.
-   It encompasses the necessary constraints discussed in this paper, making it an ideal platform for practical testing of our theory.
+   It comprises the three types of constraints discussed in this paper, making it an ideal platform for practical testing of our theory.
    In Ampersand, developers articulate constraints using heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}
-   The systems they generate maintain invariants and alert users to violations of business constraints.
-   Ampersand's explicit representation of all invariants in its source code makes it well-suited for implementing our theory.
-   The absence of imperative code in Ampersand scripts enhances system reasoning,
+   The systems they generate keep invariants satisfied and alert users to violations of business constraints.
+   The absence of imperative code in Ampersand scripts enhances reasoning about the system,
    while its static typing~\cite{vdWoude2011} yields the established benefits in software engineering processes~\cite{HanenbergKRTS14,Petersen2014}.
-   Constraints, which carry business semantics, make ``preserving the meaning as much as possible'' explicit.
+   Constraints carry business semantics, which makes ``preserving the meaning as much as possible'' explicit.
    An Ampersand script provides just enough information to generate a complete system,
    allowing extraction of a classical database schema (i.e., data structure plus constraints) from the Ampersand script.
 
@@ -360,11 +359,11 @@ Ordina NV, Nieuwegein, the Netherlands}
    Summarizing, the following requirements apply to SCDMs
 \begin{enumerate}
 \item users must experience zero downtime, to enable more frequent SCDMs.
-\item users must be able to fix invariants in the new system.
+\item users must be able to restore invariants in the new system.
    So, we need an intermediate ``migration system'' that implements blocking constraints of the desired system as business constraints,
    in order to deliver zero downtime.
 \item the number of violations that users must fix is finite and decreases (monotonically) over time,
-   to ensure that the migration system does not need to live ever after.
+   to ensure that the migration system does not need to be kept alive infinitely.
 \end{enumerate}
 
 \subsection{Data Migrations}
@@ -376,7 +375,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    while transferring data in a controlled fashion, as shown in Figure~\ref{fig:migration phase}.
 \begin{figure}[bht]
    \begin{center}
-     \includegraphics[scale=.8]{figures/migration system deployed.pdf}
+     \includegraphics[scale=.8]{figures/migration_system_deployed.pdf}
    \end{center}
 \caption{Migration phase}
 \label{fig:migration phase}
@@ -387,7 +386,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    It comprises the schemas of both the existing system and the desired system,
    so the migration system can copy the data from the existing to the desired system.
    It uses transactions to copy the data and to resolve some forms of data pollution.
-   Not all migration work, however, can be automated.
+   Not all of the work, however, can be automated.
    Data pollution, new business rules, or known issues in the existing system
    may occasionally require tailoring the migration script to specific needs
    that require action of users in production.
@@ -427,7 +426,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \section{Definitions}
 \label{sct:Definitions}
    An \define{information system} is a combination of data set, schema, and functionality.
-   For the purpose of this paper, we ignore functionality captured in user interfaces because it does not impact the migration.
+   For the purpose of this paper, we ignore functionality captured in user interfaces to focus on the transition of business semantics in the data.
    Section~\ref{sct:Data sets} describes how we define data sets.
    Since data sets are sets, we will use set operators $\cup$ (union), $\cap$ (intersect), $-$ (set difference), and an overline $\cmpl{x}$ as complement operator on sets.
    Section~\ref{sct:Constraints} defines constraints and their violations.
@@ -516,7 +515,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{sct:Constraints}
    Every constraint is an element of an infinite set called $\Constraints$.
    In this paper, variables $u$ and $v$ represent all three types of constraints.
-   We say that a constraint, $u$, is satisfied when $u$ is true for all triples in the data set.
+   We say that a constraint, $u$, is satisfied when it is true for all triples in the data set.
    For every constraint $u$, function $\violC{u}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$ produces the violations of $u$,
    and $\sign{u}:\Pair{\Concepts}{\Concepts}$ yields the signature of $u$.
    The definition of $\violC{u}$ implies the assumption that we represent each violation as a pair.
@@ -532,7 +531,10 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{equation}
    \begin{array}[t]{l}
       \viol{u}{\pair{\triples\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}{\instance\cup\instance'}}=\emptyset\\
-      \text{\bf with}\ \instance'=\{ \pair{a}{A}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\cup\{ \pair{b}{B}\mid\pair{a}{b}\in\viol{u}{\dataset}\}
+      \text{\bf with\ }\begin{array}[t]{lcl}
+         \instance&=&\{\pair{a}{A}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\cup\{ \pair{b}{B}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\\
+         \pair{A}{B}&=&\sign{u}
+      \end{array}
    \end{array}
 \label{eqn:transaction}
 \end{equation}
@@ -594,7 +596,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    \label{eqn:define R}
    \end{eqnarray}
 \item All violations must have a type, which follows from  (\ref{eqn:wellTypedViolation}).
-\item Transactional invariants remain satisfied by adding violations to a specific relation (\ref{eqn:transaction}).
+\item The system keeps any transactional invariant $u$ satisfied by adding violations to the relation $\enforceC{u}$ (\ref{eqn:transaction}).
 \item All invariants must remain satisfied:
    \begin{align}
       \forall u\in\rules\cup\transactions&.~\viol{u}{\dataset}=\emptyset
@@ -603,12 +605,11 @@ Ordina NV, Nieuwegein, the Netherlands}
 \end{itemize}
 \end{definition}
    We assume that a deployment will fail if these requirements are not satisfied.
-   We will write $\text{isIS}(\infsys)$ to denote that $\infsys$ is an information system.
 
 \section{Generating a Migration Script}
 \label{sct:Generating}
    The complexity of migrating data to date yields expensive and error-prone migration projects.
-   By generating this code we can eliminate human induced errors.
+   By generating this code we can prevent many human induced errors.
    
    This section starts with a presentation of the algorithm.
 
@@ -630,6 +631,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    \end{array}
 \end{equation}
    The notation $\overrightarrow{\infsys}$ is defined similarly, using prefix ``new.'' instead of ``old.''.
+   This relabeling does not have any effect on the behavior of the system, i.e. $\infsys$, $\overleftarrow{\infsys}$, and $\overrightarrow{\infsys}$ are indistinguishable for end-users.
 
    Then we define the migration system $\migrsys$ as follows:
    Let $\pair{\dataset}{\schema}$ be the existing system.
@@ -651,12 +653,13 @@ Ordina NV, Nieuwegein, the Netherlands}
 %    ENFORCE new.r >: old.r - copy.r
 % \end{verbatim}
    \begin{align}
-      \rels_1={}&\{{\tt copy}_r\mid r \in \rels_{\schema'}\cap\rels_{\schema}\}\label{eqn:copy relations}\\
-      \transactions_1={}&\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r}-{\tt copy}_r} \mid r \in\rels_1\}\cup\{{\tt copy}_r\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r \in\rels_1\}
+      \rels_1={}&\{{\tt copy}_r\mid r\in\rels_{\schema'}\cap\rels_{\schema}\}\label{eqn:copy relations}\\
+      \transactions_1={}&\{\overrightarrow{r}\mapsfrom \popF{\overleftarrow{r}-{\tt copy}_r} \mid r\in\rels_{\schema'}\cap\rels_{\schema}\}\ \cup\\
+      {}&\{{\tt copy}_r\mapsfrom \popF{\overrightarrow{r}\cap\overleftarrow{r}} \mid r\in\rels_{\schema'}\cap\rels_{\schema}\}\notag
    \end{align}
    The copying process terminates when:
    \begin{align}
-      \forall r\in\rels_1.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
+      \forall r\in\rels_{\schema'}\cap\rels_{\schema}.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
    \end{align}
 
 \item\label{step3}
@@ -713,7 +716,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    replaces $\rules_\text{block}$ in the migration system by the blocking invariants of the desired system.
    This moment arrives when:
    \begin{align}
-      \forall u\in\rules_{\schema'}-\rules_{\schema}.~\viol{\overrightarrow{u}}{\dataset}\subseteq{\tt fixed}_u
+      \forall u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}.~\cmpl{\viol{u}{\dataset}}\subseteq{\tt fixed}_u
    \label{eqn:readyForMoC}
    \end{align}
    After this, the migration engineer can remove the migration system and the old system.
@@ -737,21 +740,22 @@ Ordina NV, Nieuwegein, the Netherlands}
    To demonstrate it in the context of this paper, the existing system, $\pair{\dataset}{\schema}$, is rather trivial.
    It has no constraints and just one relation, $\declare{r}{A}{B}$.
    Its population is $A=\{a_1,a_2,a_3\}$, $B=\{b_1\}$, and $\pop{r}{\dataset}=\{\pair{a_1}{b_1}\}$.
+   The desired system contains one blocking invariant, which is the totality of $\declare{r}{A}{B}$.
    The schema of the migration system, $\schema_\migrsys$, follows from definition~\ref{eqn:schema migrsys}.
+
    Figure~\ref{fig:PoC} exhibits four successive screenshots,
    featuring $\overleftarrow{r}$ as {\small\verb#old_r#},
    $\overrightarrow{r}$ as {\small\verb#new_r#}.
 \begin{figure}[bht]
    \begin{center}
-      \makebox[\textwidth][c]{\includegraphics[scale=.07]{figures/screenshots.png}}%
+      \includegraphics[scale=0.9]{figures/screenshots2x2.pdf}
    \end{center}
-\caption{Four successive screenshots in the PoC}
-\label{fig:PoC}
+   \caption{Four successive screenshots in the PoC}
+   \label{fig:PoC}
 \end{figure}
 
    Exhibit A shows the migration system just after deployment, at the MoT.
    It shows that the copying of {\small\verb#old_r#} to {\small\verb#new_r#} has worked.
-   The desired system contains one blocking invariant, which is the totality of $\declare{r}{A}{B}$.
    The yellow message in exhibit A indicates that a user needs to fix totality for $a_2$ and $a_3$.
    The column {\small\verb#fixed_u#} contains the elements for which totality is satisfied, so these fields are blocked from becoming empty.
 
@@ -760,42 +764,75 @@ Ordina NV, Nieuwegein, the Netherlands}
    Note that the fields for $a_2$ and $a_3$ are empty, which is fine because they will not be blocked until they are given some value.
 
    Exhibit C shows that the user fills in ``Jill'', which means that $\pair{a_1}{Jill}$ is added to {\small\verb#new_r#}.
-   When the last atom of {tt A} is paired with an atom from {\tt B} (exhibit D), requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
+   
+   Exhibit D: When the last atom of {tt A} is paired with an atom from {\tt B}, requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
 
 \subsection{Validation}
    The proof of concept gives but one example of something that works.
-   To validate that this works in all cases, we must verify that:
+   In fact, having built prototypes increases our confidence, but cannot serve as a proof.
+   This section argues the validity of our method.
+   We take advantage of the formal definition of the generator (section~\ref{sct:Generating}) to precisely state the assumptions and requirements of its validity.
+
+   The initial situation consists of one existing system $\infsys$ and one desired system $\infsys'$ of which we have a schema, $\schema_{\infsys'}$ and an initial dataset, $\dataset_{\infsys'}$.
+   We may assume that $\infsys$ satisfies definition~\ref{def:information system} because it is a system in production.
+   Also, $\schema_{\infsys'}$ satisfies equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type} because the script of the desired system is type-correct.
+   Together, the schema and the intial dataset forms the desired system $\pair{\schema_{\infsys'}}{\dataset_{\infsys'}}$, which satisfies definition~\ref{def:information system}.
+   With these assumptions in place,
+   we must verify that:
 \begin{enumerate}
-\item The predeployment yields a migration system, $\migrsys$, that copies the designated triples to the desired system in finite time.
-\item $\migrsys$ satisfies the definition of information system (\ref{def:information system}) at MoT, especially that it has no violations of blocking invariants (requirement~\ref{eqn:satisfaction}) to ensure a successful deployment.
-\item The violations that business actors must fix are finite in number and decrease monotonically, so the business can fulfil the condition for the MoC (requirement~\ref{eqn:readyForMoC}) in finite time.
-\item The behavior of $\migrsys$ and the desired system is identical, so moving the ingress from $\migrsys$ to the desired system is not noticable for end-users.
+\item After predeployment, the migration system $\migrsys$ copies the designated triples to the desired system in finite time.
+\item At MoT, $\migrsys$ satisfies the definition of information system (\ref{def:information system}), especially that it has no violations of blocking invariants (requirement~\ref{eqn:satisfaction}) to ensure a successful deployment.
+\item Once business actors have fixed the new business invariants, i.e. when the condition for the MoC (requirement~\ref{eqn:readyForMoC}) is satisfied,
+   the behavior of $\migrsys$ and the desired system is identical, so moving the ingress from $\migrsys$ to the desired system is not noticable for end-users.
+\item The old system has become redundant, so we can remove $\infsys$ and $\migrsys$.
 \end{enumerate}
    Let us discuss these points one by one.
 
-   The relations to be copied from the old system are those relations that the desired system retains ($\rels_{\schema'}\cap\rels_{\schema}$).
-   For each $r$ to be copied, $\migrsys$ contains a relation ${\tt copy}_r$ in $\rels_1$ (eqn.~\ref{eqn:copy relations}).
+   The relations to be copied from $\infsys$ are those relations that the desired system retains: $\rels_{\schema'}\cap\rels_{\schema}$.
+   For each $r$ to be copied from $\infsys$, $\migrsys$ contains a relation ${\tt copy}_r$ in $\rels_1$ (eqn.~\ref{eqn:copy relations}).
    After the MoT, the ingress sends all change events to $\migrsys$, so the existing system can finish the work it is doing for transactional invariants and will not change after that.
    In other words, the population of every relation in $\rels_{\schema}$ becomes stable and so does every ${\tt copy}_r$.
-   At that point in time, eqn.~\ref{eqn:copyingTerminates} is true and stays true.
+   At that point in time, eqn.~\ref{eqn:copyingTerminates} is satisfied and stays satisfied.
    Effectively, $\transactions_1$ becomes redundant once the copying is done.
 
    Then, $\migrsys$ contains only blocking invariants that exist in the existing system as well (def.~\ref{dfn:migration system}).
    For this reason, all of these blocking invariants are satisfied on MoT.
    Since $\migrsys$ contains no other blocking invariants, it satisfies requirement~\ref{eqn:satisfaction}.
+   This implies that $\migrsys$ works and the migration engineer may safely switch the ingress from $\infsys$ to $\migrsys$.
 
    Thirdly, the problematic constraints are the blocking invariants of the desired system that were not in the existing system ($\rules_{\schema'}-\rules_{\schema}$ in def.~\ref{eqn:Bfix}).
-   The migration engineer might introduce transactional invariants to satisfy these invariants automatically,
-   but otherwise, definition~\ref{eqn:Bfix} defines them as business constraints, $\busConstraints_\text{fix}$, to be resolved by the business.
+   $\migrsys$ features $\busConstraints_\text{fix}$ to represent these rules in the guise of business constraints.
+   This lets business actors resolve the violations.
    Each violation in $\busConstraints_\text{fix}$ that a business actor resolves,
    will never reappear because it is registered in ${\tt fixed}_r$ by the transactional invariants of $\transactions_2$ (eqn.~\ref{eqn:enforceForRules}).
+   When all violations are fixed, every rule in $\rules_\text{block}$ has become blocking.
+   So, after the MoC, $\rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}}$ equals $\overrightarrow{\rules_{\schema'}}$ in the migration system.
+   % Since $\overrightarrow{\rules_{\schema'}}$ and $\rules_{\schema'}$ have the same behaviour for the end-user, the migration engineer can safely switch the ingress from $\migrsys$ to $\infsys'$ (the desired system).
+
+   The rules in the desired system are partly written to resolve data pollution.
+   In some cases, the migration engineer wants users to get rid of that pollution and turn the rule in a blocking invariant as described above.
+   However, some of these constraints might be satisfiable automatically.
+   In that case, the migration engineer might substitute such constraints from $\busConstraints_\text{fix}$ by transactional invariants in $\transactions_{\migrsys}$.
+   These invariants don't need the mechanism described above, because the migration system itself will take care that all constraints in $\transactions_{\migrsys}$ are satisfied.
+   Both cases need to be resolved at MoC.
 
    So finally, when all violations are resolved, the constraints in $\busConstraints_\text{fix}$ have effectively become blocking invariants.
    The blocking invariants in the desired system consist of $\rules_{\schema}$ and $\busConstraints_\text{fix}$, which is equivalent to $\rules_{\schema'}$.
    Hence we can replace $\busConstraints_\text{fix}\cup\rules_{\schema}$ with $\rules_{\schema'}$ after condition~\ref{eqn:readyForMoC} is satisfied.
 
-   Now we can assemble the results.
-   Every rule in $\rules_\text{block}$ has become blocking, so after the MoC $\rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}}=\overrightarrow{\rules_{\schema'}}$ in the migration system, which is $\rules_{\schema'}$ in the desired system.
+   Now we can assemble the results at MoC.
+   The above reasoning shows that at MoC
+   $\langle\concepts_\dataset\cup\concepts_{\dataset'},
+   \overleftarrow{\rels_{\schema}}\cup\overrightarrow{\rels_{\schema'}}\cup\rels_1\cup\rels_2,
+   \rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}},
+   \transactions_1\cup\transactions_2\cup\overrightarrow{\transactions_{\schema'}},
+   \busConstraints_\text{fix}\cup\overrightarrow{\busConstraints_{\schema'}}\rangle$ is equivalent to 
+   $\langle\concepts_{\dataset'}, \overrightarrow{\rels_{\schema'}}, \overrightarrow{\rules_{\schema'}}, \overrightarrow{\transactions_{\schema'}}, \overrightarrow{\busConstraints_{\schema'}}\rangle$,
+   which is equal to $\overrightarrow{\schema'}$.
+   So from MoC onwards, $\pair{\dataset_{\migrsys}}{\schema_{\migrsys}}$ is equivalent to $\pair{\dataset_{\migrsys}}{\overrightarrow{\schema'}}$.
+   Hence, we can tell that $\dataset_{\migrsys}$ is a valid dataset for the desired system, so we can switch the ingress from the migration system to the desired system without users noticing the difference.
+   Then, the migration system gets no more inputs, so it can be removed. 
+   Since this is equivalent to 
    Since $\transactions_1$ and $\transactions_2$ are redundant after the MoC,
    we can retain $\overrightarrow{\transactions_{\schema'}}$ in $\migrsys$,
    which is equivalent to $\transactions_{\schema'}$ in the desired system.
