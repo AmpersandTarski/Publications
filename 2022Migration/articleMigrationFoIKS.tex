@@ -33,6 +33,9 @@
 % Ampersand -----------------------------------------------------------
 
 %\def\id#1{\text{\it #1\/}}
+\newcommand{\ourtheory}{approach}
+\newcommand{\foundtheory}{foundational approach}
+
 \newcommand{\xrightarrowdbl}[2][]{%
   \xrightarrow[#1]{#2}\mathrel{\mkern-14mu}\rightarrow
 }
@@ -56,7 +59,7 @@
 \newcommand{\viol}[2]{\violC{#1}(#2)}
 \newcommand{\violC}[1]{\id{viol}_{#1}}
 \newcommand{\sign}[1]{\id{sign}_{#1}}
-\newcommand{\enfRel}[1]{\id{enf}_{#1}}
+\newcommand{\enfRel}[1]{\enforceC{#1}}
 \newcommand{\signature}[2]{\langle{#1},{#2}\rangle}
 \newcommand{\powerset}[1]{\cal{P}\{#1\}}
 \newcommand{\la}{\langle}
@@ -181,13 +184,13 @@ Ordina NV, Nieuwegein, the Netherlands}
    This can inhibit a steady pace of releases, especially for increments that alter the system's schema in production.
    Consequently, schema-changing data migrations often face challenges, leading developers to resort to manual migration or employ workarounds.
 
-   To address this issue, this paper proposes a foundational theory for data migration,
+   To address this issue, this paper proposes a \foundtheory{} for data migration,
    aiming to generate migration scripts for automating the migration process.
    The overarching challenge is preserving the business semantics of data amidst schema changes.
    Specifically, this paper tackles the task of generating a migration script based on the schemas of both the existing and the desired system,
    under the condition of zero downtime.
    The proposed solution was validated by a prototype demonstrating its efficacy.
-   Notably, the theory is technology-independent, articulating systems in terms of invariants, thereby ensuring applicability across various scenarios.
+   Notably, the \ourtheory{} is technology-independent, articulating systems in terms of invariants, thereby ensuring applicability across various scenarios.
    The migration script generator will be implemented in a software generator named Ampersand.
 \keywords{Generative software \and Incremental software deployment \and Data migration \and Relation algebra \and Ampersand \and Schema change \and Invariants \and Zero downtime}
 \end{abstract}
@@ -198,7 +201,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    \footnote{In the sequel, the word ``system'' refers to the phrase ``information system'', to simplify the language a little.}
    may live for many years.
    After they are built, they need to be updated regularly to keep up with changing requirements in a dynamically evolving environment.
-   Schema changes cannot always be avoided when updating software, so a \define{schema-changing data migration} (SCDM) will be neccessary from time to time.
+   Schema changes cannot always be avoided when updating software, so a \define{schema-changing data migration} (SCDM) will be necessary from time to time.
    For example, adding or removing a column to a table in a relational database adds to the complexity of migrating data.
    Even worse, if a system invariant changes, some of the existing data in the system may violate the new invariant.
    In practice, data migrations typically follow Extract-Transform-Load (ETL) patterns~\cite{Theodorou2017},
@@ -242,17 +245,17 @@ Ordina NV, Nieuwegein, the Netherlands}
    Some forms of data pollution are not automatable, however.
    An example is when a person has deliberately specified a false name without violating any constraint in the system.
 
-   The complexity of data migration has prompted us to develop a theory first,
+   The complexity of data migration has prompted us to develop a \ourtheory{} first,
    which we present in this contribution.
-   We have validated the theory by prototyping because a formal proof of correctness is currently beyond our reach.
-   This theory perceives an information system as a data set with constraints,
+   We have validated the \ourtheory{} by prototyping because a formal proof of correctness is currently beyond our reach.
+   This \ourtheory{} perceives an information system as a data set with constraints,
    so we can represent invariants (and thus the business semantics) directly as constraints.
 
    The next section analyzes SCDMs with an eye on zero downtime and data quality.
    It sketches the outline of a procedure for SCDMs.
    Section~\ref{sct:Definitions} formalizes the concepts that we need to define the procedure.
    Section~\ref{sct:Generating} defines the algoritm for generating a migration system, to automate SCDMs.
-   Section~\ref{sct:PoC} demonstrates the prototype of a migration system, which we used to validate our theory experimentally.
+   Section~\ref{sct:PoC} demonstrates the prototype of a migration system, which we used to validate our \ourtheory{} experimentally.
    For this purpose we have used the language Ampersand
    because its syntax and semantics correspond directly to the definitions in section~\ref{sct:Definitions}.
 
@@ -279,8 +282,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    Actors (both users and computers) are changing the data in a system continually.
    The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
-   To keep our theory technology independent, we assume that data sets contain triples.
-   This makes our theory valid for every kind of database that triples can represent,
+   To keep our \ourtheory{} technology independent, we assume that data sets contain triples.
+   This makes our \ourtheory{} valid for every kind of database that triples can represent,
    including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
 
    We assume that constraints implement the business semantics of the data.
@@ -308,12 +311,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    Of the three types of constraint, only two are invariants. 
 
 \subsection{Ampersand}
-   We employ Ampersand as a prototyping language to demonstrate our theory.
-   More significantly, our intention is to augment the Ampersand compiler with the theory outlined in this paper
-   to generate migration systems automatically.
-
+   We employ Ampersand as a prototyping language to demonstrate our \ourtheory{}.
+   %More significantly, our intention is to augment the Ampersand compiler with the \ourtheory{} outlined in this paper
+   %to generate migration systems automatically.
+   % Opmerking van SJC: ik denk dat deze intentie hier het best achterwege gelaten kan worden,
+   %   het zet de lezer direct op het spoor van: en waarom is dit nog niet in Ampersand geimplementeerd dan? Is dit niet af?
+   %
    Ampersand serves as a language for specifying information systems through a framework of concepts, relations, and constraints.
-   It comprises the three types of constraints discussed in this paper, making it an ideal platform for practical testing of our theory.
+   It comprises the three types of constraints discussed in this paper, making it an ideal platform for practical testing of our \ourtheory{}.
    In Ampersand, developers articulate constraints using heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}
    The systems they generate keep invariants satisfied and alert users to violations of business constraints.
    The absence of imperative code in Ampersand scripts enhances reasoning about the system,
@@ -346,7 +351,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    To avoid downtime, we must implement new blocking invariants initially as a business constraint,
    to let users satisfy them.
    The moment the last violation of $u$ is fixed, the business constraint can be removed and $u$ can be implemented as a blocking invariant.
-   This is the core idea of our theory.
+   This is the core idea of our \ourtheory{}.
 
    The \define{migration system} to be generated is an intermediate system,
    which contains all concepts, relations, and constraints of both the existing and the desired system.
@@ -403,14 +408,14 @@ Ordina NV, Nieuwegein, the Netherlands}
       The existing data is still in the existing system and the ingress still directs all traffic to the existing system.
       So, users notice no difference yet.
       The migration system starts copying data from the existing system.
-\item[moment of transition (MoT)]
+\item[Moment of transition (MoT)]
       After the migration system is done copying data, the migration engineer switches all traffic to the migration system.
       This is the moment users will notice the difference because the traffic switch also deploys the functionality of the desired system.
       So, in the eyes of an average user, the migration system may look like the desired system.
       However, the migration system relaxes the blocking invariants of the desired system until users resolve their violations.
       Since the existing system receives no more traffic, its activity will come to a halt and its data will become static.
       The migration system stays active until all invariants of the desired system are satisfied and it can take over the work from the migration system.
-\item[moment of completion (MoC)]
+\item[Moment of completion (MoC)]
       Once the invariants of the desired system are satisfied, the migration engineer switches all traffic to the desired system.
       The blocking invariants of the desired system are now in effect, so users cannot violate them anymore.
       After this switch, the migration engineer can safely remove both the migration system and the existing system.
@@ -527,15 +532,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    Note that $\viol{u}{\dataset}=\emptyset$ means that $\dataset$ satisfies $u$.
 
    In case $u$ is a transactional invariant,
-   the system will keep it satisfied by adding the violations to a specific relation $\declare{n}{A}{B}$.
+   the system will keep it satisfied by adding the violations to a specific relation $\declare{n}{A}{B}$ such that $\pair{A}{B}=\sign{u}$.
+   This requires that adding the pair to that relation solves the violation:
 \begin{equation}
    \begin{array}[t]{l}
-      \viol{u}{\pair{\triples\cup\{\triple{a}{\declare{n}{A}{B}}{b}\mid\pair{a}{b}\in\viol{u}{\dataset}\}}{\instance\cup\instance'}}=\emptyset\\
-      \text{\bf with\ }\begin{array}[t]{lcl}
-         \instance&=&\{\pair{a}{A}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\cup\{ \pair{b}{B}\mid\pair{a}{b}\in\viol{u}{\dataset}\}\\
-         \pair{A}{B}&=&\sign{u}
-      \end{array}
+      (a,b)\in \viol{u}{\pair{\triples}{\instance}}\, \Longrightarrow \\
+      \quad \viol{u}{\pair{\triples \cup \{\triple{a}{\declare{n}{A}{B}}{b}\}}{\instance}} = \viol{u}{\pair{\triples}{\instance}} - \{(a,b)\}
    \end{array}
+   % SJC's opmerking:  \instance \cup \{\pair{a}{A},\pair{b}{B}\} = \instance ivm eqn:wellTypedViolation
 \label{eqn:transaction}
 \end{equation}
    It is obvious that not every conceivable constraint can satisfy this equation.
@@ -557,7 +561,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    They define concepts, relations, and constraints.
    We assume that a software engineer defines a schema on design time, and a compiler checks whether the semantics are consistent.
    Errors the compiler detects are prohibitive for generating code,
-   to prevent a substantial class of mistakes to ever reach end users.
+   to prevent a substantial class of mistakes to ever reach end-users.
 
    We describe a schema $\schema$ as a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$,
    in which $\concepts\subseteq\Concepts$ is a finite set of concepts,
@@ -611,9 +615,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    The complexity of migrating data to date yields expensive and error-prone migration projects.
    By generating this code we can prevent many human induced errors.
    
-   This section starts with a presentation of the algorithm.
+   This section starts with a presentation of the migration script that is to be used.
 
-\subsection{Algorithm for generating a migration script}
+\subsection{Generating a migration script}
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
    We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
@@ -678,7 +682,7 @@ Ordina NV, Nieuwegein, the Netherlands}
       \begin{array}[t]{l}
          \text{\bf with}\\
          \sign{v}=\sign{u}\\
-         \viol{v}{\dataset}=\viol{u}{\dataset}\cap{\tt fixed}_u
+         \viol{v}{\dataset}=\viol{u}{\dataset}\cap\pop{{\tt fixed}_u}{\dataset}
       \end{array}\label{eqn:blockRule}\\
       &\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\notag
    \end{align}
@@ -689,7 +693,8 @@ Ordina NV, Nieuwegein, the Netherlands}
 %    ENFORCE fixed_TOTr >: I /\ new.r;new.r~
 % \end{verbatim}
    \begin{equation}
-     \transactions_2\ =\ \{{\tt fixed}_u\mapsfrom\lambda\dataset.~\cmpl{\viol{u}{\dataset}}\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\label{eqn:enforceForRules}
+     \transactions_2\ =\ \{{\tt fixed}_u\mapsfrom\lambda\dataset.~\cmpl{\viol{u}{\dataset} \cup \pop{{\tt fixed}_u}{\dataset}}\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\label{eqn:enforceForRules}
+     % Opmerking van SJC: de {\tt fixed}_u aan de rechterkant is nodig om aan (\ref{eqn:transaction}) te voldoen.
    \end{equation}
 \item\label{step5} To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
 % \begin{verbatim}
@@ -703,7 +708,7 @@ Ordina NV, Nieuwegein, the Netherlands}
       \begin{array}[t]{l}
          \text{\bf with}\label{eqn:Bfix}\\
          \sign{v}=\sign{u}\\
-         \viol{v}{\dataset}=\viol{u}{\dataset}-{\tt fixed}_u
+         \viol{v}{\dataset}=\viol{u}{\dataset} % -{\tt fixed}_u %opmerking van SJC: de - fixed is overbodig omdat eqn:blockRule geldt
       \end{array}\\
       &\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\notag
    \end{align}
@@ -716,10 +721,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    replaces $\rules_\text{block}$ in the migration system by the blocking invariants of the desired system.
    This moment arrives when:
    \begin{align}
-      \forall u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}.~\cmpl{\viol{u}{\dataset}}\subseteq{\tt fixed}_u
+      \forall u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}.~{\viol{u}{\dataset}}\subseteq \pop{{\tt fixed}_u}{\dataset}
    \label{eqn:readyForMoC}
    \end{align}
-   After this, the migration engineer can remove the migration system and the old system.
+   Equivalently, $\forall u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}.~\viol{u}{\dataset} = \emptyset$. After this, the migration engineer can remove the migration system and the old system.
 
 \item Let us combine the above into a single migration schema:
    \begin{align}
@@ -771,7 +776,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    The proof of concept gives but one example of something that works.
    In fact, having built prototypes increases our confidence, but cannot serve as a proof.
    This section argues the validity of our method.
-   We take advantage of the formal definition of the generator (section~\ref{sct:Generating}) to precisely state the assumptions and requirements of its validity.
+   We take advantage of the formal definition of the generated migration system (section~\ref{sct:Generating}) to precisely state the assumptions and requirements of its validity.
 
    The initial situation consists of one existing system $\infsys$ and one desired system $\infsys'$ of which we have a schema, $\schema_{\infsys'}$ and an initial dataset, $\dataset_{\infsys'}$.
    We may assume that $\infsys$ satisfies definition~\ref{def:information system} because it is a system in production.
@@ -800,7 +805,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    Since $\migrsys$ contains no other blocking invariants, it satisfies requirement~\ref{eqn:satisfaction}.
    This implies that $\migrsys$ works and the migration engineer may safely switch the ingress from $\infsys$ to $\migrsys$.
 
-   Thirdly, the problematic constraints are the blocking invariants of the desired system that were not in the existing system ($\rules_{\schema'}-\rules_{\schema}$ in def.~\ref{eqn:Bfix}).
+   Thirdly, the constraints that may need human intervention are the blocking invariants of the desired system that were not in the existing system ($\rules_{\schema'}-\rules_{\schema}$ in def.~\ref{eqn:Bfix}).
    $\migrsys$ features $\busConstraints_\text{fix}$ to represent these rules in the guise of business constraints.
    This lets business actors resolve the violations.
    Each violation in $\busConstraints_\text{fix}$ that a business actor resolves,
