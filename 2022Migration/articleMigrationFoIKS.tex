@@ -255,9 +255,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    It sketches the outline of a procedure for SCDMs.
    Section~\ref{sct:Definitions} formalizes the concepts that we need to define the procedure.
    Section~\ref{sct:Generating} defines the algoritm for generating a migration system, to automate SCDMs.
-   Section~\ref{sct:PoC} demonstrates the prototype of a migration system, which we used to validate our \ourtheory{} experimentally.
-   For this purpose we have used the language Ampersand
+   Section~\ref{sct:PoC} demonstrates the prototype of a migration system, which we used to verify our \ourtheory{} experimentally.
+   We have used the language Ampersand for this purpose,
    because its syntax and semantics correspond directly to the definitions in section~\ref{sct:Definitions}.
+   Finally, section~\ref{sct:Validation} discusses the validation of our \ourtheory{} by showing that all requirements are met.
 
 \section{Analysis}
 \label{sct:Analysis}
@@ -763,9 +764,10 @@ Ordina NV, Nieuwegein, the Netherlands}
 
    Exhibit C shows that the user fills in ``Jill'', which means that $\pair{a_1}{Jill}$ is added to {\small\verb#new_r#}.
    
-   Exhibit D: When the last atom of {\tt A} is paired with an atom from {\tt B}, requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
+   Exhibit D: After the last atom of {\tt A} is paired with an atom from {\tt B}, requirement~\ref{eqn:readyForMoC} is satisfied and the prototype informs the user to remove the migration system.
 
-\subsection{Validation}
+\section{Validation}
+\label{sct:Validation}
    The proof of concept gives but one example of something that works.
    In fact, having built prototypes increases our confidence, but cannot serve as a proof.
    This section argues the validity of our method.
@@ -830,7 +832,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    Hence, we can tell that $\dataset_{\migrsys}$ is a valid data set for the desired system, so we can switch the ingress from the migration system to the desired system without users noticing the difference.
    Then, the migration system gets no more inputs, so it can be removed. 
 
-\section{Conclusions}
+\section{Conclusion}
 \label{sct:Conclusions}
    In this paper, we describe the data migration as going from an existing system to a desired one, where the schema changes.
    As Ampersand generates information systems, creating a new system can be a small task, allowing for incremental deployment of new features.
@@ -840,7 +842,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    We propose a method for doing migration such that only a finite amount of human intervention is needed.
    Our method allows a system similar to the desired system to be used while the intervention takes place.
 
-   Our proposed migration is certainly not the only approach one could think of.
+   The data migration we propose is certainly not the only approach one could think of.
    However, we have not come across other approaches that allow changing the schema in the presence of constraints.
    As such, we cannot compare our approach against other approaches.
    We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
