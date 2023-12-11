@@ -545,12 +545,13 @@ proof (subst Rep_dataset_inject[symmetric])
 qed
 
 locale rule_violations =
-  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> ('a,'v) labeled_graph"
+  fixes violation :: "'u \<Rightarrow> ('l,'v,'c) dataset \<Rightarrow> 'x :: {order_bot, wellorder}"
   and   relevant_labels :: "'u \<Rightarrow> 'l set"
 assumes filter[simp]:"violation u (filter_with_labelset (relevant_labels u) g) = violation u g"
 begin
+
 fun satisfies where
-  "satisfies u ds \<longleftrightarrow> violation u ds = LG {} {}"
+  "satisfies u ds \<longleftrightarrow> violation u ds = bot"
 lemma satisfies_relevant[simp]:
   "satisfies u (filter_with_labelset (relevant_labels u) g) = satisfies u g"
   by simp
@@ -584,8 +585,100 @@ proof(standard)
   then show "violation_mapped f u (filter_with_labelset (relevant_mapped f u) g) =
                    violation_mapped f u g" by (auto simp:map_filter[OF inj2])
 qed
+
 end
 
+type_synonym ('l,'v,'c) dataset_seq = "nat \<Rightarrow> ('l,'v,'c) dataset"
 
+definition "subdataset a b \<equiv> subgraph (tripleset (Rep_dataset a)) (tripleset (Rep_dataset b))
+             \<and> dsTyping (Rep_dataset a) = dsTyping (Rep_dataset b)"
+
+definition chain :: "('l,'v,'c) dataset_seq \<Rightarrow> bool" where
+  "chain S \<equiv> \<forall> i. subdataset (S i) (S (i+1))"
+
+lemma subdataset_transitive:
+  assumes "subdataset a b" "subdataset b c"
+  shows "subdataset a c"
+proof -
+  from  assms[unfolded subdataset_def]
+  have "subgraph (tripleset (Rep_dataset a)) (tripleset (Rep_dataset b))"
+       "subgraph (tripleset (Rep_dataset b)) (tripleset (Rep_dataset c))"
+    by auto
+  hence "subgraph (tripleset (Rep_dataset a)) (tripleset (Rep_dataset c))"
+    by(rule subgraph_trans)
+  thus ?thesis using assms unfolding subdataset_def by auto
+qed
+
+lemma subdataset_refl[intro]:
+  shows "subdataset a a"
+  unfolding subdataset_def using typedGraph_def by auto
+
+lemma subdataset_in_chain[elim]:
+  assumes "chain s"
+  shows "i \<le> j \<Longrightarrow> subdataset (s i) (s j)"
+proof(induct "j-i" arbitrary:j)
+  case 0
+  then show ?case by auto
+next
+  case (Suc delta j)
+  from Suc have i_less:"i < j" by auto
+  hence "\<exists> j2. Suc j2 = j" by presburger
+  then obtain j2 where j2:"Suc j2 = j" by auto
+  hence subd:"subdataset (s j2) (s j)" using assms unfolding chain_def by auto
+  have "delta = j2 - i" "i \<le> j2" using i_less Suc(2) j2 by auto
+  from subdataset_transitive[OF Suc(1)[OF this] subd]
+  show ?case.
+qed
+
+locale enforced = rule_violations +
+  fixes repair :: "'e \<Rightarrow> ('b, 'c, 'd) dataset \<Rightarrow> ('b, 'c, 'd) dataset"
+  assumes viols_solved:
+          "let viol1 = (violation u ds) in 
+           let viol2 = violation u (repair viol1 ds) in
+           viol1 > viol2"
+  and mono: "subdataset ds (repair viol ds)"
+begin
+definition repair_chain where
+  "repair_chain S \<equiv> \<forall> i. \<exists> u. S (i+1) = repair (violation u (S i)) (S i)"
+
+lemma repair_chain_is_chain:
+  assumes "repair_chain S"
+  shows "chain S"
+  unfolding chain_def
+proof
+  fix i
+  show "subdataset (S i) (S (i + 1))"
+    using mono assms unfolding repair_chain_def by metis
+qed
+
+end
+
+(*
+ Bewijslijn aantekeningen
+  in het migratie verhaal zijn diverse stappen:
+   stap: migratie systeem wordt aangezet.
+     bewijslasten:
+      - alle invarianten van het migratiesysteem gelden
+      - migratiesysteem copieert data uit het oude systeem
+         (zonder invarianten te overtreden)
+      - de business constraints die in het nieuwe systeem invariant zijn,
+        leveren een eindige lijst werk (aanname?)
+
+   stap: werk wordt gedaan in het migratie systeem door de business
+      - in de business constraints die in het nieuwe systeem invariant zijn,
+        nemen de overtredingen monotoon af
+      - (corollary) als een business constraint die in het nieuwe systeem invariant is, overtredings vrij is,
+        is deze invariant.
+      - na voldoende werk zijn alle business constraints die in het nieuwe systeem invariant zijn, invariant.
+      - aanname: de enforce regels voor bovenstaande reageren 'snel genoeg'.
+      - enforce regels uit het nieuwe systeem mogen gewoon mee doen
+        (vraag: mogen ze sneller zijn dan de enforce regels uit bovengenoemde
+         punt?)
+
+   stap: als alle business constraints die in het nieuwe systeem invariant zijn, invariant zijn,
+        kan het nieuwe systeem in gebruik genomen worden. (thm: mapped_rule_violations.mapped)
+        (ihb: ik kan de oude data en het migratie-systeem laten vallen)
+
+*)
 
 end
