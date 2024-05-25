@@ -204,12 +204,12 @@ Ordina NV, Nieuwegein, the Netherlands}
    for which many tools are available.
    However, ETL tools typically provide little support for invariants that change, forcing development teams to write code.
    In a world where automation of the software process is resulting in higher productivity, more frequent releases, and better quality,
-   SCDM's should not stay behind.
+   SCDMs should not stay behind.
    Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
    Obviously, these deployments are mostly updates of existing systems.
    The risk and effort of SCDMs explains why these teams try to avoid schema changes in the first place.
-   We believe that software teams that realize high update frequencies need better tools to perform SCDM's reliably with zero-downtime.
-   We want then to design, implement, and deploy SCDMs in the flow of their DevOps practice.
+   We believe that software teams that realize high update frequencies need better tools to perform SCDMs reliably with zero-downtime.
+   We want them to design, implement, and deploy SCDMs in the flow of their DevOps practice.
 
    Data migration for other purposes than schema change has been described in the literature.
    For instance, if a data migration is done for switching to another platform or to different technology,
@@ -219,10 +219,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    In another example, Ataei, Khan, and Walkingshaw~\cite{Ataei2021,Walkingshaw2014} define a migration as a variation between two data structures.
    They show how to unify databases with slight variations by preserving all variations in one comprehensive database.
    This does not cater for schema changes, however.
-   Then there are SCDMs in situations without a schema or an implicit schema, e.g.~\cite{Hillenbrand2022}.
-   Such situations lack the error preventing power that explicit schemas bring during the development of software.
+   Then there are SCDMs in situations without a schema or with an implicit schema, e.g.~\cite{Hillenbrand2022}.
+   Such situations lack the error-preventing power that explicit schemas bring during the development of software.
    All errors a schema can prevent at compile time must then be compensated by runtime checks,
-   which increases the likelyhood of end-users getting error messages.
+   which increases the likelihood of end-users getting error messages.
    This requires versioned storage of production data and an overhead in performance.
    That is why this paper focuses on SCDMs for systems with an explicit schema.
    The prototypical use case for that is to release updates of information systems in production,
@@ -251,7 +251,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    It sketches the outline of a procedure for SCDMs.
    Section~\ref{sct:Definitions} formalizes the concepts that we need to define the procedure.
    Section~\ref{sct:Generating} defines the migration system that automates SCDMs.
-   Section~\ref{sct:PoC} demonstrates the prototype of a migration system, which we used to verify our approach experimentally.
+   Section~\ref{sct:PoC} exhibits the prototype of a migration system, which we used to verify our approach experimentally.
    We have used the language Ampersand for this purpose,
    because its syntax and semantics correspond directly to the definitions in section~\ref{sct:Definitions}.
    Finally, section~\ref{sct:Validation} discusses the validation of our approach by showing that all requirements are met.
@@ -262,31 +262,18 @@ Ordina NV, Nieuwegein, the Netherlands}
    The current section yields a procedure for migrating data from one system to another.
 \subsection{Information Systems}
    The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
-   Multiple users, working from different locations and on different moments, constitute what we will loosely call ``the business''.
-   The data in the system constitutes the collective memory of the business,
-   which relies on the semantics of the data to draw the right conclusions and carry out their tasks.
-   \begin{figure}[bht]
-      \begin{center}
-        \includegraphics[scale=0.8]{figures/existing_system.pdf}
-      \end{center}
-   \caption{Anatomy of an information system}
-   \label{fig:pre-migration}
-   \end{figure}
-   
-   Figure~\ref{fig:pre-migration} depicts the situation before migration.
-   An existing application service ingests traffic through an ingress and persists data in a data set, which is typically a database.
-   Our research assumes that the structure and business semantics are represented in a schema, from which the system is generated.
-   Actors (both users and computers) are changing the data in a system continually.
-   The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
-   Events that the system detects may cause the state to change.
-   To keep our approach technology independent, we assume that data sets contain triples.
-   This makes our approach valid for every kind of database that triples can represent,
-   including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
+   Multiple users, working from different locations and at different moments, collectively form what we can call ``the business''.
+   The data in the system constitutes the collective memory of the business.
 
-   We assume that constraints implement the business semantics of the data.
-   Constraints represent business concerns formally, so they can be checked automatically and can be used to generate software.
-   Some of the constraints require human intervention, while others require a system to intervene.
-   In this paper, we distinguish three different kinds of constraints:
+   Constraints represent the elementary truths of a business,
+   for example: ``{\em To submit a comment to the website of ACME Inc., the user must be registered.}''
+   By formally defining constraints, designers can restrict a data set.
+   We call a constraint {\em invariant} when it is implemented in an information system
+   to ensure that the data set satisfies this constraint at all times as long as it is deployed.
+   Thus, constraints implement the business semantics of the data.
+   
+   There are many ways to make sure that the data set satisfies a constraint.
+   In this paper, we distinguish just three different kinds of enforcement:
 \begin{enumerate}
 \item Blocking invariant\\
    A \define{blocking invariant} is a constraint that is always satisfied in a system.
@@ -307,6 +294,23 @@ Ordina NV, Nieuwegein, the Netherlands}
    Summarizing, in our notion of information systems, concepts, relations, and constraints carry the business semantics.
    Of the three types of constraint, only two are invariants. 
 
+   \begin{figure}[bht]
+      \begin{center}
+        \includegraphics[scale=0.8]{figures/existing_system.pdf}
+      \end{center}
+   \caption{Anatomy of an information system}
+   \label{fig:pre-migration}
+   \end{figure}
+   
+   Figure~\ref{fig:pre-migration} depicts the situation before migration.
+   An existing application service ingests traffic through an ingress and persists data in a data set, which is typically a database.
+   Our research assumes that the structure and business semantics are represented in a schema, from which the system is generated.
+   Actors (both users and computers) are changing the data in a system continually.
+   The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
+   Events that the system detects may cause the state to change.
+   To keep our approach technology-independent, we assume that data sets contain triples.
+   This makes our approach valid for every kind of database that can be represented by triples,
+   including SQL databases, object-oriented databases, graph databases, triple stores, and other no-SQL databases.
 \subsection{Ampersand}
    We employ Ampersand as a prototyping language to demonstrate our approach.
    Ampersand serves as a language for specifying information systems through a framework of concepts, relations, and constraints.
@@ -445,8 +449,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    %$\Concepts$ and $\Atoms$ are disjoint.
    For example, a developer might choose to classify \atom{Peter} and \atom{Melissa} as \concept{Person},
    and \atom{074238991} as a \concept{TelephoneNumber}.
-   In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
-   Moreover, \atom{Peter}, \atom{Melissa} and \atom{074238991} are atoms.
+   In this example, \atom{Peter}, \atom{Melissa} and \atom{074238991} are atoms and
+   \concept{Person} and \concept{TelephoneNumber} are concepts.
    In the sequel, variables $A$, $B$, and $C$ will represent concepts, and variables $a$, and $b$ represent \emph{atoms}.
    %
    The relation $\instance:\Pair{\Atoms}{\Concepts}$ relates atoms to concepts.
@@ -456,7 +460,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    %set operators $\cup$, $\cap$, and $-$ can be used on $\instance$.
 
    Relations serve to organize and store data, allowing developers to represent facts.
-   In this paper, variable $r$ represents relations\footnote{Some readers might like to read `relation symbol' where we write `relation'.}.
+   In this paper, variables $r$ and $s$ represent relations\footnote{Some readers might like to read `relation symbol' where we write `relation'.}.
    All relations are taken from an infinite set $\Rels$.
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
    Every relation $r$ has a name, a source concept, and a target concept.
@@ -475,6 +479,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{eqn:wellTypedEdge}
 \end{eqnarray}
 \end{definition}
+   All datasets are taken from an infinite set $\Dataset$.
    Looking at the example,
    equation~\ref{eqn:wellTypedEdge} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
    In practice, users can say that the Person Peter has telephone number 074238991.
@@ -500,7 +505,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
 \label{eqn:pop-concept}\\
-   \pop{x-y}{\dataset}&= \pop{x}{\dataset} - \pop{y}{\dataset}
+   \pop{r-s}{\dataset}&= \pop{r}{\dataset} - \pop{s}{\dataset}
 \label{eqn:pop-expr}
 \end{align}
 
@@ -524,8 +529,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    This requires that adding the pair to that relation solves the violation:
 \begin{equation}
    \begin{array}[t]{l}
-      (a,b)\in \viol{u}{\pair{\triples}{\instance}}\, \Longrightarrow \\
-      \quad \viol{u}{\pair{\triples \cup \{\triple{a}{\declare{n}{A}{B}}{b}\}}{\instance}} = \viol{u}{\pair{\triples}{\instance}} - \{(a,b)\}
+      \pair{a}{b}\in \viol{u}{\pair{\triples}{\instance}}\, \Longrightarrow \\
+      \quad \viol{u}{\pair{\triples \cup \{\triple{a}{\declare{n}{A}{B}}{b}\}}{\instance}} = \viol{u}{\pair{\triples}{\instance}} - \{\pair{a}{b}\}
    \end{array}
    % SJC's remark:  \instance \cup \{\pair{a}{A},\pair{b}{B}\} = \instance ivm eqn:wellTypedViolation
 \label{eqn:transaction}
@@ -581,7 +586,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \begin{itemize}
 \item $\dataset=\pair{\triples}{\instance}$ is a data set (so it must satisfy equation~\ref{eqn:wellTypedEdge}).
    We write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$ if needed;
-\item $\schema=\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}).
+\item $\schema=\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} through~\ref{eqn:enforcement-has-type}).
 \item Triples in the data set must have their relation mentioned in the schema:
    \begin{eqnarray}
       \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
@@ -726,9 +731,9 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Proof of Concept}
 \label{sct:PoC}
-   By way of proof of concept (PoC), we have built a migration system in Ampersand.
-   To demonstrate it in the context of this paper, the existing system, $\pair{\dataset}{\schema}$, is rather trivial.
-   It has no constraints and just one relation, $\declare{r}{A}{B}$.
+   By way of proof of concept (PoC), we have built a tiny migration system in Ampersand.
+   It is tiny only to fit it in the page limit of this paper.
+   The existing system, $\pair{\dataset}{\schema}$, has no constraints and just one relation, $\declare{r}{A}{B}$.
    Its population is $A=\{a_1,a_2,a_3\}$, $B=\{b_1\}$, and $\pop{r}{\dataset}=\{\pair{a_1}{b_1}\}$.
    The desired system contains one blocking invariant, which is the totality of $\declare{r}{A}{B}$.
    The schema of the migration system, $\schema_\migrsys$, follows from definition~\ref{eqn:schema migrsys}.
@@ -766,7 +771,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 
    The initial situation consists of one existing system $\infsys$ and one desired system $\infsys'$ of which we have a schema, $\schema_{\infsys'}$ and an initial data set, $\dataset_{\infsys'}$.
    We may assume that $\infsys$ satisfies definition~\ref{def:information system} because it is a system in production.
-   Also, $\schema_{\infsys'}$ satisfies equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type} because the script of the desired system is type-correct.
+   Also, $\schema_{\infsys'}$ satisfies equations~\ref{eqn:relationsIntroduceConcepts} through~\ref{eqn:enforcement-has-type} because the script of the desired system is type-correct.
    Together, the schema and the intial data set forms the desired system $\pair{\schema_{\infsys'}}{\dataset_{\infsys'}}$, which satisfies definition~\ref{def:information system}.
    With these assumptions in place,
    we must verify that:
@@ -825,7 +830,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 
 \section{Conclusion}
 \label{sct:Conclusions}
-   We have shown that it is possible to generate a migration system from the schemas of an existing system and a desired system.
+   We have shown that it is possible in theory to generate a migration system from the schemas of an existing system and a desired system.
    We have defined a migration system such that:
    \begin{itemize}
    \item after deploying the migration system, data from the existing system will be copied automatically,
@@ -837,20 +842,14 @@ Ordina NV, Nieuwegein, the Netherlands}
    \item the migration system is equivalent to the desired system at the MoC.
    \end{itemize}
 
-   The data migration we propose is certainly not the only approach one could think of.
-   However, we have not come across other approaches that allow changing the schema in the presence of constraints.
-   As such, we cannot compare our approach against other approaches yet.
-   We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
-   For now, our next step is to implement the approach shown here into Ampersand.
-
-   This work does not consider what to do about (user) interfaces yet.
-   Instead, it models events by assuming that any change to the data set can be achieved.
-   In practice, such changes need to be achieved through interfaces.
-   Most Ampersand systems indeed allow the users of the system to edit the data set quite freely through the interfaces.
-   This has allowed us to set aside interfaces in this paper for now.
-   Nevertheless, we expect that an analysis of interfaces may yield insights about event streams,
-   which are further building blocks to a foundational theory of information systems.
-   But that is future work.
+   We intend to address the following issues in future work:
+   \begin{itemize}
+   \item Building the migration system generator in Ampersand, so it can be used in practice.
+   \item Investigating the possibility of in-situ migration with changing schemas, to enable incremental development in production.
+   \item Extending the theory to incorporate interfaces, so we can reason about the behavior of the system as a whole.
+   \item Keep looking for other approaches to migration under a changing schema, to compare them with the approach shown here.
+   So far, we have not found any, so we cannot compare our approach against other approaches yet.
+   \end{itemize}
 
 %\section{Bibliography}
 \bibliographystyle{splncs04}
