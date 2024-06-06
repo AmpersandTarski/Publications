@@ -144,6 +144,7 @@
 \newcommand{\term}[1]{\>\>\(#1\)\\[1ex]}
 \newcommand{\rela}[2]{\>\(#1\)\>\>\{ \ #2 \ \}\\[1ex]}
 \newcommand{\weg}[1]{}
+\newcommand\pfun{\mathrel{\ooalign{\hfil$\mapstochar$\hfil\cr$\to$\cr}}}
 
 \def\define#1{\label{dfn:#1}{\em #1}\index{#1}}
 \def\definem#1{\label{dfnm:#1}{\em #1}\index{#1}\marge{#1}}
@@ -208,7 +209,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    for which many tools are available.
    However, ETL tools typically provide little support for invariants that change, forcing development teams to write code.
    In a world where automation of the software process is resulting in higher productivity, more frequent releases, and better quality,
-   SCDM's should not stay behind.
+   SCDMs should not stay behind.
    Roughly half of the DevOps~\cite{BassWeberZhu15} teams that responded in a worldwide survey in 2023~\cite{HumanitecDevOps2023} are deploying software more frequently than once per day.
    Obviously, these deployments are mostly updates of existing systems.
    The risk and effort of SCDMs explains why these teams try to avoid schema changes in the first place.
@@ -242,10 +243,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    a registration of valid addresses can be checked automatically.
    In a formalism like Ampersand~\cite{JoostenRAMiCS2017,Joosten-JLAMP2018}, which allows us to express such constraints, we can add constraints for data quality to the schema.
    This allows us to signal the data pollution at runtime.
-   Some forms of data pollution are not automatable, however.
-   An example is when a person has deliberately specified a false name without violating any constraint in the system.
+   Some forms of data pollution will need to remain out of scope.
+   An example is when a person has specified a false name without violating any constraint in the system.
 
-   The complexity of data migration has prompted us to develop a \ourtheory{} first,
+   The complexity of data migration has prompted us to develop an \ourtheory{} first,
    which we present in this contribution.
    We have validated the \ourtheory{} by prototyping because a formal proof of correctness is currently beyond our reach.
    This \ourtheory{} perceives an information system as a data set with constraints,
@@ -265,7 +266,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    The current section yields a procedure for migrating data from one system to another.
 \subsection{Information Systems}
    The purpose of an information system is to store and disclose data in a way that is meaningful to its users.
-   Multiple users, working from different locations and on different moments, constitute what we will loosely call ``the business''.
+   Multiple users, working from different locations and at different moments, constitute what we will loosely call ``the business''.
    The data in the system constitutes the collective memory of the business,
    which relies on the semantics of the data to draw the right conclusions and carry out their tasks.
    \begin{figure}[bht]
@@ -277,10 +278,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    \end{figure}
    
    Figure~\ref{fig:pre-migration} depicts the situation before migration.
-   An existing application service ingests traffic through an ingress and persists data in a data set, which is typically a database.
+   The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
+   An existing application service ingests traffic through an ingress and persists data in a data set.
    Our research assumes that the structure and business semantics are represented in a schema, from which the system is generated.
    Actors (both users and computers) are changing the data in a system continually.
-   The state of the system is represented by a data set, typically represented in some form of persistent store such as a database.
    Events that the system detects may cause the state to change.
    To keep our \ourtheory{} technology independent, we assume that data sets contain triples.
    This makes our \ourtheory{} valid for every kind of database that triples can represent,
@@ -296,9 +297,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    It serves to constrain the data set at runtime.
    When the data set changes in a way that violates a blocking invariant, the system produces an error message and refuses the change.
 \item Transactional invariant\\
-   The classical database transaction can be understood as a \define{transactional invariant},
-   which the system keeps satisfied by adding or deleting triples to the dataset.
-   As soon as the data violates this constraint, the system restores it without human intervention.
+   A constraint that can is kept satisfied automatically by taking corrective actions is called a \define{transactional invariant}.
+   The system keeps these satisfied by adding or deleting triples to the dataset, typically using wrapped inside a classical database transaction to avoid issues with concurrency.
+   As soon as the data violates a transactional constraint, the system restores it without human intervention.
    So, the outside world experiences this as a constraint that is always satisfied, i.e.~an invariant.
 \item Business constraint\\
    A \define{business constraint} is a constraint that users can violate temporarily until someone restores it.
@@ -319,7 +320,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    %
    Ampersand serves as a language for specifying information systems through a framework of concepts, relations, and constraints.
    It comprises the three types of constraints discussed in this paper, making it an ideal platform for practical testing of our \ourtheory{}.
-   In Ampersand, developers articulate constraints using heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}
+   In Ampersand, developers articulate constraints using heterogeneous relation algebra~\cite{Hattensperger1999,Alloy2006}.
    The systems they generate keep invariants satisfied and alert users to violations of business constraints.
    The absence of imperative code in Ampersand scripts enhances reasoning about the system,
    while its static typing~\cite{vdWoude2011} yields the established benefits in software engineering processes~\cite{HanenbergKRTS14,Petersen2014}.
@@ -393,7 +394,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    It uses transactions to copy the data and to resolve some forms of data pollution.
    Not all of the work, however, can be automated.
    Data pollution, new business rules, or known issues in the existing system
-   may occasionally require tailoring the migration script to specific needs
+   may occasionally require tailoring a script describing the migration system to specific needs
    that require action of users in production.
    For that purpose, the migration engineer specifies business constraints in the migration system.
    In Ampersand, a developer can use business constraints to implement such needs.
@@ -412,9 +413,9 @@ Ordina NV, Nieuwegein, the Netherlands}
       After the migration system is done copying data, the migration engineer switches all traffic to the migration system.
       This is the moment users will notice the difference because the traffic switch also deploys the functionality of the desired system.
       So, in the eyes of an average user, the migration system may look like the desired system.
-      However, the migration system relaxes the blocking invariants of the desired system until users resolve their violations.
+      However, the migration system relaxes the blocking invariants of the desired system until users resolve the violations of the new blocking invariants.
       Since the existing system receives no more traffic, its activity will come to a halt and its data will become static.
-      The migration system stays active until all invariants of the desired system are satisfied and it can take over the work from the migration system.
+      The migration system stays active until all invariants of the desired system are satisfied and the desired system can take over the work from the migration system.
 \item[Moment of completion (MoC)]
       Once the invariants of the desired system are satisfied, the migration engineer switches all traffic to the desired system.
       The blocking invariants of the desired system are now in effect, so users cannot violate them anymore.
@@ -422,7 +423,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 \end{description}
 
    Transactions in the existing system that happen during the time that the migration system is copying data cause no problem,
-   because their changes are copied by the migration system too.
+   because their changes are copied by the migration system, too.
    However, after the MoT there must be no new changes in the existing system
    to avoid violations of new invariants that the migration system has already fixed.
 
@@ -450,30 +451,31 @@ Ordina NV, Nieuwegein, the Netherlands}
    %From a business perspective, atoms represent concrete items of the world,
    %such as \atom{Peter}, \atom{1}, or \atom{the king of France}.
    %By convention throughout the remainder of this paper, variables $a$, $b$, and $c$ represent \emph{atoms}.
-   All atoms are taken from an infinite set called $\Atoms$.
+   All atoms are taken from a set called $\Atoms$.
    %
-   Concepts are names that group atoms of the same type.
-   All concepts are taken from an infinite set $\Concepts$.
+   Concepts (concept symbols) can be understood as (names for) types, and our definitions do not exclude sub-typing.
+   All concept symbols are taken from a set $\Concepts$.
    %$\Concepts$ and $\Atoms$ are disjoint.
    For example, a developer might choose to classify \atom{Peter} and \atom{Melissa} as \concept{Person},
    and \atom{074238991} as a \concept{TelephoneNumber}.
-   In this example, \concept{Person} and \concept{TelephoneNumber} are concepts.
+   In this example, \concept{Person} and \concept{TelephoneNumber} are concept symbols.
    Moreover, \atom{Peter}, \atom{Melissa} and \atom{074238991} are atoms.
-   In the sequel, variables $A$, $B$, $C$, $D$ will represent concepts, and variables $a$, $b$, and $c$ represent \emph{atoms}.
+   In the sequel, variables $A$, $B$, $C$, $D$ will represent concept symbols, and variables $a$, $b$, and $c$ represent \emph{atoms}.
    %
-   The relation $\instance:\Pair{\Atoms}{\Concepts}$ relates atoms to concepts.
-   The term $a\instance C$ means that atom $a$ is an \emph{instance} of concept $C$.
+   The relation $\instance:\Pair{\Atoms}{\Concepts}$ relates atoms to concept symbols.
+   The term $a\instance C$ means that atom $a$ is an \emph{instance} of a concept denoted by $C$.
    %This relation is used in the type system, in which $\instance$ assigns one or more concepts to every atom in the data set.
    %Since $\instance$ is a relation and every relation is a set of pairs,
    %set operators $\cup$, $\cap$, and $-$ can be used on $\instance$.
 
    Relations serve to organize and store data, allowing developers to represent facts.
-   In this paper, variables $r$, $s$, and $d$ represent relations\footnote{Some readers might like to read `relation symbol' where we write `relation'.}.
-   All relations are taken from an infinite set $\Rels$.
+   In this paper, variables $r$, $s$, and $d$ represent relation symbols.
+   All relation symbols are taken from a set $\Rels$.
    $\Rels$ is disjoint from $\Concepts$ and $\Atoms$.
-   Every relation $r$ has a name, a source concept, and a target concept.
-   The notation $r=\declare{n}{A}{B}$ denotes that relation $r$ has name $n$, source concept $A$, and target concept $B$.
-   The part $\pair{A}{B}$ is called the \define{signature} of the relation.
+   Every relation symbol $r$ has a name, a source concept, and a target concept.
+   The notation $r=\declare{n}{A}{B}$ denotes that relation symbol $r$ has name $n$, source concept $A$, and target concept $B$.
+   The part $\pair{A}{B}$ is called the \define{signature} of the relation symbol.
+   When the signature is clear from the context, or not important, we use $r$ and $n$ interchangeably.
    
    Triples serve to represent data.
    A triple %\footnote{Please note that this paper uses the word {\em triple} in a more restricted way than in natural language.}
@@ -481,6 +483,10 @@ Ordina NV, Nieuwegein, the Netherlands}
    For example, $\triple{\text{\atom{Peter}}}{\declare{\id{phone}}{\tt Person}{\tt TelephoneNumber}}{\text{\atom{074238991}}}$ is a triple.
    
    \begin{definition}[Data set]
+   %TODO: SJC weet niet wat hij met dit commentaar aan moet (Review 2):
+   % 
+%Before Def. 1: You could group the implicit parameters of Def. 1
+%into a ``data vocabulary'' $(\AA, \CC, \RR, \src, \trg)$.
    A data set $\dataset$ is a tuple $\pair{\triples}{\instance}$ with finite $\triples \subseteq {\Triple{\Atoms}{\Rels}{\Atoms}}$ and $\instance\subseteq\Pair{\Atoms}{\Concepts}$ that satisfies:
 \begin{eqnarray}
    \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&a\instance A\ \wedge\ b\instance B
@@ -489,26 +495,26 @@ Ordina NV, Nieuwegein, the Netherlands}
 \end{definition}
    Looking at the example,
    equation~\ref{eqn:wellTypedEdge} says that \atom{Peter} is an instance of {\tt Person} and \atom{074238991} is an instance of {\tt TelephoneNumber}.
-   In practice, users can say that the Person Peter has telephone number 074238991.
+   In practice, users can say that the person Peter has telephone number 074238991.
    So, the ``thing'' that \atom{Peter} refers to (which is Peter) has \atom{074238991} as a telephone number.
    The notations $\triples_{\dataset}$ and $\instance_{\dataset}$ are used to disambiguate $\triples$ and $\instance$ when necessary.
    To save writing in the sequel, the notation $a\ r\ b$ means that $\triple{a}{r}{b}\in\triples$.
+   We'll use $\Dataset$ to denote the set of all possible data sets.
 
-   A relation $r$ can serve as a container of pairs,
+   A relation symbol $r$ can serve as a container of pairs,
    as defined by the function $\popF{r}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$.
    It defines a set of pairs, also known as the population of $r$:
 \begin{equation}
    \pop{r}{\dataset}\ =\ \{ \pair{a}{b}\mid\ \triple{a}{r}{b}\in\triples_{\dataset}\}
 \label{eqn:pop-rel}
 \end{equation}
-   Note that the phrase ``pair $\pair{a}{b}$ is in relation $r$'' means that there is a dataset $\dataset$ in which $\pair{a}{b}\in\pop{r}{\dataset}$,
-   so the phrase ``triple $\triple{a}{r}{b}$ is in $\dataset$'' means the same thing.
+   Note that the phrase ``pair $\pair{a}{b}$ is in relation $r$'' means that $\pair{a}{b}\in\pop{r}{\dataset}$ where $\dataset$ is clear from the context.
 %   Equation~\ref{eqn:wellTypedEdge} implies that for every data set $\dataset$:
 %\[\pair{a}{b}\in\pop{\declare{n}{A}{B}}{\dataset}\ \Rightarrow\ a\instance_{\dataset}A\ \wedge\ b\instance_{\dataset}B\]
 %   For a developer, this means that the type of an atom depends only on the relation in which it resides; not on the actual population of the database.
 %
-   We overload the notation $\popF{}$ so we can use it on concepts $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
-   and expressions. We also define the difference of populations, in equation~\ref{eqn:pop-expr}, both for relations and concepts:
+   We overload the notation $\popF{}$ so we can use it on concept symbols $\popF{C}:\Dataset\rightarrow\powerset{\Atoms}$
+   and expressions. We also define the difference of populations, in equation~\ref{eqn:pop-expr}, both for relation and concept symbols:
 \begin{align}
    \pop{C}{\dataset}&= \{ x\mid\ x\ \instance_{\dataset}\ C\}
 \label{eqn:pop-concept}\\
@@ -516,11 +522,11 @@ Ordina NV, Nieuwegein, the Netherlands}
 \label{eqn:pop-expr}
 \end{align}
 
+
 \subsection{Constraints}
 \label{sct:Constraints}
-   Every constraint is an element of an infinite set called $\Constraints$.
-   In this paper, variables $u$ and $v$ represent all three types of constraints.
-   We say that a constraint, $u$, is satisfied when it is true for all triples in the data set.
+   Every constraint symbol is an element of a set called $\Constraints$.
+   In this paper, variables $u$ and $v$ represent symbols for all three types of constraints.
    For every constraint $u$, function $\violC{u}:\Dataset\rightarrow\powerset{\Pair{\Atoms}{\Atoms}}$ produces the violations of $u$,
    and $\sign{u}:\Pair{\Concepts}{\Concepts}$ yields the signature of $u$.
    The definition of $\violC{u}$ implies the assumption that we represent each violation as a pair.
@@ -529,10 +535,21 @@ Ordina NV, Nieuwegein, the Netherlands}
    \pair{a}{b}\in\viol{u}{\dataset}\ \wedge\ \sign{u}=\pair{A}{B}\ \Rightarrow\ a\instance A\ \wedge\ b\instance B
 \label{eqn:wellTypedViolation}
 \end{equation}
-   Note that $\viol{u}{\dataset}=\emptyset$ means that $\dataset$ satisfies $u$.
+   Note that $\viol{u}{\dataset}=\emptyset$ means that $\dataset$ satisfies the constraint whose symbol is $u$.
+   We'll say that $u$ is satisfied in such cases.
+   
+   In order to guarantee that the work required for migration is finite, it suffices to require that $\viol{u}{\dataset}$ is a finite set.
+   The language Ampersand implements many of the sets described so far as finite sets, causing any constraint that can be specified in it to satisfy that $\viol{u}{\dataset}$ is finite.
+   
+   
+   In the current paper, we will, for the sake of simplicity, only
+consider transactional invariants for which violations can be repaired
+by inserting them into a single designated relation.
+   The language Ampersand has more types of transactional invariants than just this one,
+   but this is sufficient for this paper.
 
-   In case $u$ is a transactional invariant,
-   the system will keep it satisfied by adding the violations to a specific relation $\declare{n}{A}{B}$ such that $\pair{A}{B}=\sign{u}$.
+   In case $u$ denotes a transactional invariant,
+   the system will keep it satisfied by adding the violations to a specific relation denoted by $\declare{n}{A}{B}$ such that $\pair{A}{B}=\sign{u}$.
    This requires that adding the pair to that relation solves the violation:
 \begin{equation}
    \begin{array}[t]{l}
@@ -545,15 +562,13 @@ Ordina NV, Nieuwegein, the Netherlands}
    It is obvious that not every conceivable constraint can satisfy this equation.
    So, we assume that the compiler restricts the set of transactional invariants to those that satisfy equation~\ref{eqn:transaction}.
    As $\declare{n}{A}{B}$ is specific for $u$, we can write $\enfRel{u}$ for it.
-   We call this the \define{enforced relation} of transactional invariant $u$:
+   We call this the symbol for the \define{enforced relation} of the transactional invariant denoted by $u$:
 \begin{equation}
    \enfRel{u}=\declare{n}{A}{B}
 \end{equation}
    Let us denote a transactional invariant as $r\mapsfrom\violC{u}$ or equivalently $r \mapsfrom \lambda \dataset.~\viol{u}{\dataset}$,
    in which $r=\enfRel{u}$.
    
-   The language Ampersand has more types of transactional invariants than just this one,
-   but this is sufficient for this paper.
 
 \subsection{Schemas}
 \label{sct:Schemas}
@@ -564,11 +579,11 @@ Ordina NV, Nieuwegein, the Netherlands}
    to prevent a substantial class of mistakes to ever reach end-users.
 
    We describe a schema $\schema$ as a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$,
-   in which $\concepts\subseteq\Concepts$ is a finite set of concepts,
-   $\rels\subseteq\Rels$ is a finite set of relations,
-   $\rules\subseteq\Constraints$ is a finite set of blocking invariants,
-   $\transactions\subseteq\Constraints$ is a finite set of transactional invariants,
-   and $\busConstraints\subseteq\Constraints$ is a finite set of business constraints.
+   in which $\concepts\subseteq\Concepts$ is a finite set of concept symbols,
+   $\rels\subseteq\Rels$ is a finite set of relation symbols,
+   $\rules\subseteq\Constraints$ is a finite set of symbols for blocking invariants,
+   $\transactions\subseteq\Constraints\pfun\Rels$ is a finite set of symbols for transactional invariants,
+   and $\busConstraints\subseteq\Constraints$ is a finite set of symbols for business constraints.
 
    \begin{definition}[Schema]
    A schema is a tuple $\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ that satisfies:
@@ -579,8 +594,8 @@ Ordina NV, Nieuwegein, the Netherlands}
    (\declare{n}{A}{B}\mapsfrom t)\in\mathcal\transactions&~\Rightarrow~ \declare{n}{A}{B}\in \rels\label{eqn:enforcement-has-type}
 \end{align}
    \end{definition}
-   Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concepts mentioned in relations and in the signature of rules are part of the schema.
-   Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation of a transactional invariant is declared in the schema. 
+   Requirements~\ref{eqn:relationsIntroduceConcepts} and~\ref{eqn:invariant-has-type} ensure that concept symbols mentioned in relations and in the signature of constraints are part of the schema.
+   Requirement~\ref{eqn:enforcement-has-type} ensures the enforced relation symbol of a transactional invariant is declared in the schema. 
    When clarity is needed, we write $\concepts_{\schema}$, $\rels_{\schema}$, $\rules_{\schema}$, $\transactions_{\schema}$, $\busConstraints_{\schema}$
    for $\concepts$, $\rels$, $\rules$, $\transactions$, $\busConstraints$ corresponding to $\schema = \quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$.
 
@@ -594,13 +609,13 @@ Ordina NV, Nieuwegein, the Netherlands}
 \item $\dataset=\pair{\triples}{\instance}$ is a data set (so it must satisfy equation~\ref{eqn:wellTypedEdge}).
    We write $\triples_\infsys = \triples$ and $\instance_\infsys = \instance$ if needed;
 \item $\schema=\quintuple{\concepts}{\rels}{\rules}{\transactions}{\busConstraints}$ is a schema (so it must satisfy equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type}).
-\item Triples in the data set must have their relation mentioned in the schema:
+\item Triples in the data set must have their relation symbol mentioned in the schema:
    \begin{eqnarray}
       \triple{a}{\declare{n}{A}{B}}{b}\in\triples&\Rightarrow&\declare{n}{A}{B}\in\rels
    \label{eqn:define R}
    \end{eqnarray}
 \item All violations must have a type, which follows from  (\ref{eqn:wellTypedViolation}).
-\item The system keeps any transactional invariant $u$ satisfied by adding violations to the relation $\enforceC{u}$ (\ref{eqn:transaction}).
+\item The system keeps any transactional invariant denoted by $u$ satisfied by adding violations to the relation denoted by $\enforceC{u}$ (\ref{eqn:transaction}).
 \item All invariants must remain satisfied:
    \begin{align}
       \forall u\in\rules\cup\transactions&.~\viol{u}{\dataset}=\emptyset
@@ -613,14 +628,15 @@ Ordina NV, Nieuwegein, the Netherlands}
 \section{Generating a Migration Script}
 \label{sct:Generating}
    The complexity of migrating data to date yields expensive and error-prone migration projects.
-   By generating this code we can prevent many human induced errors.
+   By generating the migration system we can prevent many human induced errors.
+   However, to allow for human tailoring, we generate a script that describes this migration system (from which the system can be generated automatically).
    
    This section starts with a presentation of the migration script that is to be used.
 
 \subsection{Generating a migration script}
    In the migration system, we need to refer to the items (concepts, relations, and constraints) of both the existing system and the desired system.
    We have to relabel items with prefixes to avoid name clashes in the migration system.
-   We use a left arrow to denote relabeling by prefixing the name of the item with ``old.''.
+   We use a left arrow to denote relabeling by prefixing the name of the item with ``old.'' (or some other prefix that avoids name clashes).
 \begin{equation}
    \begin{array}[m]{rcl}
       \overleftarrow{\pair{\dataset}{\schema}}&=&\pair{\overleftarrow{\dataset}}{\overleftarrow{\schema}}\\
@@ -665,6 +681,27 @@ Ordina NV, Nieuwegein, the Netherlands}
    \begin{align}
       \forall r\in\rels_{\schema'}\cap\rels_{\schema}.~\overleftarrow{r}={\tt copy}_r\label{eqn:copyingTerminates}
    \end{align}
+
+%TODO:
+% SJC begrijpt niet helemaal wat reviewer 2 hier bedoelt:
+    %(16) Transactional invariants should be elements of $\UU$.
+    %    No such elements can be seen in (16).
+    %
+    %    Are transactional invariants repaired via transactions
+    %    with any specified granularity?
+    %    (16) looks like offering lots of opportunities for race
+    %    conditions during pre-deploy (``starts copying data'')
+    %    if the old system can also delete...
+    %    In particular, it appears that (17) would then be reachable
+    %    in states where even if $\mathcal{D}'$ was empty,
+    %    $new.r \neq old.r = copy_r$,
+    %    because for some pairs $p$ it could happen that:
+    %    1. $p$ is propagated to new.r according to the first part of (16)
+    %    2. $p$ is deleted in old.r via the ingress,
+    %    3. $p$ is not in old.r anymore, and will therefore not be
+    %       copied to copy_r
+    %    4. (17) is reached with $p$ in new.r, but not in old.r and copy.r
+    %    5. The deletion of $p$ being lost invalidates the migration.
 
 \item\label{step3}
    The new blocking invariants are $\rules_{\schema'}-\rules_{\schema}$.
@@ -746,6 +783,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    It has no constraints and just one relation, $\declare{r}{A}{B}$.
    Its population is $A=\{a_1,a_2,a_3\}$, $B=\{b_1\}$, and $\pop{r}{\dataset}=\{\pair{a_1}{b_1}\}$.
    The desired system contains one blocking invariant, which is the totality of $\declare{r}{A}{B}$.
+   Its violations are $\pair{a_2}{a_2}$ and $\pair{a_3}{a_3}$.
    The schema of the migration system, $\schema_\migrsys$, follows from definition~\ref{eqn:schema migrsys}.
 
    Figure~\ref{fig:PoC} exhibits four successive screenshots,
@@ -780,7 +818,7 @@ Ordina NV, Nieuwegein, the Netherlands}
 
    The initial situation consists of one existing system $\infsys$ and one desired system $\infsys'$ of which we have a schema, $\schema_{\infsys'}$ and an initial dataset, $\dataset_{\infsys'}$.
    We may assume that $\infsys$ satisfies definition~\ref{def:information system} because it is a system in production.
-   Also, $\schema_{\infsys'}$ satisfies equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type} because the script of the desired system is type-correct.
+   Also, $\schema_{\infsys'}$ satisfies equations~\ref{eqn:relationsIntroduceConcepts} thru~\ref{eqn:enforcement-has-type} because the schema of the desired system is type-correct.
    Together, the schema and the intial dataset forms the desired system $\pair{\schema_{\infsys'}}{\dataset_{\infsys'}}$, which satisfies definition~\ref{def:information system}.
    With these assumptions in place,
    we must verify that:
@@ -794,9 +832,9 @@ Ordina NV, Nieuwegein, the Netherlands}
    Let us discuss these points one by one.
 
    The relations to be copied from $\infsys$ are those relations that the desired system retains: $\rels_{\schema'}\cap\rels_{\schema}$.
-   For each $r$ to be copied from $\infsys$, $\migrsys$ contains a relation ${\tt copy}_r$ in $\rels_1$ (eqn.~\ref{eqn:copy relations}).
+   For each $r$ to be copied from $\infsys$, $\migrsys$ contains a relation symbol ${\tt copy}_r$ in $\rels_1$ (eqn.~\ref{eqn:copy relations}).
    After the MoT, the ingress sends all change events to $\migrsys$, so the existing system can finish the work it is doing for transactional invariants and will not change after that.
-   In other words, the population of every relation in $\rels_{\schema}$ becomes stable and so does every ${\tt copy}_r$.
+   In other words, the population of every relation symbol in $\rels_{\schema}$ becomes stable and so does every ${\tt copy}_r$.
    At that point in time, eqn.~\ref{eqn:copyingTerminates} is satisfied and stays satisfied.
    Effectively, $\transactions_1$ becomes redundant once the copying is done.
 
@@ -806,7 +844,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    This implies that $\migrsys$ works and the migration engineer may safely switch the ingress from $\infsys$ to $\migrsys$.
 
    Thirdly, the constraints that may need human intervention are the blocking invariants of the desired system that were not in the existing system ($\rules_{\schema'}-\rules_{\schema}$ in def.~\ref{eqn:Bfix}).
-   $\migrsys$ features $\busConstraints_\text{fix}$ to represent these rules in the guise of business constraints.
+   $\migrsys$ features $\busConstraints_\text{fix}$ to represent these invariants in the guise of business constraints.
    This lets business actors resolve the violations.
    Each violation in $\busConstraints_\text{fix}$ that a business actor resolves,
    will never reappear because it is registered in ${\tt fixed}_r$ by the transactional invariants of $\transactions_2$ (eqn.~\ref{eqn:enforceForRules}).
@@ -814,7 +852,7 @@ Ordina NV, Nieuwegein, the Netherlands}
    So, after the MoC, $\rules_\text{block}\cup\overrightarrow{\rules_{\schema}\cap\rules_{\schema'}}$ equals $\overrightarrow{\rules_{\schema'}}$ in the migration system.
    % Since $\overrightarrow{\rules_{\schema'}}$ and $\rules_{\schema'}$ have the same behaviour for the end-user, the migration engineer can safely switch the ingress from $\migrsys$ to $\infsys'$ (the desired system).
 
-   The rules in the desired system are partly written to resolve data pollution.
+   The constraints in the desired system are partly written to resolve data pollution.
    In some cases, the migration engineer wants users to get rid of that pollution and turn the rule in a blocking invariant as described above.
    However, some of these constraints might be satisfiable automatically.
    In that case, the migration engineer might substitute such constraints from $\busConstraints_\text{fix}$ by transactional invariants in $\transactions_{\migrsys}$.
@@ -837,13 +875,12 @@ Ordina NV, Nieuwegein, the Netherlands}
    So from MoC onwards, $\pair{\dataset_{\migrsys}}{\schema_{\migrsys}}$ is equivalent to $\pair{\dataset_{\migrsys}}{\overrightarrow{\schema'}}$.
    Hence, we can tell that $\dataset_{\migrsys}$ is a valid dataset for the desired system, so we can switch the ingress from the migration system to the desired system without users noticing the difference.
    Then, the migration system gets no more inputs, so it can be removed. 
-   Since this is equivalent to 
    Since $\transactions_1$ and $\transactions_2$ are redundant after the MoC,
    we can retain $\overrightarrow{\transactions_{\schema'}}$ in $\migrsys$,
    which is equivalent to $\transactions_{\schema'}$ in the desired system.
    Likewise, $\busConstraints_\text{fix}$ has become redundant, so $\migrsys$ can do with just $\overrightarrow{\busConstraints_{\schema'}}$.
    In the desired system, that is equivalent to $\busConstraints_{\schema'}$.
-   So, the constraints in the desired system after the MoC are equivalent to the constraints in the MoC
+   So, the constraints in the desired system after the MoC are equivalent to the constraints in the MoC.
 
 
 \section{Conclusions}
@@ -860,13 +897,13 @@ Ordina NV, Nieuwegein, the Netherlands}
    However, we have not come across other approaches that allow changing the schema in the presence of constraints.
    As such, we cannot compare our approach against other approaches.
    We envision that one day there will be multiple approaches for migration under a changing schema to choose from.
-   For now, our next step is to implement the approach shown here into Ampersand.
+   For now, our next step is to automate the generation of migration scripts as an extension to Ampersand.
 
    This work does not consider what to do about (user) interfaces.
    Instead, it models events by assuming that any change to the data set can be achieved.
    In practice, such changes need to be achieved through interfaces.
    Most Ampersand systems indeed allow the users of the system to edit the data set quite freely through the interfaces.
-   However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break.
+   However, some interfaces may require certain constraints to be satisfied, which means that interfaces of the desired system might break when used through the migration system.
    In the spirit of the approach outlined here, we hope to generate migration interfaces that can replace any broken interfaces until the Moment of Transition.
    How to do this is future work.
 
