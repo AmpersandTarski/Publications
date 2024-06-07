@@ -657,7 +657,7 @@ by inserting them into a single designated relation.
    Let $\pair{\dataset}{\schema}$ be the existing system.
    Let $\pair{\dataset'}{\schema'}$ be the desired system in its initial state.
 \begin{enumerate}
-\item We take a disjoint union of the data sets by relabeling relation names, so the migration script can refer to relations from both systems:
+\item We take a disjoint union of the data sets by relabeling relation symbols, so the migration script can refer to relations from both systems:
    \begin{align}
       \dataset_\migrsys={}&\overleftarrow{\dataset}\cup\overrightarrow{\dataset'}
    \end{align}
@@ -733,7 +733,7 @@ by inserting them into a single designated relation.
      \transactions_2\ =\ \{{\tt fixed}_u\mapsfrom\lambda\dataset.~\cmpl{\viol{u}{\dataset} \cup \pop{{\tt fixed}_u}{\dataset}}\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\label{eqn:enforceForRules}
      % Opmerking van SJC: de {\tt fixed}_u aan de rechterkant is nodig om aan (\ref{eqn:transaction}) te voldoen.
    \end{equation}
-\item\label{step5} To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant $u$:
+\item\label{step5} To signal users that there are violations that need to be fixed, we generate a business constraint for each new blocking invariant denoted by $u$:
 % \begin{verbatim}
 %    ROLE User MAINTAINS TOTr
 %    RULE TOTr : I |- new.r;new.r~
@@ -750,7 +750,7 @@ by inserting them into a single designated relation.
       &\mid u\in\overrightarrow{\rules_{\schema'}-\rules_{\schema}}\}\notag
    \end{align}
    In some cases, a migration engineer can invent ways to satisfy these invariants automatically.
-   For this purpose, the generator must produce source code (as opposed to compiled code) to allow the migration engineer
+   This is one of the places where it is useful for the generator to produce source code (as opposed to compiled code) to allow the migration engineer
    to replace a business constraint with transactional invariants of her own making.
    After all violations are fixed, i.e. when equation~\ref{eqn:readyForMoC} is satisfied,
    the migration engineer can switch the ingress to the desired system.
