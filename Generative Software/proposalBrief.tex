@@ -1,0 +1,83 @@
+\documentclass{elsarticle}
+% \usepackage{graphicx}
+% \usepackage{footmisc}
+% \usepackage{amstext}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{amsthm}
+\usepackage[english]{babel}
+\usepackage{libertine}
+\usepackage{inconsolata}
+% \usepackage[official,right]{eurosym}
+\selectlanguage{english}
+\frenchspacing
+
+\begin{document}
+% \include{preamble}
+
+\title{Generative Software Development\\{\em\normalsize Research Offering}}
+\author{prof.dr.ir.\ Stef Joosten\footnote{ORCID 0000-0001-8308-0189}}
+\author{dr.\ Tim Steenvoorden\footnote{ORCID 0000-0002-8436-2054}}
+\address{Open Universiteit Nederland, Heerlen, the Netherlands}
+
+\begin{abstract}
+    This paper summarizes the capability of the Open Universiteit in generative software development.
+    We offer this enabling technology as a component of a larger effort that involves designing distributed information systems.
+    Generative software development offers attractive benefits for correctness, security, and resilience.
+    Also, it enables a product to be demonstrated live during its creation,
+    hereby supporting agile software development methods.
+    %every 2 or 3 weeks as it develops into an end product.
+\end{abstract}
+
+\begin{keyword}
+    generative software, software engineering, security, prototyping, correctness, Ampersand, TopHat
+\end{keyword}
+\maketitle
+
+\section{Problem area}
+   Data driven organizations that need to adapt frequently to changing circumstances face a software dilemma.
+   On one hand, flexible and fast adaptation requires immediate deployment of new software components, without interrupting the ongoing business.
+   On the other hand, one-of-a-kind organizations require one-of-a-kind components that need to be developed first.
+   If the required component is generic enough, commercial off-the-shelf (COTS) components or Software-as-a-Service (SaaS) components will solve that problem.
+   However, if very specific components are not on the market, organizations must revert to homebrew components.
+   The choice between a readily available solution and a homebrew solution can be a dilemma:
+   you either sacrifice the specific support for your business or you sacrifice the required flexibility.
+   In practice, we see many organizations that opt for low-code platforms to solve this dilemma.
+   Triggered by the advertised prospect that business stakeholders can build the software by themselves,
+   organizations can be in for a disappointment.
+
+\section{Vision}
+   Generative software development uses a software generator to build information systems from a formal specification.
+   Even though the idea is quite old (compilers are a form of software generator),
+   this idea is not being picked up widely in the mainstream of software development.
+   Yet, research so far has yielded promising results with respect to validation and resilience.
+   A software generator enables the DevOps way of working, which is to demonstrate the end product at the end of every sprint.
+   Thus, a way of software development emerges that allows for very fast incremental development of large information systems.
+   Research at the Open Universiteit has produced software generators specifically for information systems.
+   This is useful for supporting distributed business processes that require a mix of human and automated activity.
+
+\section{Benefits}
+    The Open University offers its expertise~\cite{JoostenRAMiCS2017,Steenvoorden2022} and tools~\cite{Joosten-JLAMP2018,10.1145/3354166.3354182}
+    as a building block for a larger research effort,
+    in which generative software development is an enabler for the research proposed.
+    This capability offers the following benefits:
+\begin{itemize}
+    \item By generating software, we can produce live demonstrations periodically to keep the future user population informed of the progress.
+    This produces quick results, which keeps funders happy.
+    \item By automating software production, we can prevent a large class of mistakes and thereby reduce the project risk.
+    \item By formally specifying the functionality, we can give valuable guarantees on the correctness of the results.
+    \item Software that is correctly generated needs no testing. This yields significant savings on testing and test maintenance.
+    \item The tooling that has been developed at the Open University is especially suitable for automating business processes and workflows.
+\end{itemize}
+
+\section{Researchers}
+    The authors are acknowledged scientists, both with a proven track record in generative software development and workflow modelling.
+
+\newpage
+
+\section{Bibliography}
+    \bibliographystyle{elsarticle-harv}
+    \bibliography{doc}
+
+
+\end{document}
